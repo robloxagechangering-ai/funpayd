@@ -413,7 +413,6 @@ async def requisites_input_handler(message: Message, state: FSMContext):
     req_type = data.get('req_type')
     value = message.text
     
-    # Сохраняем реквизиты продавца
     update_deal_seller_req(deal_id, value)
     update_deal_status(deal_id, "waiting_payment")
     await state.clear()
@@ -421,7 +420,6 @@ async def requisites_input_handler(message: Message, state: FSMContext):
     text = "Реквизиты сохранены. Ожидаем оплату."
     await send_with_video(chat_id=message.chat.id, text=text, reply_markup=get_back_button(get_user_lang(message.from_user.id)))
     
-    # Уведомить покупателя, если он есть
     deal = get_deal(deal_id)
     if deal:
         deal_id, seller_id, buyer_id, deal_type, description, amount, currency, seller_req, buyer_req, status, seller_username, buyer_username, created_at = deal
@@ -618,4 +616,32 @@ async def buyer_seller_username_handler(message: Message, state: FSMContext):
 
 <b>Ссылка для продавца:</b>
 https://t.me/{BOT_USERNAME}?start=deal_{deal_id}"""
-    await
+    await send_with_video(chat_id=message.chat.id, text=text, reply_markup=get_back_button(lang))
+    await state.clear()
+
+# ===== РЕКВИЗИТЫ (ПРОДАВЕЦ) =====
+
+@dp.message(DealStates.seller_requisites)
+async def seller_requisites_handler(message: Message, state: FSMContext):
+    lang = get_user_lang(message.from_user.id)
+    data = await state.get_data()
+    deal_id = create_deal(
+        seller_id=message.from_user.id,
+        deal_type=data.get('deal_type'),
+        description=data.get('description'),
+        amount=data.get('amount'),
+        currency=data.get('currency'),
+        seller_req=message.text,
+        seller_username=get_user_username(message.from_user.id)
+    )
+    text = f"""<b>Сделка #{deal_id} создана</b>
+
+<b>Тип:</b> {data.get('deal_type')}
+<b>Описание:</b> {data.get('description')}
+<b>Сумма:</b> {data.get('amount')} {data.get('currency')}
+<b>Реквизиты:</b> {message.text}
+
+<b>Ссылка для покупателя:</b>
+https://t.me/{BOT_USERNAME}?start=deal_{deal_id}
+
+<b>Статус:</b> ожидаем покупателя."""
