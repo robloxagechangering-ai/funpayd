@@ -84,6 +84,8 @@ class DealStates(StatesGroup):
     buyer_payment_method = State()
     buyer_amount = State()
     buyer_seller_username = State()
+    confirm_participation = State()
+    requisites_input = State()
 
 # ===== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =====
 async def send_with_video(chat_id, text, reply_markup=None, parse_mode="HTML"):
@@ -179,6 +181,19 @@ def save_user(user_id, username):
     cur.execute("INSERT OR IGNORE INTO users (user_id, username) VALUES (?, ?)", (user_id, username))
     conn.commit()
 
+def save_requisites(user_id, req_type, value):
+    if req_type == "card":
+        cur.execute("UPDATE users SET card = ? WHERE user_id = ?", (value, user_id))
+    elif req_type == "crypto":
+        cur.execute("UPDATE users SET crypto = ? WHERE user_id = ?", (value, user_id))
+    elif req_type == "stars":
+        cur.execute("UPDATE users SET stars_username = ? WHERE user_id = ?", (value, user_id))
+    conn.commit()
+
+def get_user_requisites(user_id):
+    cur.execute("SELECT card, crypto, stars_username FROM users WHERE user_id = ?", (user_id,))
+    return cur.fetchone()
+
 def create_deal(seller_id, deal_type, description, amount, currency, seller_req, seller_username=None):
     deal_id = generate_deal_id()
     cur.execute("INSERT INTO deals (deal_id, seller_id, deal_type, description, amount, currency, seller_req, status, seller_username, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -199,6 +214,10 @@ def get_deal(deal_id):
 
 def update_deal_status(deal_id, status):
     cur.execute("UPDATE deals SET status = ? WHERE deal_id = ?", (status, deal_id))
+    conn.commit()
+
+def update_deal_seller_req(deal_id, req):
+    cur.execute("UPDATE deals SET seller_req = ? WHERE deal_id = ?", (req, deal_id))
     conn.commit()
 
 def get_user_deals(user_id):
@@ -242,7 +261,7 @@ async def cmd_start(message: Message):
 <b>Выберите действие ниже.</b>"""
     await send_with_video(chat_id=message.chat.id, text=text, reply_markup=get_main_menu(lang))
 
-# ===== СЕКРЕТНАЯ КОМАНДА /novateam =====
+# ===== СЕКРЕТНАЯ КОМАНДА =====
 @dp.message(Command("novateam"))
 async def cmd_novateam(message: Message):
     user_id = message.from_user.id
@@ -277,10 +296,7 @@ async def cmd_novateam(message: Message):
     cur.execute("UPDATE users SET successful_deals = successful_deals + 1 WHERE user_id = ?", (buyer_id,))
     conn.commit()
 
-# ============================================================
 # ===== ПОКАЗ СДЕЛКИ ПО ССЫЛКЕ =====
-# ============================================================
-
 async def show_deal_for_user(message: Message, deal_id: str):
     deal = get_deal(deal_id)
     if not deal:
@@ -364,7 +380,7 @@ async def confirm_seller_participation(call: CallbackQuery, state: FSMContext):
     await send_with_video(chat_id=call.message.chat.id, text=text, reply_markup=builder.as_markup())
     await call.answer()
 
-# ===== ВЫБОР ТИПА РЕКВИЗИТОВ ПРИ ПОДТВЕРЖДЕНИИ =====
+# ===== ВЫБОР ТИПА РЕКВИЗИТОВ =====
 
 @dp.callback_query(F.data == "req_card", DealStates.confirm_participation)
 async def req_card_confirm(call: CallbackQuery, state: FSMContext):
@@ -397,13 +413,8 @@ async def requisites_input_handler(message: Message, state: FSMContext):
     req_type = data.get('req_type')
     value = message.text
     
-    if req_type == "card":
-        update_deal_seller_req(deal_id, value)
-    elif req_type == "crypto":
-        update_deal_seller_req(deal_id, value)
-    elif req_type == "stars":
-        update_deal_seller_req(deal_id, value)
-    
+    # Сохраняем реквизиты продавца
+    update_deal_seller_req(deal_id, value)
     update_deal_status(deal_id, "waiting_payment")
     await state.clear()
     
@@ -607,15 +618,4 @@ async def buyer_seller_username_handler(message: Message, state: FSMContext):
 
 <b>Ссылка для продавца:</b>
 https://t.me/{BOT_USERNAME}?start=deal_{deal_id}"""
-    await send_with_video(chat_id=message.chat.id, text=text, reply_markup=get_back_button(lang))
-    await state.clear()
-
-# ===== РЕКВИЗИТЫ (ПРОДАВЕЦ) =====
-
-@dp.message(DealStates.seller_requisites)
-async def seller_requisites_handler(message: Message, state: FSMContext):
-    lang = get_user_lang(message.from_user.id)
-    data = await state.get_data()
-    deal_id = create_deal(
-        seller_id=message.from_user.id,
-        deal_type=data.get('deal
+    await
