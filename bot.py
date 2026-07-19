@@ -4,7 +4,6 @@ import sqlite3
 import uuid
 import os
 from datetime import datetime
-from aiohttp import web
 
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command, CommandStart
@@ -18,7 +17,6 @@ BOT_TOKEN = "8715914131:AAHKF1nC32BWiAAjGMrXWmIFFRoVIH-eft4"
 ADMIN_IDS = [8625870625]
 VIDEO_URL = "https://youtu.be/en30WSXTX90"
 BOT_USERNAME = "secretariOffreybot"
-PORT = int(os.environ.get("PORT", 8080))
 
 logging.basicConfig(level=logging.INFO)
 storage = MemoryStorage()
@@ -541,5 +539,4 @@ async def show_deal_for_user(message: Message, deal_id: str):
     if user_id != seller_id and buyer_id is None:
         cur.execute("UPDATE deals SET buyer_id = ?, buyer_username = ? WHERE deal_id = ?", (user_id, message.from_user.username, deal_id))
         conn.commit()
-        deal = get_deal(deal_id)
-        deal_id, seller_id, buyer_id, deal_type, description, amount, currency, seller_req, buyer_req, status, seller_username, buyer_username,
+        deal =
