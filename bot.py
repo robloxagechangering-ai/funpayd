@@ -532,4 +532,30 @@ async def requisites_input_handler(message: Message, state: FSMContext):
     
     deal = get_deal(deal_id)
     if deal:
-       
+        deal_id, seller_id, buyer_id, deal_type, description, amount, currency, seller_req, buyer_req, status, seller_username, buyer_username, created_at = deal
+        if buyer_id:
+            buyer_text = f"""✅ Продавец подтвердил участие в сделке #{deal_id}
+
+<b>Тип:</b> {deal_type}
+<b>Описание:</b> {description}
+<b>Сумма:</b> {amount} {currency}
+<b>Реквизиты продавца:</b> {seller_req}
+
+<b>Для имитации оплаты напишите:</b> /novateam"""
+            await bot.send_message(chat_id=buyer_id, text=buyer_text, parse_mode="HTML")
+
+# ============================================================
+# ===== ВСЕ ОСТАЛЬНЫЕ ОБРАБОТЧИКИ =====
+# ============================================================
+
+@dp.callback_query(F.data == "main_menu")
+async def main_menu_callback(call: CallbackQuery):
+    lang = get_user_lang(call.from_user.id)
+    t = TEXTS.get(lang, TEXTS['ru'])
+    await send_with_video(chat_id=call.message.chat.id, text=t['main_title'], reply_markup=get_main_menu(lang))
+    await call.answer()
+
+# ===== СОЗДАНИЕ СДЕЛКИ =====
+
+@dp.callback_query(F.data == "create_deal")
+async def create
