@@ -14,6 +14,9 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+# ==================================================
+# НАСТРОЙКИ
+# ==================================================
 BOT_TOKEN = "8715914131:AAHKF1nC32BWiAAjGMrXWmIFFRoVIH-eft4"
 ADMIN_IDS = [8625870625]
 VIDEO_URL = "https://youtu.be/en30WSXTX90"
@@ -544,4 +547,4 @@ async def show_deal_for_user(message: Message, deal_id: str):
         deal = get_deal(deal_id)
         deal_id, seller_id, buyer_id, deal_type, description, amount, currency, seller_req, buyer_req, status, seller_username, buyer_username, created_at = deal
     
-    if user_id
+    if
