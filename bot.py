@@ -4,7 +4,7 @@ import sqlite3
 import uuid
 import os
 from datetime import datetime
-from aiohttp import web  # Добавлено
+from aiohttp import web
 
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command, CommandStart
@@ -21,7 +21,7 @@ BOT_TOKEN = "8715914131:AAHKF1nC32BWiAAjGMrXWmIFFRoVIH-eft4"
 ADMIN_IDS = [8625870625]
 VIDEO_URL = "https://youtu.be/en30WSXTX90"
 BOT_USERNAME = "secretariOffreybot"
-PORT = int(os.environ.get("PORT", 8080))  # Порт от Render
+PORT = int(os.environ.get("PORT", 8080))
 
 logging.basicConfig(level=logging.INFO)
 storage = MemoryStorage()
@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS referrals (
 conn.commit()
 
 # ==================================================
-# СОСТОЯНИЯ FSM
+# СОСТОЯНИЯ FSM (ИСПРАВЛЕНО: ДОБАВЛЕНО НОВОЕ СОСТОЯНИЕ)
 # ==================================================
 class DealStates(StatesGroup):
     seller_type = State()
@@ -91,11 +91,12 @@ class DealStates(StatesGroup):
     buyer_amount = State()
     buyer_seller_username = State()
     confirm_participation = State()
-    requisites_input = State()
+    requisites_input = State()            # для подтверждения сделки
     funds_deposit = State()
+    profile_requisites_input = State()    # НОВОЕ: для сохранения реквизитов профиля
 
 # ==================================================
-# ТЕКСТЫ ДЛЯ 3 ЯЗЫКОВ
+# ТЕКСТЫ ДЛЯ 3 ЯЗЫКОВ (БЕЗ ИЗМЕНЕНИЙ)
 # ==================================================
 TEXTS = {
     'ru': {
@@ -648,6 +649,7 @@ async def req_stars_confirm(call: CallbackQuery, state: FSMContext):
     await send_with_video(chat_id=call.message.chat.id, text=text, reply_markup=get_back_button(lang))
     await call.answer()
 
+# Обработчик для ввода реквизитов при подтверждении сделки
 @dp.message(DealStates.requisites_input)
 async def requisites_input_handler(message: Message, state: FSMContext):
     data = await state.get_data()
@@ -826,7 +828,7 @@ async def seller_requisites_handler(message: Message, state: FSMContext):
     await state.clear()
 
 # ==================================================
-# ДОПОЛНИТЕЛЬНЫЕ КНОПКИ
+# ДОПОЛНИТЕЛЬНЫЕ КНОПКИ (ИСПРАВЛЕНО)
 # ==================================================
 
 @dp.callback_query(F.data == "funds")
@@ -877,10 +879,11 @@ async def requisites_callback(call: CallbackQuery):
     await send_with_video(chat_id=call.message.chat.id, text=get_text('requisites_menu', lang), reply_markup=get_requisites_menu(lang))
     await call.answer()
 
+# --- ИСПРАВЛЕННЫЕ ОБРАБОТЧИКИ ДЛЯ СОХРАНЕНИЯ РЕКВИЗИТОВ ПРОФИЛЯ ---
 @dp.callback_query(F.data == "req_card_save")
 async def req_card_save(call: CallbackQuery, state: FSMContext):
     lang = get_user_lang(call.from_user.id)
-    await state.set_state(DealStates.requisites_input)
+    await state.set_state(DealStates.profile_requisites_input)  # новое состояние
     await state.update_data(req_type="card")
     await send_with_video(chat_id=call.message.chat.id, text=get_text('requisites_card', lang), reply_markup=get_back_button(lang))
     await call.answer()
@@ -888,7 +891,7 @@ async def req_card_save(call: CallbackQuery, state: FSMContext):
 @dp.callback_query(F.data == "req_crypto_save")
 async def req_crypto_save(call: CallbackQuery, state: FSMContext):
     lang = get_user_lang(call.from_user.id)
-    await state.set_state(DealStates.requisites_input)
+    await state.set_state(DealStates.profile_requisites_input)  # новое состояние
     await state.update_data(req_type="crypto")
     await send_with_video(chat_id=call.message.chat.id, text=get_text('requisites_crypto', lang), reply_markup=get_back_button(lang))
     await call.answer()
@@ -896,12 +899,12 @@ async def req_crypto_save(call: CallbackQuery, state: FSMContext):
 @dp.callback_query(F.data == "req_stars_save")
 async def req_stars_save(call: CallbackQuery, state: FSMContext):
     lang = get_user_lang(call.from_user.id)
-    await state.set_state(DealStates.requisites_input)
+    await state.set_state(DealStates.profile_requisites_input)  # новое состояние
     await state.update_data(req_type="stars")
     await send_with_video(chat_id=call.message.chat.id, text=get_text('requisites_stars', lang), reply_markup=get_back_button(lang))
     await call.answer()
 
-@dp.message(DealStates.requisites_input)
+@dp.message(DealStates.profile_requisites_input)
 async def requisites_save_handler(message: Message, state: FSMContext):
     data = await state.get_data()
     req_type = data.get('req_type')
@@ -914,21 +917,19 @@ async def requisites_save_handler(message: Message, state: FSMContext):
     
     await send_with_video(chat_id=message.chat.id, text=get_text('requisites_saved', lang), reply_markup=get_back_button(lang))
 
+# --- КОНЕЦ ИСПРАВЛЕНИЙ ---
+
 @dp.callback_query(F.data == "lang")
 async def lang_callback(call: CallbackQuery):
     await send_with_video(chat_id=call.message.chat.id, text="🌐 Выберите язык / Choose language / 选择语言:", reply_markup=get_lang_menu())
     await call.answer()
 
-# ==================================================
-# ИСПРАВЛЕННАЯ ФУНКЦИЯ УСТАНОВКИ ЯЗЫКА
-# ==================================================
 @dp.callback_query(F.data.startswith("lang_"))
 async def set_lang_callback(call: CallbackQuery):
     lang = call.data.split("_")[1]
     user_id = call.from_user.id
     cur.execute("UPDATE users SET lang = ? WHERE user_id = ?", (lang, user_id))
     conn.commit()
-    # Убираем отдельный call.answer(), чтобы не дублировать с main_menu_callback
     await main_menu_callback(call)
 
 @dp.callback_query(F.data == "support")
@@ -986,7 +987,6 @@ async def start_web_server():
     site = web.TCPSite(runner, host='0.0.0.0', port=PORT)
     await site.start()
     logging.info(f"Web server started on port {PORT}")
-    # Бесконечно ждём, чтобы сервер не завершался
     await asyncio.Event().wait()
 
 # ==================================================
@@ -995,10 +995,8 @@ async def start_web_server():
 
 async def main():
     logging.basicConfig(level=logging.INFO)
-    # Удаляем вебхук при старте, чтобы избежать конфликтов
     await bot.delete_webhook(drop_pending_updates=True)
     print("Бот запущен!")
-    # Запускаем поллинг и веб-сервер параллельно
     await asyncio.gather(
         dp.start_polling(bot),
         start_web_server()
