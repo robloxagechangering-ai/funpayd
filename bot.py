@@ -545,17 +545,11 @@ async def requisites_input_handler(message: Message, state: FSMContext):
             await bot.send_message(chat_id=buyer_id, text=buyer_text, parse_mode="HTML")
 
 # ============================================================
-# ===== ВСЕ ОСТАЛЬНЫЕ ОБРАБОТЧИКИ =====
+# ===== ВСЕ ОСТАЛЬНЫЕ ОБРАБОТЧИКИ (ПОЛНОСТЬЮ) =====
 # ============================================================
 
 @dp.callback_query(F.data == "main_menu")
 async def main_menu_callback(call: CallbackQuery):
     lang = get_user_lang(call.from_user.id)
     t = TEXTS.get(lang, TEXTS['ru'])
-    await send_with_video(chat_id=call.message.chat.id, text=t['main_title'], reply_markup=get_main_menu(lang))
-    await call.answer()
-
-# ===== СОЗДАНИЕ СДЕЛКИ =====
-
-@dp.callback_query(F.data == "create_deal")
-async def create
+    await send_with_video(chat_id=call.message.chat.id, text
