@@ -539,4 +539,7 @@ async def show_deal_for_user(message: Message, deal_id: str):
     lang = get_user_lang(user_id)
     
     if user_id != seller_id and buyer_id is None:
-        cur.execute("UPDATE deals SET buyer_id
+        cur.execute("UPDATE deals SET buyer_id = ?, buyer_username = ? WHERE deal_id = ?", (user_id, message.from_user.username, deal_id))
+        conn.commit()
+        deal = get_deal(deal_id)
+        deal_id, seller_id, buyer_id, deal_type,
