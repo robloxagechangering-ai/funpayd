@@ -4,6 +4,7 @@ import sqlite3
 import uuid
 import os
 from datetime import datetime
+from aiohttp import web  # Добавлено
 
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command, CommandStart
@@ -20,6 +21,7 @@ BOT_TOKEN = "8715914131:AAHKF1nC32BWiAAjGMrXWmIFFRoVIH-eft4"
 ADMIN_IDS = [8625870625]
 VIDEO_URL = "https://youtu.be/en30WSXTX90"
 BOT_USERNAME = "secretariOffreybot"
+PORT = int(os.environ.get("PORT", 8080))  # Порт от Render
 
 logging.basicConfig(level=logging.INFO)
 storage = MemoryStorage()
@@ -972,15 +974,35 @@ async def fallback_handler(message: Message):
     await message.answer(get_text('funds_deposit_error', lang))
 
 # ==================================================
+# ВЕБ-СЕРВЕР ДЛЯ RENDER
+# ==================================================
+
+async def start_web_server():
+    """Запускает простой веб-сервер, чтобы Render видел открытый порт"""
+    app = web.Application()
+    app.router.add_get('/', lambda request: web.Response(text="Bot is running!"))
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, host='0.0.0.0', port=PORT)
+    await site.start()
+    logging.info(f"Web server started on port {PORT}")
+    # Бесконечно ждём, чтобы сервер не завершался
+    await asyncio.Event().wait()
+
+# ==================================================
 # ЗАПУСК
 # ==================================================
 
 async def main():
     logging.basicConfig(level=logging.INFO)
-    # Удаляем вебхук при старте
+    # Удаляем вебхук при старте, чтобы избежать конфликтов
     await bot.delete_webhook(drop_pending_updates=True)
     print("Бот запущен!")
-    await dp.start_polling(bot)
+    # Запускаем поллинг и веб-сервер параллельно
+    await asyncio.gather(
+        dp.start_polling(bot),
+        start_web_server()
+    )
 
 if __name__ == "__main__":
     asyncio.run(main())
