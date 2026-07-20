@@ -1107,7 +1107,7 @@ async def funds_withdraw(callback: CallbackQuery):
     await callback.answer()
 
 # ==================================================
-# ЗАПУСК БОТА И ВЕБ-СЕРВЕРА
+# ЗАПУСК БОТА И ВЕБ-СЕРВЕРА (ИСПРАВЛЕННЫЙ)
 # ==================================================
 async def on_startup(app):
     logging.info("Bot started (web server up)")
@@ -1124,17 +1124,24 @@ async def handle(request):
     return web.Response(text="Bot is alive")
 
 async def main():
-    # Запускаем поллинг бота в фоне
-    asyncio.create_task(dp.start_polling(bot))
-
-    # Поднимаем веб-сервер (чтобы Render не усыплял)
+    # Создаём веб-приложение
     app = web.Application()
     app.router.add_get("/", handle)
     app.on_startup.append(on_startup)
     app.on_shutdown.append(on_shutdown)
-    
-    # Запускаем сервер
-    web.run_app(app, host="0.0.0.0", port=PORT)
+
+    # Запускаем веб-сервер через AppRunner (не создаёт новый цикл)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, host="0.0.0.0", port=PORT)
+    await site.start()
+    logging.info(f"Web server started on port {PORT}")
+
+    try:
+        # Запускаем поллинг бота (блокируется до остановки)
+        await dp.start_polling(bot)
+    finally:
+        await runner.cleanup()
 
 if __name__ == "__main__":
-    asyncio.run(main())  # <--- ИСПРАВЛЕНО
+    asyncio.run(main())
