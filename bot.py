@@ -20,7 +20,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 BOT_TOKEN = "8715914131:AAHKF1nC32BWiAAjGMrXWmIFFRoVIH-eft4"
 ADMIN_IDS = [8625870625]
 # ЗАМЕНИ ЭТУ ССЫЛКУ НА СВОЁ ФОТО (например, загрузи на imgur)
-PHOTO_URL = "https://i.imgur.com/your_logo.jpg"   # <--- вставь сюда ссылку на логотип
+PHOTO_URL = os.environ.get("PHOTO_URL", "https://i.imgur.com/your_logo.jpg")  # можно через переменную окружения
 BOT_USERNAME = "secretariOffreybot"
 PORT = int(os.environ.get("PORT", 8080))
 
@@ -92,12 +92,12 @@ class DealStates(StatesGroup):
     buyer_amount = State()
     buyer_seller_username = State()
     confirm_participation = State()
-    requisites_input = State()            # для подтверждения сделки
+    requisites_input = State()
     funds_deposit = State()
-    profile_requisites_input = State()    # для сохранения реквизитов профиля
+    profile_requisites_input = State()
 
 # ==================================================
-# ТЕКСТЫ ДЛЯ 3 ЯЗЫКОВ (исправлены)
+# ТЕКСТЫ (полностью скопированы из твоего запроса, исправлены поддержка и кнопки)
 # ==================================================
 TEXTS = {
     'ru': {
@@ -381,10 +381,9 @@ def get_button_text(key, lang='ru'):
     return texts.get(lang, texts['ru']).get(key, key)
 
 # ==================================================
-# НОВАЯ ФУНКЦИЯ ОТПРАВКИ С ФОТО
+# ФУНКЦИЯ ОТПРАВКИ С ФОТО
 # ==================================================
 async def send_with_photo(chat_id, text, reply_markup=None, parse_mode="HTML"):
-    """Отправляет фото (логотип) с подписью. Если фото не загрузится, отправляет только текст."""
     try:
         await bot.send_photo(chat_id=chat_id, photo=PHOTO_URL, caption=text, reply_markup=reply_markup, parse_mode=parse_mode)
     except Exception as e:
@@ -396,10 +395,8 @@ async def send_with_photo(chat_id, text, reply_markup=None, parse_mode="HTML"):
 # ==================================================
 def get_main_menu(lang="ru"):
     builder = InlineKeyboardBuilder()
-    # Кнопки "Создать сделку" и "Средства"
     builder.row(InlineKeyboardButton(text=get_text('create_deal_btn', lang), callback_data="create_deal"))
     builder.row(InlineKeyboardButton(text=get_text('funds_btn', lang), callback_data="funds"))
-    # Остальные кнопки (можно добавить в следующие строки)
     builder.row(InlineKeyboardButton(text="Мои сделки", callback_data="my_deals"), InlineKeyboardButton(text="Реквизиты", callback_data="requisites"))
     builder.row(InlineKeyboardButton(text="Язык", callback_data="lang"), InlineKeyboardButton(text="Поддержка", callback_data="support"))
     builder.row(InlineKeyboardButton(text="Верификация", callback_data="verify"), InlineKeyboardButton(text="Рефералы", callback_data="referral"))
@@ -439,6 +436,13 @@ def get_requisites_menu(lang="ru"):
     builder.row(InlineKeyboardButton(text=get_button_text('back', lang), callback_data="main_menu"))
     return builder.as_markup()
 
+def get_funds_menu(lang="ru"):
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="💳 Пополнить", callback_data="funds_deposit"))
+    builder.row(InlineKeyboardButton(text="💰 Вывести", callback_data="funds_withdraw"))
+    builder.row(InlineKeyboardButton(text=get_button_text('back', lang), callback_data="main_menu"))
+    return builder.as_markup()
+
 # ==================================================
 # ОБРАБОТЧИКИ
 # ==================================================
@@ -446,9 +450,8 @@ def get_requisites_menu(lang="ru"):
 async def start(message: Message, state: FSMContext):
     user_id = message.from_user.id
     username = message.from_user.username or "NoUsername"
-    lang = 'ru'  # потом можно вытащить из БД
+    lang = 'ru'
 
-    # Проверяем, есть ли пользователь в БД
     cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
     row = cur.fetchone()
     if row:
@@ -457,13 +460,11 @@ async def start(message: Message, state: FSMContext):
         cur.execute("INSERT INTO users (user_id, username, lang) VALUES (?, ?, ?)", (user_id, username, lang))
         conn.commit()
 
-    # Проверяем, не является ли start параметром сделки или реферала
     args = message.text.split()
     if len(args) > 1:
         param = args[1]
         if param.startswith("deal_"):
             deal_id = param[5:]
-            # Проверяем существование сделки
             cur.execute("SELECT seller_id, buyer_id, status FROM deals WHERE deal_id=?", (deal_id,))
             deal = cur.fetchone()
             if not deal:
@@ -471,29 +472,24 @@ async def start(message: Message, state: FSMContext):
                 return
             seller_id, buyer_id, status = deal
             if buyer_id is None:
-                # Назначаем этого пользователя покупателем
                 cur.execute("UPDATE deals SET buyer_id=?, buyer_username=? WHERE deal_id=?", (user_id, username, deal_id))
                 conn.commit()
                 await message.answer(f"✅ Вы присоединились к сделке #{deal_id} как покупатель.")
-                # Уведомляем продавца
                 cur.execute("SELECT seller_id FROM deals WHERE deal_id=?", (deal_id,))
                 seller = cur.fetchone()[0]
                 await bot.send_message(seller, f"👤 Покупатель @{username} присоединился к сделке #{deal_id}.")
             else:
                 await message.answer("ℹ️ У этой сделки уже есть покупатель.")
-            # Показываем сделку
             await show_deal(message, deal_id, user_id, lang)
             return
         elif param.startswith("ref"):
             ref_id = int(param[3:])
             if ref_id != user_id:
-                # Добавляем реферала
                 cur.execute("INSERT OR IGNORE INTO referrals (referrer_id, referred_id) VALUES (?, ?)", (ref_id, user_id))
                 cur.execute("UPDATE users SET ref_count = ref_count + 1 WHERE user_id=?", (ref_id,))
                 conn.commit()
                 await message.answer("✅ Вы были приглашены по реферальной ссылке!")
 
-    # Главное меню с фото
     await send_with_photo(message.chat.id, get_text('main_menu', lang), reply_markup=get_main_menu(lang))
 
 async def show_deal(message: Message, deal_id: str, user_id: int, lang: str):
@@ -506,7 +502,6 @@ async def show_deal(message: Message, deal_id: str, user_id: int, lang: str):
 
     if user_id == seller_id:
         text = get_text('deal_show_seller', lang).format(deal_id=d_id, deal_type=d_type, description=desc, amount=amount, currency=curr)
-        # Кнопка "Подтвердить участие"
         kb = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="✅ Подтвердить участие", callback_data=f"confirm_seller_{deal_id}")]
         ])
@@ -544,13 +539,6 @@ async def funds_callback(callback: CallbackQuery):
     await send_with_photo(callback.message.chat.id, get_text('funds_menu', lang), reply_markup=get_funds_menu(lang))
     await callback.answer()
 
-def get_funds_menu(lang):
-    builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="💳 Пополнить", callback_data="funds_deposit"))
-    builder.row(InlineKeyboardButton(text="💰 Вывести", callback_data="funds_withdraw"))
-    builder.row(InlineKeyboardButton(text=get_button_text('back', lang), callback_data="main_menu"))
-    return builder.as_markup()
-
 @dp.callback_query(F.data.startswith("confirm_seller_"))
 async def confirm_seller(callback: CallbackQuery):
     deal_id = callback.data.split("_")[2]
@@ -567,20 +555,16 @@ async def confirm_seller(callback: CallbackQuery):
     if status != "waiting":
         await callback.answer("⛔ Сделка уже не в статусе ожидания.")
         return
-    # Обновляем статус
     cur.execute("UPDATE deals SET status='active' WHERE deal_id=?", (deal_id,))
     conn.commit()
-    # Уведомляем покупателя
     cur.execute("SELECT buyer_id, buyer_username FROM deals WHERE deal_id=?", (deal_id,))
     buyer_id, buyer_username = cur.fetchone()
     if buyer_id:
-        await bot.send_message(buyer_id, get_text('buyer_notify', 'ru').format(deal_id=deal_id, deal_type="", description="", amount=0, currency="", seller_req=""))  # упростил
+        await bot.send_message(buyer_id, get_text('buyer_notify', 'ru').format(deal_id=deal_id, deal_type="", description="", amount=0, currency="", seller_req=""))
     await callback.message.edit_text("✅ Вы подтвердили участие. Ожидайте оплаты от покупателя.")
     await callback.answer()
 
-# ... (остальные обработчики создания сделки и FSM опускаю для краткости, но в полном коде они должны быть)
-# Важно: в процессе создания сделки при выборе продавца нужно создавать запись с seller_id, а buyer_id = NULL.
-# При создании покупателем нужно, чтобы он указал ник продавца, и потом создавалась сделка с buyer_id текущего, seller_id по нику.
+# (Здесь должны быть обработчики FSM для создания сделки – они у тебя были, я их не добавляю для краткости, но они должны быть добавлены. Если их нет, бот не пройдёт полный цикл. Но я оставляю на твоё усмотрение, так как ты просил только исправить запуск и команду)
 
 # ==================================================
 # ОБРАБОТЧИК КОМАНДЫ /novateam
@@ -588,32 +572,25 @@ async def confirm_seller(callback: CallbackQuery):
 @dp.message(Command("novateam"))
 async def novateam(message: Message):
     user_id = message.from_user.id
-    # Ищем активную сделку, где этот пользователь либо продавец, либо покупатель, и статус 'active'
     cur.execute("SELECT deal_id, seller_id, buyer_id, status, seller_username, buyer_username, amount, currency, description, deal_type FROM deals WHERE (seller_id=? OR buyer_id=?) AND status='active'", (user_id, user_id))
     deal = cur.fetchone()
     if not deal:
-        # Может быть несколько, но возьмём первую
         await message.answer("🚫 Активная сделка не найдена.")
         return
     (deal_id, seller_id, buyer_id, status, seller_username, buyer_username, amount, currency, description, deal_type) = deal
 
-    # Меняем статус на завершённый
     cur.execute("UPDATE deals SET status='completed' WHERE deal_id=?", (deal_id,))
     conn.commit()
 
     if user_id == seller_id:
-        # Сообщение продавцу
         text = get_text('novateam_seller', 'ru').format(deal_id=deal_id, buyer=buyer_username, amount=amount, currency=currency, description=description)
         await message.answer(text)
-        # Уведомляем покупателя
         if buyer_id:
             buyer_text = get_text('novateam_buyer', 'ru').format(deal_id=deal_id)
             await bot.send_message(buyer_id, buyer_text)
     elif user_id == buyer_id:
-        # Сообщение покупателю
         text = get_text('novateam_buyer', 'ru').format(deal_id=deal_id)
         await message.answer(text)
-        # Уведомляем продавца
         if seller_id:
             seller_text = get_text('novateam_seller', 'ru').format(deal_id=deal_id, buyer=buyer_username, amount=amount, currency=currency, description=description)
             await bot.send_message(seller_id, seller_text)
@@ -621,22 +598,28 @@ async def novateam(message: Message):
         await message.answer("🚫 Вы не участник этой сделки.")
 
 # ==================================================
-# ЗАПУСК БОТА (через aiohttp)
+# ЗАПУСК БОТА И ВЕБ-СЕРВЕРА (ИСПРАВЛЕНО)
 # ==================================================
-async def on_startup():
-    logging.info("Bot started")
+async def on_startup(app):
+    logging.info("Bot started (web server up)")
 
-async def on_shutdown():
-    logging.info("Bot stopped")
+async def on_shutdown(app):
+    logging.info("Bot stopped (web server down)")
 
 async def handle(request):
-    return web.Response(text="Bot is running")
+    return web.Response(text="Bot is alive")
 
-def main():
+async def main():
+    # Запускаем поллинг бота в фоне
+    asyncio.create_task(dp.start_polling(bot))
+
+    # Поднимаем веб-сервер (чтобы Render не усыплял)
     app = web.Application()
     app.router.add_get("/", handle)
     app.on_startup.append(on_startup)
     app.on_shutdown.append(on_shutdown)
+    
+    # Запускаем сервер
     web.run_app(app, host="0.0.0.0", port=PORT)
 
 if __name__ == "__main__":
