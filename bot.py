@@ -1107,7 +1107,7 @@ async def funds_withdraw(callback: CallbackQuery):
     await callback.answer()
 
 # ==================================================
-# ЗАПУСК БОТА И ВЕБ-СЕРВЕРА (ИСПРАВЛЕННЫЙ)
+# ЗАПУСК БОТА И ВЕБ-СЕРВЕРА (С АПТАЙМ-РОБОТОМ)
 # ==================================================
 async def on_startup(app):
     logging.info("Bot started (web server up)")
@@ -1137,11 +1137,22 @@ async def main():
     await site.start()
     logging.info(f"Web server started on port {PORT}")
 
-    try:
-        # Запускаем поллинг бота (блокируется до остановки)
-        await dp.start_polling(bot)
-    finally:
-        await runner.cleanup()
+    # ===== АПТАЙМ-РОБОТ: бесконечный цикл с перезапуском при сбое =====
+    while True:
+        try:
+            logging.info("Starting bot polling...")
+            await dp.start_polling(bot)
+        except Exception as e:
+            logging.error(f"Polling crashed: {e}. Restarting in 5 seconds...")
+            await asyncio.sleep(5)
+            continue  # перезапускаем цикл
+        else:
+            # Если поллинг завершился нормально (например, вручную) — выходим
+            logging.info("Polling stopped gracefully. Shutting down...")
+            break
+    # =====================================================================
+
+    await runner.cleanup()
 
 if __name__ == "__main__":
     asyncio.run(main())
