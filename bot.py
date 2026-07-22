@@ -623,7 +623,7 @@ async def funds_callback(callback: CallbackQuery):
     await callback.answer()
 
 # ==================================================
-# FSM ДЛЯ СОЗДАНИЯ СДЕЛКИ (ПРОДАВЕЦ) - ПЕРЕРАБОТАНО
+# FSM ДЛЯ СОЗДАНИЯ СДЕЛКИ (ПРОДАВЕЦ) - УПРОЩЕНО ДО МАКСИМУМА
 # ==================================================
 @dp.callback_query(F.data == "seller_role")
 async def seller_role(callback: CallbackQuery, state: FSMContext):
@@ -683,11 +683,11 @@ async def seller_payment_method(callback: CallbackQuery, state: FSMContext):
 
 @dp.message(DealStates.seller_amount)
 async def seller_amount(message: Message, state: FSMContext):
-    # Получаем данные из состояния
+    # ПРОВЕРКА: если состояние сбилось, просто сбрасываем всё и просим начать заново
     data = await state.get_data()
     if 'currency' not in data:
-        # Если валюты нет — состояние сбилось, отправляем назад к выбору оплаты
         await state.clear()
+        await message.answer("⚠️ Сессия сброшена. Начните создание сделки заново.")
         user_id = message.from_user.id
         try:
             cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
@@ -695,9 +695,7 @@ async def seller_amount(message: Message, state: FSMContext):
             lang = row[0] if row else 'ru'
         except:
             lang = 'ru'
-        await message.answer("⚠️ Сессия сброшена. Пожалуйста, выберите способ оплаты снова.")
-        await send_with_photo(message.chat.id, get_text('payment_method', lang), reply_markup=get_payment_methods(lang))
-        await state.set_state(DealStates.seller_payment_method)
+        await send_with_photo(message.chat.id, get_text('main_menu', lang), reply_markup=get_main_menu(lang))
         return
 
     # Принимаем только цифры
@@ -711,9 +709,7 @@ async def seller_amount(message: Message, state: FSMContext):
         await message.answer("⚠️ Сумма должна быть больше нуля.")
         return
 
-    # Сохраняем сумму
     await state.update_data(amount=amount)
-
     user_id = message.from_user.id
     try:
         cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
@@ -746,6 +742,7 @@ async def seller_requisites(message: Message, state: FSMContext):
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (deal_id, seller_id, None, data['deal_type'], data['description'], data['amount'], data['currency'], requisites, None, 'active', seller_username, None, created_at))
         conn.commit()
+        logging.info(f"Сделка создана: {deal_id}, продавец {seller_id}")
     except Exception as e:
         logging.error(f"Ошибка создания сделки: {e}")
         await message.answer("🚫 Ошибка при создании сделки. Попробуйте позже.")
