@@ -112,7 +112,7 @@ class DealStates(StatesGroup):
     profile_requisites_input = State()
 
 # ==================================================
-# ТЕКСТЫ (все языки)
+# ТЕКСТЫ (все языки) — убрано упоминание /novateam
 # ==================================================
 TEXTS = {
     'ru': {
@@ -152,7 +152,7 @@ TEXTS = {
         'deal_status': '<b>Сделка #{deal_id}</b>\n<b>Тип:</b> {deal_type}\n<b>Описание:</b> {description}\n<b>Сумма:</b> {amount} {currency}\n<b>Статус:</b> {status}',
         'confirm_requisites': 'Выберите тип реквизитов для подтверждения:',
         'requisites_saved': 'Реквизиты сохранены. Ожидаем оплату.',
-        'buyer_notify': '✅ Продавец подтвердил участие в сделке #{deal_id}\n\n<b>Тип:</b> {deal_type}\n<b>Описание:</b> {description}\n<b>Сумма:</b> {amount} {currency}\n<b>Реквизиты продавца:</b> {seller_req}\n\n<b>Для имитации оплаты напишите:</b> /novateam',
+        'buyer_notify': '✅ Продавец подтвердил участие в сделке #{deal_id}\n\n<b>Тип:</b> {deal_type}\n<b>Описание:</b> {description}\n<b>Сумма:</b> {amount} {currency}\n<b>Реквизиты продавца:</b> {seller_req}',
         'novateam_seller': '<b>💳 Оплата подтверждена</b>\n\n<b>Сделка:</b> #{deal_id}\n<b>Покупатель:</b> @{buyer}\n<b>Сумма:</b> {amount} {currency}\n<b>Предмет:</b> {description}\n\n<b>🛡 Передайте товар покупателю</b>',
         'novateam_buyer': '✅ Оплата подтверждена! Сделка #{deal_id} завершена.',
         'funds_menu': 'Выберите действие:',
@@ -239,7 +239,7 @@ TEXTS = {
         'deal_status': '<b>Deal #{deal_id}</b>\n<b>Type:</b> {deal_type}\n<b>Description:</b> {description}\n<b>Amount:</b> {amount} {currency}\n<b>Status:</b> {status}',
         'confirm_requisites': 'Select requisites type for confirmation:',
         'requisites_saved': 'Requisites saved. Waiting for payment.',
-        'buyer_notify': '✅ Seller confirmed participation in deal #{deal_id}\n\n<b>Type:</b> {deal_type}\n<b>Description:</b> {description}\n<b>Amount:</b> {amount} {currency}\n<b>Seller requisites:</b> {seller_req}\n\n<b>For payment simulation type:</b> /novateam',
+        'buyer_notify': '✅ Seller confirmed participation in deal #{deal_id}\n\n<b>Type:</b> {deal_type}\n<b>Description:</b> {description}\n<b>Amount:</b> {amount} {currency}\n<b>Seller requisites:</b> {seller_req}',
         'novateam_seller': '<b>💳 Payment confirmed</b>\n\n<b>Deal:</b> #{deal_id}\n<b>Buyer:</b> @{buyer}\n<b>Amount:</b> {amount} {currency}\n<b>Item:</b> {description}\n\n<b>🛡 Transfer item to buyer</b>',
         'novateam_buyer': '✅ Payment confirmed! Deal #{deal_id} completed.',
         'funds_menu': 'Select action:',
@@ -326,7 +326,7 @@ Online: 15756
         'deal_status': '<b>交易 #{deal_id}</b>\n<b>类型：</b>{deal_type}\n<b>描述：</b>{description}\n<b>金额：</b>{amount} {currency}\n<b>状态：</b>{status}',
         'confirm_requisites': '选择确认收款方式：',
         'requisites_saved': '收款方式已保存。等待付款。',
-        'buyer_notify': '✅ 卖家已确认参与交易 #{deal_id}\n\n<b>类型：</b>{deal_type}\n<b>描述：</b>{description}\n<b>金额：</b>{amount} {currency}\n<b>卖家收款方式：</b>{seller_req}\n\n<b>模拟付款请发送：</b>/novateam',
+        'buyer_notify': '✅ 卖家已确认参与交易 #{deal_id}\n\n<b>类型：</b>{deal_type}\n<b>描述：</b>{description}\n<b>金额：</b>{amount} {currency}\n<b>卖家收款方式：</b>{seller_req}',
         'novateam_seller': '<b>💳 付款已确认</b>\n\n<b>交易：</b>#{deal_id}\n<b>买家：</b>@{buyer}\n<b>金额：</b>{amount} {currency}\n<b>物品：</b>{description}\n\n<b>🛡 请将物品转交给买家</b>',
         'novateam_buyer': '✅ 付款已确认！交易 #{deal_id} 已完成。',
         'funds_menu': '请选择操作：',
@@ -486,20 +486,27 @@ async def start(message: Message, state: FSMContext):
         if param.startswith("deal_"):
             deal_id = param[5:]
             try:
-                cur.execute("SELECT seller_id, buyer_id, status FROM deals WHERE deal_id=?", (deal_id,))
+                cur.execute("SELECT seller_id, buyer_id, seller_username, status FROM deals WHERE deal_id=?", (deal_id,))
                 deal = cur.fetchone()
                 if not deal:
                     await message.answer("🚫 Сделка не найдена.")
                     return
-                seller_id, buyer_id, status = deal
+                seller_id, buyer_id, seller_username, status = deal
+                # Если пользователь ещё не присоединился как покупатель
                 if buyer_id is None:
                     cur.execute("UPDATE deals SET buyer_id=?, buyer_username=? WHERE deal_id=?", (user_id, username, deal_id))
                     conn.commit()
                     await message.answer(f"✅ Вы присоединились к сделке #{deal_id} как покупатель.")
                     cur.execute("SELECT seller_id FROM deals WHERE deal_id=?", (deal_id,))
                     seller = cur.fetchone()[0]
-                    await bot.send_message(seller, f"👤 Покупатель @{username} присоединился к сделке #{deal_id}.")
-                else:
+                    if seller:
+                        await bot.send_message(seller, f"👤 Покупатель @{username} присоединился к сделке #{deal_id}.")
+                # Если пользователь не продавец и не покупатель, но его username совпадает с seller_username
+                elif seller_id is None and seller_username and seller_username == username:
+                    cur.execute("UPDATE deals SET seller_id=? WHERE deal_id=?", (user_id, deal_id))
+                    conn.commit()
+                    await message.answer(f"✅ Вы стали продавцом в сделке #{deal_id}.")
+                elif user_id != seller_id and user_id != buyer_id:
                     await message.answer("ℹ️ У этой сделки уже есть покупатель.")
             except Exception as e:
                 logging.error(f"Ошибка при обработке deal ссылки: {e}")
@@ -529,14 +536,14 @@ async def show_deal(message: Message, deal_id: str, user_id: int, lang: str):
             return
         (d_id, seller_id, buyer_id, d_type, desc, amount, curr, seller_req, buyer_req, status, seller_username, buyer_username, created) = deal
 
-        if user_id == seller_id:
+        if user_id == seller_id or (seller_id is None and seller_username == message.from_user.username):
             text = get_text('deal_show_seller', lang).format(deal_id=d_id, deal_type=d_type, description=desc, amount=amount, currency=curr)
             kb = InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(text="✅ Подтвердить участие", callback_data=f"confirm_seller_{deal_id}")]
             ])
             await send_with_photo(message.chat.id, text, reply_markup=kb)
         elif user_id == buyer_id:
-            text = get_text('deal_show_buyer', lang).format(deal_id=d_id, deal_type=d_type, description=desc, amount=amount, currency=curr, seller_req=seller_req)
+            text = get_text('deal_show_buyer', lang).format(deal_id=d_id, deal_type=d_type, description=desc, amount=amount, currency=curr, seller_req=seller_req if seller_req else "Не указаны")
             await send_with_photo(message.chat.id, text)
         else:
             await message.answer("🚫 Вы не являетесь участником этой сделки.")
@@ -784,18 +791,7 @@ async def buyer_seller_username(message: Message, state: FSMContext):
     if not seller_username.startswith("@"):
         seller_username = "@" + seller_username
     await state.update_data(seller_username=seller_username)
-    try:
-        cur.execute("SELECT user_id FROM users WHERE username=?", (seller_username[1:],))
-        row = cur.fetchone()
-        if not row:
-            await message.answer("⚠️ Продавец с таким username не найден в системе. Убедитесь, что он запускал бота.\nПопробуйте ввести ещё раз.")
-            return
-    except Exception as e:
-        logging.error(f"Ошибка поиска продавца: {e}")
-        await message.answer("🚫 Ошибка. Попробуйте позже.")
-        await state.clear()
-        return
-    seller_id = row[0]
+    # Убираем проверку на существование продавца — всегда создаём сделку
     data = await state.get_data()
     deal_id = str(uuid.uuid4())[:8]
     buyer_id = message.from_user.id
@@ -806,7 +802,7 @@ async def buyer_seller_username(message: Message, state: FSMContext):
         cur.execute("""
             INSERT INTO deals (deal_id, seller_id, buyer_id, deal_type, description, amount, currency, seller_req, buyer_req, status, seller_username, buyer_username, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (deal_id, seller_id, buyer_id, data['deal_type'], data['description'], data['amount'], data['currency'], None, None, 'waiting', seller_username, buyer_username, created_at))
+        """, (deal_id, None, buyer_id, data['deal_type'], data['description'], data['amount'], data['currency'], None, None, 'waiting', seller_username, buyer_username, created_at))
         conn.commit()
     except Exception as e:
         logging.error(f"Ошибка создания сделки покупателем: {e}")
@@ -832,7 +828,12 @@ async def buyer_seller_username(message: Message, state: FSMContext):
     )
     await send_with_photo(message.chat.id, text)
 
-    await bot.send_message(seller_id, f"📦 Покупатель @{buyer_username} создал сделку #{deal_id}. Перейдите по ссылке для подтверждения:\nhttps://t.me/{BOT_USERNAME}?start=deal_{deal_id}")
+    # Уведомляем продавца (если он существует в БД)
+    cur.execute("SELECT user_id FROM users WHERE username=?", (seller_username[1:],))
+    row = cur.fetchone()
+    if row:
+        seller_id = row[0]
+        await bot.send_message(seller_id, f"📦 Покупатель @{buyer_username} создал сделку #{deal_id}. Перейдите по ссылке для подтверждения:\nhttps://t.me/{BOT_USERNAME}?start=deal_{deal_id}")
 
     await state.clear()
 
@@ -843,19 +844,24 @@ async def buyer_seller_username(message: Message, state: FSMContext):
 async def confirm_seller(callback: CallbackQuery):
     deal_id = callback.data.split("_")[2]
     user_id = callback.from_user.id
+    username = callback.from_user.username
     try:
-        cur.execute("SELECT seller_id, buyer_id, status FROM deals WHERE deal_id=?", (deal_id,))
+        cur.execute("SELECT seller_id, buyer_id, status, seller_username FROM deals WHERE deal_id=?", (deal_id,))
         deal = cur.fetchone()
         if not deal:
             await callback.answer("🚫 Сделка не найдена.")
             return
-        seller_id, buyer_id, status = deal
-        if user_id != seller_id:
+        seller_id, buyer_id, status, seller_username = deal
+        # Проверяем, является ли пользователь продавцом
+        if user_id != seller_id and (seller_id is not None or seller_username != username):
             await callback.answer("⛔ Вы не продавец в этой сделке.")
             return
         if status != "waiting":
             await callback.answer("⛔ Сделка уже не в статусе ожидания.")
             return
+        # Если seller_id ещё не назначен, назначаем
+        if seller_id is None:
+            cur.execute("UPDATE deals SET seller_id=? WHERE deal_id=?", (user_id, deal_id))
         cur.execute("UPDATE deals SET status='active' WHERE deal_id=?", (deal_id,))
         conn.commit()
     except Exception as e:
@@ -863,6 +869,7 @@ async def confirm_seller(callback: CallbackQuery):
         await callback.answer("🚫 Ошибка.")
         return
 
+    # Уведомляем покупателя
     try:
         cur.execute("SELECT buyer_id, buyer_username, deal_type, description, amount, currency, seller_req FROM deals WHERE deal_id=?", (deal_id,))
         buyer_id, buyer_username, deal_type, description, amount, currency, seller_req = cur.fetchone()
@@ -876,16 +883,21 @@ async def confirm_seller(callback: CallbackQuery):
                 description=description,
                 amount=amount,
                 currency=currency,
-                seller_req=seller_req
+                seller_req=seller_req if seller_req else "Не указаны"
             ))
     except Exception as e:
         logging.error(f"Ошибка уведомления покупателя: {e}")
 
-    await callback.message.edit_text("✅ Вы подтвердили участие. Ожидайте оплаты от покупателя.")
+    # Язык продавца
+    cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
+    row = cur.fetchone()
+    seller_lang = row[0] if row else 'ru'
+
+    await callback.message.edit_text(get_text('deal_confirm_seller', seller_lang).format(deal_id=deal_id) if 'deal_confirm_seller' in TEXTS[seller_lang] else "✅ Вы подтвердили участие. Ожидайте оплаты от покупателя.")
     await callback.answer()
 
 # ==================================================
-# ОБРАБОТЧИК /novateam
+# ОБРАБОТЧИК /novateam (работает без упоминаний)
 # ==================================================
 @dp.message(Command("novateam"))
 async def novateam(message: Message):
@@ -974,19 +986,33 @@ async def my_deals(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "requisites")
 async def requisites_menu(callback: CallbackQuery):
-    await send_with_photo(callback.message.chat.id, get_text('requisites_menu', 'ru'), reply_markup=get_requisites_menu('ru'))
+    user_id = callback.from_user.id
+    try:
+        cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
+        row = cur.fetchone()
+        lang = row[0] if row else 'ru'
+    except:
+        lang = 'ru'
+    await send_with_photo(callback.message.chat.id, get_text('requisites_menu', lang), reply_markup=get_requisites_menu(lang))
     await callback.answer()
 
 @dp.callback_query(F.data.startswith("req_"))
 async def requisites_edit(callback: CallbackQuery, state: FSMContext):
     req_type = callback.data.split("_")[1]
     await state.update_data(req_type=req_type)
+    user_id = callback.from_user.id
+    try:
+        cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
+        row = cur.fetchone()
+        lang = row[0] if row else 'ru'
+    except:
+        lang = 'ru'
     if req_type == "card":
-        text = get_text('requisites_card', 'ru')
+        text = get_text('requisites_card', lang)
     elif req_type == "crypto":
-        text = get_text('requisites_crypto', 'ru')
+        text = get_text('requisites_crypto', lang)
     else:
-        text = get_text('requisites_stars', 'ru')
+        text = get_text('requisites_stars', lang)
     await send_with_photo(callback.message.chat.id, text)
     await state.set_state(DealStates.profile_requisites_input)
     await callback.answer()
@@ -1008,7 +1034,11 @@ async def save_requisites(message: Message, state: FSMContext):
         else:
             cur.execute("UPDATE users SET stars_username=? WHERE user_id=?", (value, user_id))
         conn.commit()
-        await message.answer(get_text('requisites_saved', 'ru'))
+        # Получаем язык пользователя
+        cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
+        row = cur.fetchone()
+        lang = row[0] if row else 'ru'
+        await message.answer(get_text('requisites_saved', lang))
     except Exception as e:
         logging.error(f"Ошибка сохранения реквизитов: {e}")
         await message.answer("🚫 Ошибка сохранения.")
@@ -1016,12 +1046,19 @@ async def save_requisites(message: Message, state: FSMContext):
 
 @dp.callback_query(F.data == "lang")
 async def lang_menu(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    try:
+        cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
+        row = cur.fetchone()
+        lang = row[0] if row else 'ru'
+    except:
+        lang = 'ru'
     builder = InlineKeyboardBuilder()
     builder.row(InlineKeyboardButton(text="🇷🇺 Русский", callback_data="lang_ru"))
     builder.row(InlineKeyboardButton(text="🇬🇧 English", callback_data="lang_en"))
     builder.row(InlineKeyboardButton(text="🇨🇳 中文", callback_data="lang_zh"))
-    builder.row(InlineKeyboardButton(text=get_button_text('back', 'ru'), callback_data="main_menu"))
-    await send_with_photo(callback.message.chat.id, get_text('lang_menu', 'ru'), reply_markup=builder.as_markup())
+    builder.row(InlineKeyboardButton(text=get_button_text('back', lang), callback_data="main_menu"))
+    await send_with_photo(callback.message.chat.id, get_text('lang_menu', lang), reply_markup=builder.as_markup())
     await callback.answer()
 
 @dp.callback_query(F.data.startswith("lang_"))
@@ -1041,21 +1078,38 @@ async def set_lang(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "support")
 async def support(callback: CallbackQuery):
-    await send_with_photo(callback.message.chat.id, get_text('support', 'ru'))
+    user_id = callback.from_user.id
+    try:
+        cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
+        row = cur.fetchone()
+        lang = row[0] if row else 'ru'
+    except:
+        lang = 'ru'
+    await send_with_photo(callback.message.chat.id, get_text('support', lang))
     await callback.answer()
 
 @dp.callback_query(F.data == "verify")
 async def verify(callback: CallbackQuery):
-    await send_with_photo(callback.message.chat.id, get_text('verify', 'ru'))
+    user_id = callback.from_user.id
+    try:
+        cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
+        row = cur.fetchone()
+        lang = row[0] if row else 'ru'
+    except:
+        lang = 'ru'
+    await send_with_photo(callback.message.chat.id, get_text('verify', lang))
     await callback.answer()
 
 @dp.callback_query(F.data == "referral")
 async def referral(callback: CallbackQuery):
     user_id = callback.from_user.id
     try:
+        cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
+        row = cur.fetchone()
+        lang = row[0] if row else 'ru'
         cur.execute("SELECT ref_count FROM users WHERE user_id=?", (user_id,))
         ref_count = cur.fetchone()[0]
-        await send_with_photo(callback.message.chat.id, get_text('referral', 'ru').format(bot_username=BOT_USERNAME, user_id=user_id, ref_count=ref_count))
+        await send_with_photo(callback.message.chat.id, get_text('referral', lang).format(bot_username=BOT_USERNAME, user_id=user_id, ref_count=ref_count))
     except Exception as e:
         logging.error(f"Ошибка рефералов: {e}")
         await callback.message.answer("🚫 Ошибка.")
@@ -1063,7 +1117,14 @@ async def referral(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "about")
 async def about(callback: CallbackQuery):
-    await send_with_photo(callback.message.chat.id, get_text('about', 'ru'))
+    user_id = callback.from_user.id
+    try:
+        cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
+        row = cur.fetchone()
+        lang = row[0] if row else 'ru'
+    except:
+        lang = 'ru'
+    await send_with_photo(callback.message.chat.id, get_text('about', lang))
     await callback.answer()
 
 # ==================================================
@@ -1071,7 +1132,14 @@ async def about(callback: CallbackQuery):
 # ==================================================
 @dp.callback_query(F.data == "funds_deposit")
 async def funds_deposit(callback: CallbackQuery, state: FSMContext):
-    await send_with_photo(callback.message.chat.id, get_text('funds_deposit', 'ru'))
+    user_id = callback.from_user.id
+    try:
+        cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
+        row = cur.fetchone()
+        lang = row[0] if row else 'ru'
+    except:
+        lang = 'ru'
+    await send_with_photo(callback.message.chat.id, get_text('funds_deposit', lang))
     await state.set_state(DealStates.funds_deposit)
     await callback.answer()
 
@@ -1103,7 +1171,14 @@ async def funds_deposit_handle(message: Message, state: FSMContext):
 
 @dp.callback_query(F.data == "funds_withdraw")
 async def funds_withdraw(callback: CallbackQuery):
-    await send_with_photo(callback.message.chat.id, get_text('funds_withdraw', 'ru'))
+    user_id = callback.from_user.id
+    try:
+        cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
+        row = cur.fetchone()
+        lang = row[0] if row else 'ru'
+    except:
+        lang = 'ru'
+    await send_with_photo(callback.message.chat.id, get_text('funds_withdraw', lang))
     await callback.answer()
 
 # ==================================================
