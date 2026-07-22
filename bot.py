@@ -3,7 +3,6 @@ import logging
 import sqlite3
 import uuid
 import os
-import re
 from datetime import datetime
 from aiohttp import web
 
@@ -683,22 +682,17 @@ async def seller_payment_method(callback: CallbackQuery, state: FSMContext):
     await state.set_state(DealStates.seller_amount)
     await callback.answer()
 
+# ==================================================
+# ИСПРАВЛЕННАЯ ФУНКЦИЯ seller_amount (Рубли и Гривны заработают)
+# ==================================================
 @dp.message(DealStates.seller_amount)
 async def seller_amount(message: Message, state: FSMContext):
-    cleaned_text = re.sub(r'[^0-9]', '', message.text)
-    if not cleaned_text:
-        await message.answer("⚠️ Введите корректную сумму (только цифры).")
-        return
-
-    amount = int(cleaned_text)
-    if amount <= 0:
-        await message.answer("⚠️ Сумма должна быть больше нуля.")
-        return
-
+    # Проверяем, что валюта сохранена в состоянии
     data = await state.get_data()
-    # Если валюты нет — FSM сбит. Сбрасываем и просим начать заново.
     if 'currency' not in data:
+        # Если валюты нет — сбрасываем и просим начать заново
         await state.clear()
+        await message.answer("🚫 Ошибка сессии. Пожалуйста, выберите способ оплаты заново.")
         user_id = message.from_user.id
         try:
             cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
@@ -706,9 +700,22 @@ async def seller_amount(message: Message, state: FSMContext):
             lang = row[0] if row else 'ru'
         except:
             lang = 'ru'
-        await message.answer("🚫 Ошибка состояния сделки (пропала валюта). Начните создание заново.", reply_markup=get_main_menu(lang))
+        await send_with_photo(message.chat.id, get_text('payment_method', lang), reply_markup=get_payment_methods(lang))
+        await state.set_state(DealStates.seller_payment_method)
         return
 
+    # Валидация: строго цифры, без букв и пробелов
+    text = message.text.strip()
+    if not text.isdigit():
+        await message.answer("⚠️ Введите сумму ТОЛЬКО цифрами (без букв, пробелов и запятых).\nПример: 500")
+        return
+
+    amount = int(text)
+    if amount <= 0:
+        await message.answer("⚠️ Сумма должна быть больше нуля.")
+        return
+
+    # Сохраняем сумму и переходим к реквизитам
     await state.update_data(amount=amount)
 
     user_id = message.from_user.id
@@ -724,6 +731,9 @@ async def seller_amount(message: Message, state: FSMContext):
     await send_with_photo(message.chat.id, req_text)
     await state.set_state(DealStates.seller_requisites)
 
+# ==================================================
+# ОСТАЛЬНЫЕ ОБРАБОТЧИКИ FSM
+# ==================================================
 @dp.message(DealStates.seller_requisites)
 async def seller_requisites(message: Message, state: FSMContext):
     requisites = message.text.strip()
