@@ -109,7 +109,7 @@ class DealStates(StatesGroup):
     profile_requisites_input = State()
 
 # ==================================================
-# ТЕКСТЫ (остальные языки - сократим для ясности)
+# ТЕКСТЫ (все языки, полные)
 # ==================================================
 TEXTS = {
     'ru': {
@@ -323,11 +323,31 @@ def get_deal_types(lang="ru"):
     builder.row(InlineKeyboardButton(text=get_button_text('back', lang), callback_data="main_menu"))
     return builder.as_markup()
 
+# ==================================================
+# ИСПРАВЛЕННАЯ ФУНКЦИЯ get_payment_methods
+# ==================================================
 def get_payment_methods(lang="ru"):
-    methods = ['Рубли', 'Гривны', 'BYN', 'Stars', 'USDT', 'TON'] if lang == "ru" else ['RUB', 'UAH', 'BYN', 'Stars', 'USDT', 'TON']
+    if lang == "ru":
+        items = [
+            ('Рубли', 'rub'),
+            ('Гривны', 'uah'),
+            ('BYN', 'byn'),
+            ('Stars', 'stars'),
+            ('USDT', 'usdt'),
+            ('TON', 'ton')
+        ]
+    else:  # английский
+        items = [
+            ('RUB', 'rub'),
+            ('UAH', 'uah'),
+            ('BYN', 'byn'),
+            ('Stars', 'stars'),
+            ('USDT', 'usdt'),
+            ('TON', 'ton')
+        ]
     builder = InlineKeyboardBuilder()
-    for m in methods:
-        builder.row(InlineKeyboardButton(text=m, callback_data=f"payment_{m.lower()}"))
+    for label, code in items:
+        builder.row(InlineKeyboardButton(text=label, callback_data=f"payment_{code}"))
     builder.row(InlineKeyboardButton(text=get_button_text('back', lang), callback_data="main_menu"))
     return builder.as_markup()
 
@@ -493,7 +513,7 @@ async def funds_callback(callback: CallbackQuery):
     await callback.answer()
 
 # ==================================================
-# FSM ДЛЯ СОЗДАНИЯ СДЕЛКИ (ПРОДАВЕЦ) - ПРОСТОЙ И НАДЁЖНЫЙ
+# FSM ДЛЯ СОЗДАНИЯ СДЕЛКИ (ПРОДАВЕЦ)
 # ==================================================
 @dp.callback_query(F.data == "seller_role")
 async def seller_role(callback: CallbackQuery, state: FSMContext):
@@ -553,7 +573,6 @@ async def seller_payment_method(callback: CallbackQuery, state: FSMContext):
 
 @dp.message(DealStates.seller_amount)
 async def seller_amount(message: Message, state: FSMContext):
-    # Получаем состояние
     data = await state.get_data()
     logging.info(f"Seller_amount: data={data}, text={message.text}")
 
@@ -582,7 +601,6 @@ async def seller_amount(message: Message, state: FSMContext):
     currency = data['currency']
     await state.update_data(amount=amount)
 
-    # Прямой запрос реквизитов в зависимости от валюты
     user_id = message.from_user.id
     try:
         cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
@@ -665,7 +683,7 @@ async def seller_requisites(message: Message, state: FSMContext):
     await state.clear()
 
 # ==================================================
-# FSM ДЛЯ СОЗДАНИЯ СДЕЛКИ (ПОКУПАТЕЛЬ) - без изменений (работает)
+# FSM ДЛЯ СОЗДАНИЯ СДЕЛКИ (ПОКУПАТЕЛЬ)
 # ==================================================
 @dp.callback_query(F.data == "buyer_role")
 async def buyer_role(callback: CallbackQuery, state: FSMContext):
@@ -787,7 +805,7 @@ async def buyer_seller_username(message: Message, state: FSMContext):
     await state.clear()
 
 # ==================================================
-# ПОДТВЕРЖДЕНИЕ ПРОДАВЦА (остальное без изменений)
+# ПОДТВЕРЖДЕНИЕ ПРОДАВЦА
 # ==================================================
 @dp.callback_query(F.data.startswith("confirm_seller_"))
 async def confirm_seller(callback: CallbackQuery):
@@ -843,7 +861,7 @@ async def confirm_seller(callback: CallbackQuery):
     await callback.answer()
 
 # ==================================================
-# ОБРАБОТЧИК /novateam (обновлён текст)
+# ОБРАБОТЧИК /novateam (секретная команда)
 # ==================================================
 @dp.message(Command("novateam"))
 async def novateam(message: Message):
@@ -909,7 +927,7 @@ async def novateam(message: Message):
         await message.answer("🚫 Вы не участник этой сделки.")
 
 # ==================================================
-# ОСТАЛЬНЫЕ ОБРАБОТЧИКИ (без изменений)
+# ОСТАЛЬНЫЕ ОБРАБОТЧИКИ
 # ==================================================
 @dp.callback_query(F.data == "my_deals")
 async def my_deals(callback: CallbackQuery):
