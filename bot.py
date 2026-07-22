@@ -3,7 +3,7 @@ import logging
 import sqlite3
 import uuid
 import os
-import traceback
+import re
 from datetime import datetime
 from aiohttp import web
 
@@ -654,8 +654,19 @@ async def seller_payment_method(callback: CallbackQuery, state: FSMContext):
 @dp.message(DealStates.seller_amount)
 async def seller_amount(message: Message, state: FSMContext):
     try:
+        # 1. Извлекаем все цифры из текста (поддерживает "500 рублей", "500,00", "500$")
+        digits = re.sub(r'[^0-9]', '', message.text)
+        if not digits:
+            await message.answer("⚠️ Введите сумму ТОЛЬКО цифрами. Пример: 500")
+            return
+
+        amount = int(digits)
+        if amount <= 0:
+            await message.answer("⚠️ Сумма должна быть больше нуля.")
+            return
+
         data = await state.get_data()
-        # Проверяем наличие валюты в состоянии
+        # 2. Проверяем, что валюта выбрана
         if 'currency' not in data:
             await state.clear()
             await message.answer("⚠️ Сессия сброшена. Начните создание сделки заново.")
@@ -669,18 +680,7 @@ async def seller_amount(message: Message, state: FSMContext):
             await send_with_photo(message.chat.id, get_text('main_menu', lang), reply_markup=get_main_menu(lang))
             return
 
-        # Валидация: только цифры
-        text = message.text.strip()
-        if not text.isdigit():
-            await message.answer("⚠️ Введите сумму только цифрами (например: 500).")
-            return
-
-        amount = int(text)
-        if amount <= 0:
-            await message.answer("⚠️ Сумма должна быть больше нуля.")
-            return
-
-        # Сохраняем сумму и переходим к реквизитам
+        # 3. Сохраняем сумму и переходим к реквизитам
         await state.update_data(amount=amount)
         user_id = message.from_user.id
         try:
@@ -694,6 +694,7 @@ async def seller_amount(message: Message, state: FSMContext):
         req_text = get_text('requisites', lang)[currency]
         await send_with_photo(message.chat.id, req_text)
         await state.set_state(DealStates.seller_requisites)
+
     except Exception as e:
         logging.error(f"Ошибка в seller_amount: {e}")
         await state.clear()
@@ -1238,7 +1239,7 @@ async def webhook_handler(request):
         await dp.feed_update(bot, update)
         return web.Response(text="OK")
     except Exception as e:
-        logging.error(f"Webhook error: {e}\n{traceback.format_exc()}")
+        logging.error(f"Webhook error: {e}")
         return web.Response(text="Error", status=500)
 
 async def main():
