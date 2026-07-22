@@ -501,9 +501,9 @@ async def start(message: Message, state: FSMContext):
                     seller = cur.fetchone()[0]
                     if seller:
                         await bot.send_message(seller, f"👤 Покупатель @{username} присоединился к сделке #{deal_id}.")
-                # Если пользователь не продавец и не покупатель, но его username совпадает с seller_username
-                elif seller_id is None and seller_username and seller_username == username:
-                    cur.execute("UPDATE deals SET seller_id=? WHERE deal_id=?", (user_id, deal_id))
+                # Если покупатель уже есть, а продавец не назначен — любой может стать продавцом
+                elif seller_id is None:
+                    cur.execute("UPDATE deals SET seller_id=?, seller_username=? WHERE deal_id=?", (user_id, username, deal_id))
                     conn.commit()
                     await message.answer(f"✅ Вы стали продавцом в сделке #{deal_id}.")
                 elif user_id != seller_id and user_id != buyer_id:
@@ -536,28 +536,25 @@ async def show_deal(message: Message, deal_id: str, user_id: int, lang: str):
             return
         (d_id, seller_id, buyer_id, d_type, desc, amount, curr, seller_req, buyer_req, status, seller_username, buyer_username, created) = deal
 
-        # Если пользователь не является участником, но есть свободное место, попробуем добавить его
+        # Если пользователь не является участником, пробуем добавить
         if user_id != seller_id and user_id != buyer_id:
-            # Если покупатель ещё не назначен, становимся покупателем
             if buyer_id is None:
                 cur.execute("UPDATE deals SET buyer_id=?, buyer_username=? WHERE deal_id=?", (user_id, message.from_user.username or "NoUsername", deal_id))
                 conn.commit()
                 await message.answer(f"✅ Вы присоединились к сделке #{deal_id} как покупатель.")
-                # Перезагружаем данные
+                # перезагружаем сделку
                 cur.execute("SELECT * FROM deals WHERE deal_id=?", (deal_id,))
                 deal = cur.fetchone()
                 (d_id, seller_id, buyer_id, d_type, desc, amount, curr, seller_req, buyer_req, status, seller_username, buyer_username, created) = deal
-            # Если продавец ещё не назначен и username совпадает, становимся продавцом
-            elif seller_id is None and seller_username == message.from_user.username:
-                cur.execute("UPDATE deals SET seller_id=? WHERE deal_id=?", (user_id, deal_id))
+            elif seller_id is None:
+                # Любой может стать продавцом, если seller_id ещё не назначен
+                cur.execute("UPDATE deals SET seller_id=?, seller_username=? WHERE deal_id=?", (user_id, message.from_user.username or "NoUsername", deal_id))
                 conn.commit()
                 await message.answer(f"✅ Вы стали продавцом в сделке #{deal_id}.")
-                # Перезагружаем данные
                 cur.execute("SELECT * FROM deals WHERE deal_id=?", (deal_id,))
                 deal = cur.fetchone()
                 (d_id, seller_id, buyer_id, d_type, desc, amount, curr, seller_req, buyer_req, status, seller_username, buyer_username, created) = deal
             else:
-                # Если оба места заняты, сообщаем
                 await message.answer("🚫 В этой сделке уже есть продавец и покупатель.")
                 return
 
@@ -572,7 +569,6 @@ async def show_deal(message: Message, deal_id: str, user_id: int, lang: str):
             text = get_text('deal_show_buyer', lang).format(deal_id=d_id, deal_type=d_type, description=desc, amount=amount, currency=curr, seller_req=seller_req if seller_req else "Не указаны")
             await send_with_photo(message.chat.id, text)
         else:
-            # Если всё ещё не участник (не должно произойти)
             await message.answer("🚫 Вы не являетесь участником этой сделки.")
     except Exception as e:
         logging.error(f"Ошибка в show_deal: {e}")
@@ -675,12 +671,7 @@ async def seller_payment_method(callback: CallbackQuery, state: FSMContext):
 
 @dp.message(DealStates.seller_amount)
 async def seller_amount(message: Message, state: FSMContext):
-    # Проверяем, что состояние seller_amount активно
-    current_state = await state.get_state()
-    if current_state != DealStates.seller_amount:
-        await message.answer("⚠️ Пожалуйста, сначала выберите способ оплаты и введите сумму.")
-        return
-
+    # Проверка состояния убрана — она ломала FSM
     if not message.text.isdigit():
         await message.answer("⚠️ Введите целое число.")
         return
@@ -824,7 +815,6 @@ async def buyer_seller_username(message: Message, state: FSMContext):
     if not seller_username.startswith("@"):
         seller_username = "@" + seller_username
     await state.update_data(seller_username=seller_username)
-    # Убираем проверку на существование продавца — всегда создаём сделку
     data = await state.get_data()
     deal_id = str(uuid.uuid4())[:8]
     buyer_id = message.from_user.id
@@ -885,16 +875,19 @@ async def confirm_seller(callback: CallbackQuery):
             await callback.answer("🚫 Сделка не найдена.")
             return
         seller_id, buyer_id, status, seller_username = deal
-        # Проверяем, является ли пользователь продавцом
-        if user_id != seller_id and (seller_id is not None or seller_username != username):
-            await callback.answer("⛔ Вы не продавец в этой сделке.")
-            return
+        # Проверяем, является ли пользователь продавцом (учитываем, что seller_id мог быть None)
+        if user_id != seller_id:
+            # Если seller_id None, но это тот же username, что и записан, разрешаем
+            if seller_id is None and seller_username == username:
+                # назначаем его продавцом
+                cur.execute("UPDATE deals SET seller_id=? WHERE deal_id=?", (user_id, deal_id))
+                conn.commit()
+            else:
+                await callback.answer("⛔ Вы не продавец в этой сделке.")
+                return
         if status != "waiting":
             await callback.answer("⛔ Сделка уже не в статусе ожидания.")
             return
-        # Если seller_id ещё не назначен, назначаем
-        if seller_id is None:
-            cur.execute("UPDATE deals SET seller_id=? WHERE deal_id=?", (user_id, deal_id))
         cur.execute("UPDATE deals SET status='active' WHERE deal_id=?", (deal_id,))
         conn.commit()
     except Exception as e:
