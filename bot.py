@@ -1232,7 +1232,7 @@ async def funds_withdraw(callback: CallbackQuery):
     await callback.answer()
 
 # ==================================================
-# ЗАПУСК БОТА И ВЕБ-СЕРВЕРА
+# ЗАПУСК БОТА И ВЕБ-СЕРВЕРА (С ЗАЩИТОЙ ОТ КОНФЛИКТА)
 # ==================================================
 async def on_startup(app):
     logging.info("Bot started (web server up)")
@@ -1260,8 +1260,11 @@ async def main():
     await site.start()
     logging.info(f"Web server started on port {PORT}")
 
+    # === ЖЁСТКАЯ ОЧИСТКА СТАРЫХ ПОДКЛЮЧЕНИЙ ===
     await bot.delete_webhook(drop_pending_updates=True)
-    logging.info("Old webhook/polling cleared. Starting fresh.")
+    logging.info("Old webhook/polling cleared. Waiting 3 seconds for old instances to die...")
+    await asyncio.sleep(3)  # Даём старому контейнеру время окончательно умереть
+    # ============================================
 
     while True:
         try:
