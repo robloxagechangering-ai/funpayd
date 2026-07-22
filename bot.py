@@ -654,7 +654,6 @@ async def seller_payment_method(callback: CallbackQuery, state: FSMContext):
 @dp.message(DealStates.seller_amount)
 async def seller_amount(message: Message, state: FSMContext):
     try:
-        # Логируем начало обработки
         logging.info(f"Обработка seller_amount от {message.from_user.id}: {message.text}")
 
         # Извлекаем цифры
@@ -668,11 +667,9 @@ async def seller_amount(message: Message, state: FSMContext):
             await message.answer("⚠️ Сумма должна быть больше нуля.")
             return
 
-        # Получаем состояние
         data = await state.get_data()
         logging.info(f"Состояние seller_amount: {data}")
 
-        # Проверяем наличие валюты
         if 'currency' not in data:
             logging.warning("Валюта не найдена в состоянии. Сброс.")
             await state.clear()
@@ -688,11 +685,6 @@ async def seller_amount(message: Message, state: FSMContext):
             return
 
         currency = data['currency']
-
-        # Сохраняем сумму
-        await state.update_data(amount=amount)
-
-        # Получаем язык пользователя
         user_id = message.from_user.id
         try:
             cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
@@ -701,15 +693,17 @@ async def seller_amount(message: Message, state: FSMContext):
         except:
             lang = 'ru'
 
-        # Проверяем, что валюта существует в requisites
-        req_text = get_text('requisites', lang).get(currency)
-        if not req_text:
-            logging.error(f"Неизвестная валюта: {currency}")
+        # Прямой доступ к словарю requisites через TEXTS
+        try:
+            req_text = TEXTS[lang]['requisites'][currency]
+        except KeyError:
+            logging.error(f"Валюта {currency} не найдена в языке {lang}. Сброс.")
             await state.clear()
             await message.answer("🚫 Ошибка валюты. Начните создание сделки заново.")
             await send_with_photo(message.chat.id, get_text('main_menu', lang), reply_markup=get_main_menu(lang))
             return
 
+        await state.update_data(amount=amount)
         await send_with_photo(message.chat.id, req_text)
         await state.set_state(DealStates.seller_requisites)
 
