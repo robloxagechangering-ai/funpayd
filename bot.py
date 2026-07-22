@@ -94,26 +94,23 @@ init_db()
 # СОСТОЯНИЯ FSM
 # ==================================================
 class DealStates(StatesGroup):
-    # Продавец
     seller_type = State()
     seller_description = State()
     seller_payment_method = State()
     seller_amount = State()
     seller_requisites = State()
-    # Покупатель
     buyer_type = State()
     buyer_description = State()
     buyer_payment_method = State()
     buyer_amount = State()
     buyer_seller_username = State()
-    # Прочее
     confirm_participation = State()
     requisites_input = State()
     funds_deposit = State()
     profile_requisites_input = State()
 
 # ==================================================
-# ТЕКСТЫ (все языки) — исправлен novateam_seller
+# ТЕКСТЫ (все языки)
 # ==================================================
 TEXTS = {
     'ru': {
@@ -514,7 +511,6 @@ async def start(message: Message, state: FSMContext):
                     await message.answer("🚫 Сделка не найдена.")
                     return
                 seller_id, buyer_id, seller_username, status = deal
-                # Если пользователь ещё не присоединился как покупатель и место свободно
                 if buyer_id is None:
                     cur.execute("UPDATE deals SET buyer_id=?, buyer_username=? WHERE deal_id=?", (user_id, username, deal_id))
                     conn.commit()
@@ -523,7 +519,6 @@ async def start(message: Message, state: FSMContext):
                     seller = cur.fetchone()[0]
                     if seller:
                         await bot.send_message(seller, f"👤 Покупатель @{username} присоединился к сделке #{deal_id}.")
-                # Если покупатель уже есть, а продавец не назначен — любой может стать продавцом
                 elif seller_id is None:
                     cur.execute("UPDATE deals SET seller_id=?, seller_username=? WHERE deal_id=?", (user_id, username, deal_id))
                     conn.commit()
@@ -558,18 +553,15 @@ async def show_deal(message: Message, deal_id: str, user_id: int, lang: str):
             return
         (d_id, seller_id, buyer_id, d_type, desc, amount, curr, seller_req, buyer_req, status, seller_username, buyer_username, created) = deal
 
-        # Если пользователь не является участником, пробуем добавить
         if user_id != seller_id and user_id != buyer_id:
             if buyer_id is None:
                 cur.execute("UPDATE deals SET buyer_id=?, buyer_username=? WHERE deal_id=?", (user_id, message.from_user.username or "NoUsername", deal_id))
                 conn.commit()
                 await message.answer(f"✅ Вы присоединились к сделке #{deal_id} как покупатель.")
-                # перезагружаем сделку
                 cur.execute("SELECT * FROM deals WHERE deal_id=?", (deal_id,))
                 deal = cur.fetchone()
                 (d_id, seller_id, buyer_id, d_type, desc, amount, curr, seller_req, buyer_req, status, seller_username, buyer_username, created) = deal
             elif seller_id is None:
-                # Любой может стать продавцом, если seller_id ещё не назначен
                 cur.execute("UPDATE deals SET seller_id=?, seller_username=? WHERE deal_id=?", (user_id, message.from_user.username or "NoUsername", deal_id))
                 conn.commit()
                 await message.answer(f"✅ Вы стали продавцом в сделке #{deal_id}.")
@@ -580,7 +572,6 @@ async def show_deal(message: Message, deal_id: str, user_id: int, lang: str):
                 await message.answer("🚫 В этой сделке уже есть продавец и покупатель.")
                 return
 
-        # Теперь показываем сделку
         if user_id == seller_id:
             text = get_text('deal_show_seller', lang).format(deal_id=d_id, deal_type=d_type, description=desc, amount=amount, currency=curr)
             kb = InlineKeyboardMarkup(inline_keyboard=[
@@ -650,7 +641,7 @@ async def seller_role(callback: CallbackQuery, state: FSMContext):
 
 @dp.callback_query(DealStates.seller_type, F.data.startswith("deal_type_"))
 async def seller_type_chosen(callback: CallbackQuery, state: FSMContext):
-    deal_type = callback.data.split("_")[2]  # account или gift
+    deal_type = callback.data.split("_")[2]
     await state.update_data(deal_type=deal_type)
     user_id = callback.from_user.id
     try:
@@ -678,7 +669,7 @@ async def seller_description(message: Message, state: FSMContext):
 
 @dp.callback_query(DealStates.seller_payment_method, F.data.startswith("payment_"))
 async def seller_payment_method(callback: CallbackQuery, state: FSMContext):
-    currency = callback.data.split("_")[1]  # rub, uah, byn, stars, usdt, ton
+    currency = callback.data.split("_")[1]
     await state.update_data(currency=currency)
     user_id = callback.from_user.id
     try:
@@ -693,7 +684,6 @@ async def seller_payment_method(callback: CallbackQuery, state: FSMContext):
 
 @dp.message(DealStates.seller_amount)
 async def seller_amount(message: Message, state: FSMContext):
-    # Вытаскиваем только цифры из любой строки (даже "25 рублей" -> 25)
     cleaned_text = re.sub(r'[^0-9]', '', message.text)
     if not cleaned_text:
         await message.answer("⚠️ Введите корректную сумму (только цифры).")
@@ -704,10 +694,8 @@ async def seller_amount(message: Message, state: FSMContext):
         await message.answer("⚠️ Сумма должна быть больше нуля.")
         return
 
-    # Проверяем, что валюта выбрана (она не должна потеряться)
     data = await state.get_data()
     if 'currency' not in data:
-        # Если валюты нет, возвращаем пользователя к выбору оплаты
         user_id = message.from_user.id
         try:
             cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
@@ -720,7 +708,6 @@ async def seller_amount(message: Message, state: FSMContext):
         await state.set_state(DealStates.seller_payment_method)
         return
 
-    # Сохраняем сумму и идём запрашивать реквизиты
     await state.update_data(amount=amount)
 
     user_id = message.from_user.id
@@ -753,7 +740,7 @@ async def seller_requisites(message: Message, state: FSMContext):
         cur.execute("""
             INSERT INTO deals (deal_id, seller_id, buyer_id, deal_type, description, amount, currency, seller_req, buyer_req, status, seller_username, buyer_username, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (deal_id, seller_id, None, data['deal_type'], data['description'], data['amount'], data['currency'], requisites, None, 'waiting', seller_username, None, created_at))
+        """, (deal_id, seller_id, None, data['deal_type'], data['description'], data['amount'], data['currency'], requisites, None, 'active', seller_username, None, created_at))
         conn.commit()
     except Exception as e:
         logging.error(f"Ошибка создания сделки: {e}")
@@ -894,7 +881,6 @@ async def buyer_seller_username(message: Message, state: FSMContext):
     )
     await send_with_photo(message.chat.id, text)
 
-    # Уведомляем продавца (если он существует в БД)
     cur.execute("SELECT user_id FROM users WHERE username=?", (seller_username[1:],))
     row = cur.fetchone()
     if row:
@@ -918,17 +904,14 @@ async def confirm_seller(callback: CallbackQuery):
             await callback.answer("🚫 Сделка не найдена.")
             return
         seller_id, buyer_id, status, seller_username = deal
-        # Проверяем, является ли пользователь продавцом (учитываем, что seller_id мог быть None)
         if user_id != seller_id:
-            # Если seller_id None, но это тот же username, что и записан, разрешаем
             if seller_id is None and seller_username == username:
-                # назначаем его продавцом
                 cur.execute("UPDATE deals SET seller_id=? WHERE deal_id=?", (user_id, deal_id))
                 conn.commit()
             else:
                 await callback.answer("⛔ Вы не продавец в этой сделке.")
                 return
-        if status != "waiting":
+        if status != "waiting" and status != "active":
             await callback.answer("⛔ Сделка уже не в статусе ожидания.")
             return
         cur.execute("UPDATE deals SET status='active' WHERE deal_id=?", (deal_id,))
@@ -938,7 +921,6 @@ async def confirm_seller(callback: CallbackQuery):
         await callback.answer("🚫 Ошибка.")
         return
 
-    # Уведомляем покупателя
     try:
         cur.execute("SELECT buyer_id, buyer_username, deal_type, description, amount, currency, seller_req FROM deals WHERE deal_id=?", (deal_id,))
         buyer_id, buyer_username, deal_type, description, amount, currency, seller_req = cur.fetchone()
@@ -957,16 +939,14 @@ async def confirm_seller(callback: CallbackQuery):
     except Exception as e:
         logging.error(f"Ошибка уведомления покупателя: {e}")
 
-    # Язык продавца
     cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
     row = cur.fetchone()
     seller_lang = row[0] if row else 'ru'
-
     await callback.message.edit_text(get_text('deal_confirm_seller', seller_lang).format(deal_id=deal_id) if 'deal_confirm_seller' in TEXTS[seller_lang] else "✅ Вы подтвердили участие. Ожидайте оплаты от покупателя.", parse_mode="HTML")
     await callback.answer()
 
 # ==================================================
-# ОБРАБОТЧИК /novateam (исправлен с проверкой статуса)
+# ОБРАБОТЧИК /novateam (теперь работает на любую сделку, где пользователь участник)
 # ==================================================
 @dp.message(Command("novateam"))
 async def novateam(message: Message):
@@ -975,22 +955,16 @@ async def novateam(message: Message):
     
     if len(args) > 1:
         deal_id = args[1]
-        cur.execute("SELECT deal_id, seller_id, buyer_id, status, seller_username, buyer_username, amount, currency, description, deal_type FROM deals WHERE deal_id=? AND (seller_id=? OR buyer_id=?) AND status='active'", (deal_id, user_id, user_id))
+        cur.execute("SELECT deal_id, seller_id, buyer_id, status, seller_username, buyer_username, amount, currency, description, deal_type FROM deals WHERE deal_id=? AND (seller_id=? OR buyer_id=?)", (deal_id, user_id, user_id))
         deal = cur.fetchone()
         if not deal:
-            # Проверяем, есть ли вообще такая сделка
-            cur.execute("SELECT status FROM deals WHERE deal_id=?", (deal_id,))
-            deal_exists = cur.fetchone()
-            if deal_exists:
-                await message.answer(f"🚫 Сделка #{deal_id} найдена, но она не в статусе 'active' (сейчас: {deal_exists[0]}). Подтвердите её через меню сначала.")
-            else:
-                await message.answer("🚫 Активная сделка с таким ID не найдена, или вы не являетесь её участником.")
+            await message.answer("🚫 Сделка с таким ID не найдена, или вы не являетесь её участником.")
             return
     else:
-        cur.execute("SELECT deal_id, seller_id, buyer_id, status, seller_username, buyer_username, amount, currency, description, deal_type FROM deals WHERE (seller_id=? OR buyer_id=?) AND status='active'", (user_id, user_id))
+        cur.execute("SELECT deal_id, seller_id, buyer_id, status, seller_username, buyer_username, amount, currency, description, deal_type FROM deals WHERE seller_id=? OR buyer_id=?", (user_id, user_id))
         deal = cur.fetchone()
         if not deal:
-            await message.answer("🚫 У вас нет активных сделок (статус 'active'). Сначала подтвердите сделку через кнопку 'Подтвердить участие'.")
+            await message.answer("🚫 У вас нет сделок. Сначала создайте или присоединитесь к сделке.")
             return
 
     (deal_id, seller_id, buyer_id, status, seller_username, buyer_username, amount, currency, description, deal_type) = deal
@@ -1110,7 +1084,6 @@ async def save_requisites(message: Message, state: FSMContext):
         else:
             cur.execute("UPDATE users SET stars_username=? WHERE user_id=?", (value, user_id))
         conn.commit()
-        # Получаем язык пользователя
         cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
         row = cur.fetchone()
         lang = row[0] if row else 'ru'
@@ -1258,7 +1231,7 @@ async def funds_withdraw(callback: CallbackQuery):
     await callback.answer()
 
 # ==================================================
-# ЗАПУСК БОТА И ВЕБ-СЕРВЕРА (С АПТАЙМ-РОБОТОМ И ОЧИСТКОЙ ВЕБХУКА)
+# ЗАПУСК БОТА И ВЕБ-СЕРВЕРА
 # ==================================================
 async def on_startup(app):
     logging.info("Bot started (web server up)")
@@ -1275,25 +1248,20 @@ async def handle(request):
     return web.Response(text="Bot is alive")
 
 async def main():
-    # Создаём веб-приложение
     app = web.Application()
     app.router.add_get("/", handle)
     app.on_startup.append(on_startup)
     app.on_shutdown.append(on_shutdown)
 
-    # Запускаем веб-сервер через AppRunner (не создаёт новый цикл)
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, host="0.0.0.0", port=PORT)
     await site.start()
     logging.info(f"Web server started on port {PORT}")
 
-    # === ОЧИСТКА СТАРЫХ ВЕБХУКОВ/ПОЛЛИНГОВ ===
     await bot.delete_webhook(drop_pending_updates=True)
     logging.info("Old webhook/polling cleared. Starting fresh.")
-    # ========================================
 
-    # ===== АПТАЙМ-РОБОТ: бесконечный цикл с перезапуском при сбое =====
     while True:
         try:
             logging.info("Starting bot polling...")
@@ -1301,12 +1269,10 @@ async def main():
         except Exception as e:
             logging.error(f"Polling crashed: {e}. Restarting in 5 seconds...")
             await asyncio.sleep(5)
-            continue  # перезапускаем цикл
+            continue
         else:
-            # Если поллинг завершился нормально (например, вручную) — выходим
             logging.info("Polling stopped gracefully. Shutting down...")
             break
-    # =====================================================================
 
     await runner.cleanup()
 
