@@ -3,6 +3,7 @@ import logging
 import sqlite3
 import uuid
 import os
+import re
 from datetime import datetime
 from aiohttp import web
 
@@ -692,15 +693,36 @@ async def seller_payment_method(callback: CallbackQuery, state: FSMContext):
 
 @dp.message(DealStates.seller_amount)
 async def seller_amount(message: Message, state: FSMContext):
-    # Проверка состояния убрана — она ломала FSM
-    if not message.text.isdigit():
-        await message.answer("⚠️ Введите целое число.")
+    # Вытаскиваем только цифры из любой строки (даже "25 рублей" -> 25)
+    cleaned_text = re.sub(r'[^0-9]', '', message.text)
+    if not cleaned_text:
+        await message.answer("⚠️ Введите корректную сумму (только цифры).")
         return
-    amount = int(message.text)
+
+    amount = int(cleaned_text)
     if amount <= 0:
         await message.answer("⚠️ Сумма должна быть больше нуля.")
         return
+
+    # Проверяем, что валюта выбрана (она не должна потеряться)
+    data = await state.get_data()
+    if 'currency' not in data:
+        # Если валюты нет, возвращаем пользователя к выбору оплаты
+        user_id = message.from_user.id
+        try:
+            cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
+            row = cur.fetchone()
+            lang = row[0] if row else 'ru'
+        except:
+            lang = 'ru'
+        await message.answer("⚠️ Сначала выберите способ оплаты.")
+        await send_with_photo(message.chat.id, get_text('payment_method', lang), reply_markup=get_payment_methods(lang))
+        await state.set_state(DealStates.seller_payment_method)
+        return
+
+    # Сохраняем сумму и идём запрашивать реквизиты
     await state.update_data(amount=amount)
+
     user_id = message.from_user.id
     try:
         cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
@@ -708,7 +730,7 @@ async def seller_amount(message: Message, state: FSMContext):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    data = await state.get_data()
+
     currency = data['currency']
     req_text = get_text('requisites', lang)[currency]
     await send_with_photo(message.chat.id, req_text)
@@ -944,7 +966,7 @@ async def confirm_seller(callback: CallbackQuery):
     await callback.answer()
 
 # ==================================================
-# ОБРАБОТЧИК /novateam (работает без упоминаний)
+# ОБРАБОТЧИК /novateam (исправлен с проверкой статуса)
 # ==================================================
 @dp.message(Command("novateam"))
 async def novateam(message: Message):
@@ -956,14 +978,21 @@ async def novateam(message: Message):
         cur.execute("SELECT deal_id, seller_id, buyer_id, status, seller_username, buyer_username, amount, currency, description, deal_type FROM deals WHERE deal_id=? AND (seller_id=? OR buyer_id=?) AND status='active'", (deal_id, user_id, user_id))
         deal = cur.fetchone()
         if not deal:
-            await message.answer("🚫 Активная сделка с таким ID не найдена или вы не участник.")
+            # Проверяем, есть ли вообще такая сделка
+            cur.execute("SELECT status FROM deals WHERE deal_id=?", (deal_id,))
+            deal_exists = cur.fetchone()
+            if deal_exists:
+                await message.answer(f"🚫 Сделка #{deal_id} найдена, но она не в статусе 'active' (сейчас: {deal_exists[0]}). Подтвердите её через меню сначала.")
+            else:
+                await message.answer("🚫 Активная сделка с таким ID не найдена, или вы не являетесь её участником.")
             return
     else:
         cur.execute("SELECT deal_id, seller_id, buyer_id, status, seller_username, buyer_username, amount, currency, description, deal_type FROM deals WHERE (seller_id=? OR buyer_id=?) AND status='active'", (user_id, user_id))
         deal = cur.fetchone()
         if not deal:
-            await message.answer("🚫 Активная сделка не найдена. Если у вас несколько сделок, укажите ID: /novateam <ID>")
+            await message.answer("🚫 У вас нет активных сделок (статус 'active'). Сначала подтвердите сделку через кнопку 'Подтвердить участие'.")
             return
+
     (deal_id, seller_id, buyer_id, status, seller_username, buyer_username, amount, currency, description, deal_type) = deal
 
     try:
@@ -989,7 +1018,7 @@ async def novateam(message: Message):
             currency=currency,
             description=description
         )
-        await message.answer(text)  # parse_mode не нужен, т.к. текст без HTML
+        await message.answer(text)
         if buyer_id:
             buyer_text = get_text('novateam_buyer', buyer_lang).format(deal_id=deal_id)
             await bot.send_message(buyer_id, buyer_text)
