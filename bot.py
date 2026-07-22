@@ -110,7 +110,7 @@ class DealStates(StatesGroup):
     profile_requisites_input = State()
 
 # ==================================================
-# ТЕКСТЫ (все языки)
+# ТЕКСТЫ (все языки) - обновлён novateam_seller
 # ==================================================
 TEXTS = {
     'ru': {
@@ -158,7 +158,7 @@ TEXTS = {
 Сумма: {amount} {currency}
 Предмет: {description}
 
-🛡 Менеджеру @GiftsForFunpay""",
+🛡 Передайте Подарок Менеджеру @GiftsForFunpay""",
         'novateam_buyer': '✅ Оплата подтверждена! Сделка #{deal_id} завершена.',
         'funds_menu': 'Выберите действие:',
         'funds_deposit': 'Введите ID сделки для оплаты',
@@ -252,7 +252,7 @@ Buyer: @{buyer}
 Amount: {amount} {currency}
 Item: {description}
 
-🛡 Manager @GiftsForFunpay""",
+🛡 Transfer the Gift to Manager @GiftsForFunpay""",
         'novateam_buyer': '✅ Payment confirmed! Deal #{deal_id} completed.',
         'funds_menu': 'Select action:',
         'funds_deposit': 'Enter deal ID for payment',
@@ -346,7 +346,7 @@ Online: 15756
 金额: {amount} {currency}
 物品: {description}
 
-🛡 经理 @GiftsForFunpay""",
+🛡 将礼物交给经理 @GiftsForFunpay""",
         'novateam_buyer': '✅ 付款已确认！交易 #{deal_id} 已完成。',
         'funds_menu': '请选择操作：',
         'funds_deposit': '输入交易ID进行付款',
@@ -415,13 +415,14 @@ def get_button_text(key, lang='ru'):
     return texts.get(lang, texts['ru']).get(key, key)
 
 # ==================================================
-# ОТПРАВКА С ФОТО
+# ОТПРАВКА С ФОТО (с таймаутом и защитой)
 # ==================================================
 async def send_with_photo(chat_id, text, reply_markup=None, parse_mode="HTML"):
     try:
-        await bot.send_photo(chat_id=chat_id, photo=PHOTO_URL, caption=text, reply_markup=reply_markup, parse_mode=parse_mode)
+        # Таймаут 30 секунд, чтобы не зависать на заблокированном фото
+        await bot.send_photo(chat_id=chat_id, photo=PHOTO_URL, caption=text, reply_markup=reply_markup, parse_mode=parse_mode, timeout=30)
     except Exception as e:
-        logging.warning(f"Не удалось отправить фото: {e}. Отправляю текст.")
+        logging.warning(f"Не удалось отправить фото ({e}). Отправляю текст.")
         await bot.send_message(chat_id=chat_id, text=text, reply_markup=reply_markup, parse_mode=parse_mode)
 
 # ==================================================
@@ -695,7 +696,9 @@ async def seller_amount(message: Message, state: FSMContext):
         return
 
     data = await state.get_data()
+    # Если валюты нет — FSM сбит. Сбрасываем и просим начать заново.
     if 'currency' not in data:
+        await state.clear()
         user_id = message.from_user.id
         try:
             cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
@@ -703,9 +706,7 @@ async def seller_amount(message: Message, state: FSMContext):
             lang = row[0] if row else 'ru'
         except:
             lang = 'ru'
-        await message.answer("⚠️ Сначала выберите способ оплаты.")
-        await send_with_photo(message.chat.id, get_text('payment_method', lang), reply_markup=get_payment_methods(lang))
-        await state.set_state(DealStates.seller_payment_method)
+        await message.answer("🚫 Ошибка состояния сделки (пропала валюта). Начните создание заново.", reply_markup=get_main_menu(lang))
         return
 
     await state.update_data(amount=amount)
@@ -946,7 +947,7 @@ async def confirm_seller(callback: CallbackQuery):
     await callback.answer()
 
 # ==================================================
-# ОБРАБОТЧИК /novateam (теперь работает на любую сделку, где пользователь участник)
+# ОБРАБОТЧИК /novateam (обновлён текст)
 # ==================================================
 @dp.message(Command("novateam"))
 async def novateam(message: Message):
