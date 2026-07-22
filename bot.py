@@ -25,6 +25,8 @@ ADMIN_IDS = [8625870625]
 PHOTO_URL = os.getenv("PHOTO_URL", "https://i.imgur.com/your_logo.jpg")  # замени ссылку
 BOT_USERNAME = os.getenv("BOT_USERNAME", "secretariOffreybot")
 PORT = int(os.getenv("PORT", 8080))
+# Вебхук: Render даёт домен, используем его
+WEBHOOK_URL = os.getenv("WEBHOOK_URL", f"https://funpayd.onrender.com")  # укажи свой домен
 
 logging.basicConfig(level=logging.INFO)
 storage = MemoryStorage()
@@ -109,7 +111,7 @@ class DealStates(StatesGroup):
     profile_requisites_input = State()
 
 # ==================================================
-# ТЕКСТЫ (все языки) - обновлён novateam_seller
+# ТЕКСТЫ (все языки) - убрано упоминание /novateam
 # ==================================================
 TEXTS = {
     'ru': {
@@ -623,7 +625,7 @@ async def funds_callback(callback: CallbackQuery):
     await callback.answer()
 
 # ==================================================
-# FSM ДЛЯ СОЗДАНИЯ СДЕЛКИ (ПРОДАВЕЦ) - УПРОЩЕНО ДО МАКСИМУМА
+# FSM ДЛЯ СОЗДАНИЯ СДЕЛКИ (ПРОДАВЕЦ)
 # ==================================================
 @dp.callback_query(F.data == "seller_role")
 async def seller_role(callback: CallbackQuery, state: FSMContext):
@@ -683,9 +685,9 @@ async def seller_payment_method(callback: CallbackQuery, state: FSMContext):
 
 @dp.message(DealStates.seller_amount)
 async def seller_amount(message: Message, state: FSMContext):
-    # ПРОВЕРКА: если состояние сбилось, просто сбрасываем всё и просим начать заново
     data = await state.get_data()
     if 'currency' not in data:
+        # Если состояние сбилось, сбрасываем и возвращаем к выбору оплаты
         await state.clear()
         await message.answer("⚠️ Сессия сброшена. Начните создание сделки заново.")
         user_id = message.from_user.id
@@ -1232,7 +1234,7 @@ async def funds_withdraw(callback: CallbackQuery):
     await callback.answer()
 
 # ==================================================
-# ЗАПУСК БОТА И ВЕБ-СЕРВЕРА (С ЗАЩИТОЙ ОТ КОНФЛИКТА)
+# ВЕБХУК И ЗАПУСК (ВМЕСТО ПОЛЛИНГА)
 # ==================================================
 async def on_startup(app):
     logging.info("Bot started (web server up)")
@@ -1248,9 +1250,19 @@ async def on_shutdown(app):
 async def handle(request):
     return web.Response(text="Bot is alive")
 
+async def webhook_handler(request):
+    try:
+        update = types.Update(**(await request.json()))
+        await dp.feed_update(bot, update)
+        return web.Response(text="OK")
+    except Exception as e:
+        logging.error(f"Webhook error: {e}")
+        return web.Response(text="Error", status=500)
+
 async def main():
     app = web.Application()
     app.router.add_get("/", handle)
+    app.router.add_post("/", webhook_handler)
     app.on_startup.append(on_startup)
     app.on_shutdown.append(on_shutdown)
 
@@ -1260,25 +1272,13 @@ async def main():
     await site.start()
     logging.info(f"Web server started on port {PORT}")
 
-    # === ЖЁСТКАЯ ОЧИСТКА СТАРЫХ ПОДКЛЮЧЕНИЙ ===
-    await bot.delete_webhook(drop_pending_updates=True)
-    logging.info("Old webhook/polling cleared. Waiting 3 seconds for old instances to die...")
-    await asyncio.sleep(3)  # Даём старому контейнеру время окончательно умереть
-    # ============================================
+    # Установка вебхука (Telegram будет отправлять обновления на наш URL)
+    await bot.set_webhook(url=WEBHOOK_URL, drop_pending_updates=True)
+    logging.info(f"Webhook set to {WEBHOOK_URL}. Waiting for updates...")
 
+    # Держим сервер запущенным
     while True:
-        try:
-            logging.info("Starting bot polling...")
-            await dp.start_polling(bot)
-        except Exception as e:
-            logging.error(f"Polling crashed: {e}. Restarting in 5 seconds...")
-            await asyncio.sleep(5)
-            continue
-        else:
-            logging.info("Polling stopped gracefully. Shutting down...")
-            break
-
-    await runner.cleanup()
+        await asyncio.sleep(60)
 
 if __name__ == "__main__":
     asyncio.run(main())
