@@ -418,7 +418,6 @@ def get_button_text(key, lang='ru'):
 # ==================================================
 async def send_with_photo(chat_id, text, reply_markup=None, parse_mode="HTML"):
     try:
-        # Таймаут 30 секунд, чтобы не зависать на заблокированном фото
         await bot.send_photo(chat_id=chat_id, photo=PHOTO_URL, caption=text, reply_markup=reply_markup, parse_mode=parse_mode, timeout=30)
     except Exception as e:
         logging.warning(f"Не удалось отправить фото ({e}). Отправляю текст.")
@@ -624,7 +623,7 @@ async def funds_callback(callback: CallbackQuery):
     await callback.answer()
 
 # ==================================================
-# FSM ДЛЯ СОЗДАНИЯ СДЕЛКИ (ПРОДАВЕЦ)
+# FSM ДЛЯ СОЗДАНИЯ СДЕЛКИ (ПРОДАВЕЦ) - ПЕРЕРАБОТАНО
 # ==================================================
 @dp.callback_query(F.data == "seller_role")
 async def seller_role(callback: CallbackQuery, state: FSMContext):
@@ -682,17 +681,13 @@ async def seller_payment_method(callback: CallbackQuery, state: FSMContext):
     await state.set_state(DealStates.seller_amount)
     await callback.answer()
 
-# ==================================================
-# ИСПРАВЛЕННАЯ ФУНКЦИЯ seller_amount (Рубли и Гривны заработают)
-# ==================================================
 @dp.message(DealStates.seller_amount)
 async def seller_amount(message: Message, state: FSMContext):
-    # Проверяем, что валюта сохранена в состоянии
+    # Получаем данные из состояния
     data = await state.get_data()
     if 'currency' not in data:
-        # Если валюты нет — сбрасываем и просим начать заново
+        # Если валюты нет — состояние сбилось, отправляем назад к выбору оплаты
         await state.clear()
-        await message.answer("🚫 Ошибка сессии. Пожалуйста, выберите способ оплаты заново.")
         user_id = message.from_user.id
         try:
             cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
@@ -700,14 +695,15 @@ async def seller_amount(message: Message, state: FSMContext):
             lang = row[0] if row else 'ru'
         except:
             lang = 'ru'
+        await message.answer("⚠️ Сессия сброшена. Пожалуйста, выберите способ оплаты снова.")
         await send_with_photo(message.chat.id, get_text('payment_method', lang), reply_markup=get_payment_methods(lang))
         await state.set_state(DealStates.seller_payment_method)
         return
 
-    # Валидация: строго цифры, без букв и пробелов
+    # Принимаем только цифры
     text = message.text.strip()
     if not text.isdigit():
-        await message.answer("⚠️ Введите сумму ТОЛЬКО цифрами (без букв, пробелов и запятых).\nПример: 500")
+        await message.answer("⚠️ Введите сумму только цифрами (например: 500).")
         return
 
     amount = int(text)
@@ -715,7 +711,7 @@ async def seller_amount(message: Message, state: FSMContext):
         await message.answer("⚠️ Сумма должна быть больше нуля.")
         return
 
-    # Сохраняем сумму и переходим к реквизитам
+    # Сохраняем сумму
     await state.update_data(amount=amount)
 
     user_id = message.from_user.id
@@ -731,9 +727,6 @@ async def seller_amount(message: Message, state: FSMContext):
     await send_with_photo(message.chat.id, req_text)
     await state.set_state(DealStates.seller_requisites)
 
-# ==================================================
-# ОСТАЛЬНЫЕ ОБРАБОТЧИКИ FSM
-# ==================================================
 @dp.message(DealStates.seller_requisites)
 async def seller_requisites(message: Message, state: FSMContext):
     requisites = message.text.strip()
