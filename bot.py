@@ -3,6 +3,7 @@ import logging
 import sqlite3
 import uuid
 import os
+import traceback
 from datetime import datetime
 from aiohttp import web
 
@@ -22,11 +23,10 @@ if not BOT_TOKEN:
     raise ValueError("BOT_TOKEN не задан в переменных окружения!")
 
 ADMIN_IDS = [8625870625]
-PHOTO_URL = os.getenv("PHOTO_URL", "https://i.imgur.com/your_logo.jpg")  # замени ссылку
+PHOTO_URL = os.getenv("PHOTO_URL", "https://i.imgur.com/your_logo.jpg")
 BOT_USERNAME = os.getenv("BOT_USERNAME", "secretariOffreybot")
 PORT = int(os.getenv("PORT", 8080))
-# Вебхук: Render даёт домен, используем его
-WEBHOOK_URL = os.getenv("WEBHOOK_URL", f"https://funpayd.onrender.com")  # укажи свой домен
+WEBHOOK_URL = os.getenv("WEBHOOK_URL", "https://funpayd.onrender.com")
 
 logging.basicConfig(level=logging.INFO)
 storage = MemoryStorage()
@@ -58,7 +58,6 @@ def init_db():
             successful_deals INTEGER DEFAULT 0
         )
         """)
-
         cur.execute("""
         CREATE TABLE IF NOT EXISTS deals (
             deal_id TEXT PRIMARY KEY,
@@ -76,7 +75,6 @@ def init_db():
             created_at TEXT
         )
         """)
-
         cur.execute("""
         CREATE TABLE IF NOT EXISTS referrals (
             referrer_id INTEGER,
@@ -115,17 +113,7 @@ class DealStates(StatesGroup):
 # ==================================================
 TEXTS = {
     'ru': {
-        'main_menu': """<b># FUNPAY</b>
-
-<b>Безопасный гарант для сделок в Telegram.</b>
-
-<b>Что внутри:</b>
-• защита от мошенников
-• удержание средств до завершения сделки
-• история и статусы сделок
-• поддержка через @GiftsforFunpay
-
-<b>Выберите действие ниже.</b>""",
+        'main_menu': """<b># FUNPAY</b>\n\n<b>Безопасный гарант для сделок в Telegram.</b>\n\n<b>Что внутри:</b>\n• защита от мошенников\n• удержание средств до завершения сделки\n• история и статусы сделок\n• поддержка через @GiftsforFunpay\n\n<b>Выберите действие ниже.</b>""",
         'create_deal_msg': 'Выберите вашу роль в сделке:',
         'create_deal_btn': 'Создать сделку',
         'funds_btn': 'Средства',
@@ -209,17 +197,7 @@ TEXTS = {
         'stars': 'Stars'
     },
     'en': {
-        'main_menu': """<b># FUNPAY</b>
-
-<b>Safe guarantor for deals in Telegram.</b>
-
-<b>What inside:</b>
-• protection from scammers
-• funds holding until deal completion
-• deal history and statuses
-• support via @GiftsforFunpay
-
-<b>Select action below.</b>""",
+        'main_menu': """<b># FUNPAY</b>\n\n<b>Safe guarantor for deals in Telegram.</b>\n\n<b>What inside:</b>\n• protection from scammers\n• funds holding until deal completion\n• deal history and statuses\n• support via @GiftsforFunpay\n\n<b>Select action below.</b>""",
         'create_deal_msg': 'Choose your role:',
         'create_deal_btn': 'Create deal',
         'funds_btn': 'Funds',
@@ -303,17 +281,7 @@ Online: 15756
         'stars': 'Stars'
     },
     'zh': {
-        'main_menu': """<b># FUNPAY</b>
-
-<b>Telegram交易安全担保。</b>
-
-<b>功能：</b>
-• 防欺诈保护
-• 交易完成前资金冻结
-• 交易历史与状态
-• 通过 @GiftsforFunpay 支持
-
-<b>请选择操作。</b>""",
+        'main_menu': """<b># FUNPAY</b>\n\n<b>Telegram交易安全担保。</b>\n\n<b>功能：</b>\n• 防欺诈保护\n• 交易完成前资金冻结\n• 交易历史与状态\n• 通过 @GiftsforFunpay 支持\n\n<b>请选择操作。</b>""",
         'create_deal_msg': '选择您的角色：',
         'create_deal_btn': '创建交易',
         'funds_btn': '资金',
@@ -416,11 +384,11 @@ def get_button_text(key, lang='ru'):
     return texts.get(lang, texts['ru']).get(key, key)
 
 # ==================================================
-# ОТПРАВКА С ФОТО (с таймаутом и защитой)
+# ОТПРАВКА С ФОТО (убрал timeout)
 # ==================================================
 async def send_with_photo(chat_id, text, reply_markup=None, parse_mode="HTML"):
     try:
-        await bot.send_photo(chat_id=chat_id, photo=PHOTO_URL, caption=text, reply_markup=reply_markup, parse_mode=parse_mode, timeout=30)
+        await bot.send_photo(chat_id=chat_id, photo=PHOTO_URL, caption=text, reply_markup=reply_markup, parse_mode=parse_mode)
     except Exception as e:
         logging.warning(f"Не удалось отправить фото ({e}). Отправляю текст.")
         await bot.send_message(chat_id=chat_id, text=text, reply_markup=reply_markup, parse_mode=parse_mode)
@@ -685,11 +653,51 @@ async def seller_payment_method(callback: CallbackQuery, state: FSMContext):
 
 @dp.message(DealStates.seller_amount)
 async def seller_amount(message: Message, state: FSMContext):
-    data = await state.get_data()
-    if 'currency' not in data:
-        # Если состояние сбилось, сбрасываем и возвращаем к выбору оплаты
+    try:
+        data = await state.get_data()
+        # Проверяем наличие валюты в состоянии
+        if 'currency' not in data:
+            await state.clear()
+            await message.answer("⚠️ Сессия сброшена. Начните создание сделки заново.")
+            user_id = message.from_user.id
+            try:
+                cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
+                row = cur.fetchone()
+                lang = row[0] if row else 'ru'
+            except:
+                lang = 'ru'
+            await send_with_photo(message.chat.id, get_text('main_menu', lang), reply_markup=get_main_menu(lang))
+            return
+
+        # Валидация: только цифры
+        text = message.text.strip()
+        if not text.isdigit():
+            await message.answer("⚠️ Введите сумму только цифрами (например: 500).")
+            return
+
+        amount = int(text)
+        if amount <= 0:
+            await message.answer("⚠️ Сумма должна быть больше нуля.")
+            return
+
+        # Сохраняем сумму и переходим к реквизитам
+        await state.update_data(amount=amount)
+        user_id = message.from_user.id
+        try:
+            cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
+            row = cur.fetchone()
+            lang = row[0] if row else 'ru'
+        except:
+            lang = 'ru'
+
+        currency = data['currency']
+        req_text = get_text('requisites', lang)[currency]
+        await send_with_photo(message.chat.id, req_text)
+        await state.set_state(DealStates.seller_requisites)
+    except Exception as e:
+        logging.error(f"Ошибка в seller_amount: {e}")
         await state.clear()
-        await message.answer("⚠️ Сессия сброшена. Начните создание сделки заново.")
+        await message.answer("🚫 Произошла ошибка. Начните создание сделки заново.")
         user_id = message.from_user.id
         try:
             cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
@@ -698,32 +706,6 @@ async def seller_amount(message: Message, state: FSMContext):
         except:
             lang = 'ru'
         await send_with_photo(message.chat.id, get_text('main_menu', lang), reply_markup=get_main_menu(lang))
-        return
-
-    # Принимаем только цифры
-    text = message.text.strip()
-    if not text.isdigit():
-        await message.answer("⚠️ Введите сумму только цифрами (например: 500).")
-        return
-
-    amount = int(text)
-    if amount <= 0:
-        await message.answer("⚠️ Сумма должна быть больше нуля.")
-        return
-
-    await state.update_data(amount=amount)
-    user_id = message.from_user.id
-    try:
-        cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
-        row = cur.fetchone()
-        lang = row[0] if row else 'ru'
-    except:
-        lang = 'ru'
-
-    currency = data['currency']
-    req_text = get_text('requisites', lang)[currency]
-    await send_with_photo(message.chat.id, req_text)
-    await state.set_state(DealStates.seller_requisites)
 
 @dp.message(DealStates.seller_requisites)
 async def seller_requisites(message: Message, state: FSMContext):
@@ -1234,7 +1216,7 @@ async def funds_withdraw(callback: CallbackQuery):
     await callback.answer()
 
 # ==================================================
-# ВЕБХУК И ЗАПУСК (ВМЕСТО ПОЛЛИНГА)
+# ВЕБХУК И ЗАПУСК
 # ==================================================
 async def on_startup(app):
     logging.info("Bot started (web server up)")
@@ -1256,7 +1238,7 @@ async def webhook_handler(request):
         await dp.feed_update(bot, update)
         return web.Response(text="OK")
     except Exception as e:
-        logging.error(f"Webhook error: {e}")
+        logging.error(f"Webhook error: {e}\n{traceback.format_exc()}")
         return web.Response(text="Error", status=500)
 
 async def main():
@@ -1272,11 +1254,9 @@ async def main():
     await site.start()
     logging.info(f"Web server started on port {PORT}")
 
-    # Установка вебхука (Telegram будет отправлять обновления на наш URL)
     await bot.set_webhook(url=WEBHOOK_URL, drop_pending_updates=True)
     logging.info(f"Webhook set to {WEBHOOK_URL}. Waiting for updates...")
 
-    # Держим сервер запущенным
     while True:
         await asyncio.sleep(60)
 
