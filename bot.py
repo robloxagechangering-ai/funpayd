@@ -654,7 +654,10 @@ async def seller_payment_method(callback: CallbackQuery, state: FSMContext):
 @dp.message(DealStates.seller_amount)
 async def seller_amount(message: Message, state: FSMContext):
     try:
-        # 1. Извлекаем все цифры из текста (поддерживает "500 рублей", "500,00", "500$")
+        # Логируем начало обработки
+        logging.info(f"Обработка seller_amount от {message.from_user.id}: {message.text}")
+
+        # Извлекаем цифры
         digits = re.sub(r'[^0-9]', '', message.text)
         if not digits:
             await message.answer("⚠️ Введите сумму ТОЛЬКО цифрами. Пример: 500")
@@ -665,9 +668,13 @@ async def seller_amount(message: Message, state: FSMContext):
             await message.answer("⚠️ Сумма должна быть больше нуля.")
             return
 
+        # Получаем состояние
         data = await state.get_data()
-        # 2. Проверяем, что валюта выбрана
+        logging.info(f"Состояние seller_amount: {data}")
+
+        # Проверяем наличие валюты
         if 'currency' not in data:
+            logging.warning("Валюта не найдена в состоянии. Сброс.")
             await state.clear()
             await message.answer("⚠️ Сессия сброшена. Начните создание сделки заново.")
             user_id = message.from_user.id
@@ -680,8 +687,12 @@ async def seller_amount(message: Message, state: FSMContext):
             await send_with_photo(message.chat.id, get_text('main_menu', lang), reply_markup=get_main_menu(lang))
             return
 
-        # 3. Сохраняем сумму и переходим к реквизитам
+        currency = data['currency']
+
+        # Сохраняем сумму
         await state.update_data(amount=amount)
+
+        # Получаем язык пользователя
         user_id = message.from_user.id
         try:
             cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
@@ -690,13 +701,20 @@ async def seller_amount(message: Message, state: FSMContext):
         except:
             lang = 'ru'
 
-        currency = data['currency']
-        req_text = get_text('requisites', lang)[currency]
+        # Проверяем, что валюта существует в requisites
+        req_text = get_text('requisites', lang).get(currency)
+        if not req_text:
+            logging.error(f"Неизвестная валюта: {currency}")
+            await state.clear()
+            await message.answer("🚫 Ошибка валюты. Начните создание сделки заново.")
+            await send_with_photo(message.chat.id, get_text('main_menu', lang), reply_markup=get_main_menu(lang))
+            return
+
         await send_with_photo(message.chat.id, req_text)
         await state.set_state(DealStates.seller_requisites)
 
     except Exception as e:
-        logging.error(f"Ошибка в seller_amount: {e}")
+        logging.error(f"КРИТИЧЕСКАЯ ОШИБКА в seller_amount: {e}", exc_info=True)
         await state.clear()
         await message.answer("🚫 Произошла ошибка. Начните создание сделки заново.")
         user_id = message.from_user.id
