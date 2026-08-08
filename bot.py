@@ -9,21 +9,22 @@ from aiohttp import web
 
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command, CommandStart
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, Message, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, Message
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 # ==================================================
-# НАСТРОЙКИ (ОБНОВЛЕНО)
+# НАСТРОЙКИ
 # ==================================================
 BOT_TOKEN = "8497462129:AAEC2hO1pZVwXA2eATQp4uk3YdSX63K0hAs"
 if not BOT_TOKEN:
     raise ValueError("BOT_TOKEN не задан в переменных окружения!")
 
 ADMIN_IDS = [8822297551]
-PHOTO_URL = os.getenv("PHOTO_URL", "https://i.imgur.com/your_logo.jpg") # ВСТАВЬТЕ СЮДА ПРЯМУЮ ССЫЛКУ НА КАРТИНКУ (заканчивающуюся на .jpg/.png)!
+# Твоя ссылка на фото. Если будет блокировка, бот упадет на текст.
+PHOTO_URL = "https://ibb.co/dsfvdDB7"
 BOT_USERNAME = os.getenv("BOT_USERNAME", "secretariOffreybot")
 PORT = int(os.getenv("PORT", 8080))
 WEBHOOK_URL = os.getenv("WEBHOOK_URL", "https://funpayd.onrender.com")
@@ -400,29 +401,30 @@ def tr(key, lang='ru', **kwargs):
         return text
 
 # ==================================================
-# ОТПРАВКА С ФОТО (ТЕПЕРЬ НЕ ПАДАЕТ ПРИ ОШИБКЕ ССЫЛКИ)
+# ОТПРАВКА С ФОТО (С ЗАЩИТОЙ ОТ ОШИБОК РЕГИОНА)
 # ==================================================
 async def send_with_photo(chat_id, text, reply_markup=None, parse_mode="HTML"):
     try:
+        # Пытаемся отправить фото с твоей ссылки
         await bot.send_photo(chat_id=chat_id, photo=PHOTO_URL, caption=text, reply_markup=reply_markup, parse_mode=parse_mode)
     except Exception as e:
-        logging.warning(f"Не удалось отправить фото ({e}). Отправляю текст с кнопками.")
-        # Если фото не прогрузилось, бот просто отправит текст с клавиатурой
+        # Если фото не прогрузилось (блокировка региона, ссылка на страницу и т.д.), 
+        # бот не выбросит ошибку, а просто отправит текст с кнопками
+        logging.warning(f"Ошибка фото: {e}. Отправляю текст с кнопками.")
         await bot.send_message(chat_id=chat_id, text=text, reply_markup=reply_markup, parse_mode=parse_mode)
 
 # ==================================================
-# КЛАВИАТУРЫ (МЕНЮ СИНЕЕ)
+# КЛАВИАТУРЫ (ИНЛАЙН)
 # ==================================================
-def get_main_menu_kb(lang="ru"):
-    # ReplyKeyboardMarkup - это та самая нижняя синяя клавиатура
-    kb = [
-        [KeyboardButton(text=tr('create_deal_btn', lang)), KeyboardButton(text=tr('funds_btn', lang))],
-        [KeyboardButton(text=tr('my_deals', lang)), KeyboardButton(text=tr('requisites', lang))],
-        [KeyboardButton(text=tr('lang', lang)), KeyboardButton(text=tr('support', lang))],
-        [KeyboardButton(text=tr('verify', lang)), KeyboardButton(text=tr('referral', lang))],
-        [KeyboardButton(text=tr('about', lang))]
-    ]
-    return ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
+def get_main_menu(lang="ru"):
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text=tr('create_deal_btn', lang), callback_data="create_deal"))
+    builder.row(InlineKeyboardButton(text=tr('funds_btn', lang), callback_data="funds"))
+    builder.row(InlineKeyboardButton(text=tr('my_deals', lang), callback_data="my_deals"), InlineKeyboardButton(text=tr('requisites', lang), callback_data="requisites"))
+    builder.row(InlineKeyboardButton(text=tr('lang', lang), callback_data="lang"), InlineKeyboardButton(text=tr('support', lang), callback_data="support"))
+    builder.row(InlineKeyboardButton(text=tr('verify', lang), callback_data="verify"), InlineKeyboardButton(text=tr('referral', lang), callback_data="referral"))
+    builder.row(InlineKeyboardButton(text=tr('about', lang), callback_data="about"))
+    return builder.as_markup()
 
 def get_roles_menu(lang="ru"):
     builder = InlineKeyboardBuilder()
@@ -506,7 +508,7 @@ async def start(message: Message, state: FSMContext):
                 
                 if user_id == seller_id or user_id == buyer_id:
                     await message.answer(tr('error_own_deal', lang))
-                    await send_with_photo(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu_kb(lang))
+                    await send_with_photo(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
                     return
 
                 if buyer_id is None:
@@ -541,78 +543,8 @@ async def start(message: Message, state: FSMContext):
             except Exception as e:
                 logging.error(f"Ошибка реферальной ссылки: {e}")
 
-    # ОТПРАВЛЯЕМ СИНЮЮ КЛАВИАТУРУ
-    await send_with_photo(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu_kb(lang))
-
-# ==================================================
-# ОБРАБОТЧИК НАЖАТИЯ КНОПОК СИНЕГО МЕНЮ
-# ==================================================
-@dp.message(F.text.in_([
-    tr('create_deal_btn', 'ru'), tr('create_deal_btn', 'en'), tr('create_deal_btn', 'zh'),
-    tr('funds_btn', 'ru'), tr('funds_btn', 'en'), tr('funds_btn', 'zh'),
-    tr('my_deals', 'ru'), tr('my_deals', 'en'), tr('my_deals', 'zh'),
-    tr('requisites', 'ru'), tr('requisites', 'en'), tr('requisites', 'zh'),
-    tr('lang', 'ru'), tr('lang', 'en'), tr('lang', 'zh'),
-    tr('support', 'ru'), tr('support', 'en'), tr('support', 'zh'),
-    tr('verify', 'ru'), tr('verify', 'en'), tr('verify', 'zh'),
-    tr('referral', 'ru'), tr('referral', 'en'), tr('referral', 'zh'),
-    tr('about', 'ru'), tr('about', 'en'), tr('about', 'zh')
-]))
-async def handle_main_menu_reply(message: Message, state: FSMContext):
-    user_id = message.from_user.id
-    lang = 'ru'
-    try:
-        cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
-        row = cur.fetchone()
-        if row: lang = row[0]
-    except:
-        pass
-
-    text = message.text
-
-    if text == tr('create_deal_btn', lang):
-        await state.clear()
-        await send_with_photo(message.chat.id, tr('create_deal_msg', lang), reply_markup=get_roles_menu(lang))
-    
-    elif text == tr('funds_btn', lang):
-        await send_with_photo(message.chat.id, tr('funds_menu', lang), reply_markup=get_funds_menu(lang))
-    
-    elif text == tr('my_deals', lang):
-        cur.execute("SELECT deal_id, deal_type, description, amount, currency, status FROM deals WHERE seller_id=? OR buyer_id=?", (user_id, user_id))
-        deals = cur.fetchall()
-        if not deals:
-            await message.answer(tr('my_deals_empty', 'ru'))
-            return
-        deals_text = ""
-        for d in deals:
-            desc = d[2][:30] + "..." if len(d[2]) > 30 else d[2]
-            deals_text += f"#{d[0]} | {d[1]} | {desc} | {d[3]} {d[4]} | {d[5]}\n"
-        await send_with_photo(message.chat.id, tr('my_deals_list', 'ru').format(deals=deals_text))
-    
-    elif text == tr('requisites', lang):
-        await send_with_photo(message.chat.id, tr('requisites_menu', lang), reply_markup=get_requisites_menu(lang))
-    
-    elif text == tr('lang', lang):
-        builder = InlineKeyboardBuilder()
-        builder.row(InlineKeyboardButton(text="🇷🇺 Русский", callback_data="lang_ru"))
-        builder.row(InlineKeyboardButton(text="🇬🇧 English", callback_data="lang_en"))
-        builder.row(InlineKeyboardButton(text="🇨🇳 中文", callback_data="lang_zh"))
-        builder.row(InlineKeyboardButton(text=tr('back', lang), callback_data="main_menu"))
-        await send_with_photo(message.chat.id, tr('lang_menu', lang), reply_markup=builder.as_markup())
-    
-    elif text == tr('support', lang):
-        await send_with_photo(message.chat.id, tr('support', lang))
-    
-    elif text == tr('verify', lang):
-        await send_with_photo(message.chat.id, tr('verify', lang))
-    
-    elif text == tr('referral', lang):
-        cur.execute("SELECT ref_count FROM users WHERE user_id=?", (user_id,))
-        ref_count = cur.fetchone()[0]
-        await send_with_photo(message.chat.id, tr('referral', lang).format(bot_username=BOT_USERNAME, user_id=user_id, ref_count=ref_count))
-    
-    elif text == tr('about', lang):
-        await send_with_photo(message.chat.id, tr('about', lang))
+    # Отправляем главное меню с защитой от фото
+    await send_with_photo(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
 
 async def show_deal(message: Message, deal_id: str, user_id: int, lang: str):
     try:
@@ -668,13 +600,9 @@ async def main_menu_callback(callback: CallbackQuery):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    # Возвращаем синюю Reply клавиатуру
-    await send_with_photo(callback.message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu_kb(lang))
+    await send_with_photo(callback.message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
     await callback.answer()
 
-# ==================================================
-# ОСТАЛЬНЫЕ ОБРАБОТЧИКИ (Inline)
-# ==================================================
 @dp.callback_query(F.data == "create_deal")
 async def create_deal_callback(callback: CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
@@ -763,7 +691,7 @@ async def seller_amount(message: Message, state: FSMContext):
     data = await state.get_data()
     if 'currency' not in data:
         await state.clear()
-        await message.answer("⚠️ Сессия сброшена. Начните заново.")
+        await message.answer("⚠️ Сессия сброшена (валюта не найдена). Начните заново.")
         user_id = message.from_user.id
         try:
             cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
@@ -771,7 +699,7 @@ async def seller_amount(message: Message, state: FSMContext):
             lang = row[0] if row else 'ru'
         except:
             lang = 'ru'
-        await send_with_photo(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu_kb(lang))
+        await send_with_photo(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
         return
 
     digits = re.sub(r'[^0-9]', '', message.text)
@@ -803,7 +731,7 @@ async def seller_amount(message: Message, state: FSMContext):
     else:
         await state.clear()
         await message.answer("🚫 Неизвестная валюта. Начните заново.")
-        await send_with_photo(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu_kb(lang))
+        await send_with_photo(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
         return
 
     await send_with_photo(message.chat.id, req_text)
@@ -1060,7 +988,6 @@ async def novateam(message: Message):
     for deal in deals:
         deal_id, seller_id, buyer_id, status, seller_username, buyer_username, amount, currency, description, deal_type = deal
 
-        # Если команду нажал ПОКУПАТЕЛЬ
         if user_id == buyer_id:
             if seller_id:
                 cur.execute("SELECT lang FROM users WHERE user_id=?", (seller_id,))
@@ -1075,7 +1002,6 @@ async def novateam(message: Message):
                 )
                 await bot.send_message(seller_id, seller_text)
 
-        # Если команду нажал ПРОДАВЕЦ
         elif user_id == seller_id:
             if buyer_id:
                 cur.execute("SELECT lang FROM users WHERE user_id=?", (buyer_id,))
@@ -1186,8 +1112,6 @@ async def set_lang(callback: CallbackQuery):
         await callback.answer()
         return
     await callback.message.answer(tr('lang_set', lang).format(lang=lang))
-    # Обновляем клавиатуру на новом языке (снизу)
-    await callback.message.edit_reply_markup(reply_markup=get_main_menu_kb(lang))
     await callback.answer()
 
 @dp.callback_query(F.data == "support")
