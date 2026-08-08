@@ -24,7 +24,6 @@ if not BOT_TOKEN:
 
 ADMIN_IDS = [8822297551]
 PHOTO_URL = "https://ibb.co/dsfvdDB7"
-# Юзернейм твоего нового бота (по умолчанию стоит он, чтобы ссылки не кидали в никуда)
 BOT_USERNAME = os.getenv("BOT_USERNAME", "FunpayTrustly_robot")
 PORT = int(os.getenv("PORT", 8080))
 WEBHOOK_URL = os.getenv("WEBHOOK_URL", "https://funpayd.onrender.com")
@@ -110,7 +109,7 @@ class DealStates(StatesGroup):
     profile_requisites_input = State()
 
 # ==================================================
-# СЛОВАРЬ ПЕРЕВОДОВ (УБРАНЫ ЛИШНИЕ ЭМОДЗИ, ТЕКСТ ПО ТВОЕМУ ЗАПРОСУ)
+# СЛОВАРЬ ПЕРЕВОДОВ
 # ==================================================
 LOCALES = {
     'ru': {
@@ -188,7 +187,7 @@ def tr(key, lang='ru', **kwargs):
         return text
 
 # ==================================================
-# ОТПРАВКА ФОТО ТОЛЬКО В ГЛАВНОЕ МЕНЮ И "О СЕРВИСЕ"
+# ОТПРАВКА ФОТО (ТОЛЬКО ДЛЯ ГЛАВНОГО МЕНЮ И СДЕЛОК)
 # ==================================================
 async def send_start_menu(chat_id, text, reply_markup=None, parse_mode="HTML"):
     try:
@@ -198,7 +197,7 @@ async def send_start_menu(chat_id, text, reply_markup=None, parse_mode="HTML"):
         await bot.send_message(chat_id=chat_id, text=text, reply_markup=reply_markup, parse_mode=parse_mode)
 
 # ==================================================
-# КЛАВИАТУРЫ (МИНИМАЛИЗМ)
+# КЛАВИАТУРЫ
 # ==================================================
 def get_main_menu(lang="ru"):
     builder = InlineKeyboardBuilder()
@@ -277,10 +276,9 @@ async def start(message: Message, state: FSMContext):
 
     args = message.text.split()
     if len(args) > 1:
-        param = args[1]
-        
+        param = args[1].strip()
         if param.startswith("deal_"):
-            deal_id = param[5:]
+            deal_id = param[5:].strip()
             try:
                 cur.execute("SELECT seller_id, buyer_id, seller_username, status FROM deals WHERE deal_id=?", (deal_id,))
                 deal = cur.fetchone()
@@ -315,7 +313,7 @@ async def start(message: Message, state: FSMContext):
             
         elif param.startswith("ref"):
             try:
-                ref_id = int(param[3:])
+                ref_id = int(param[3:].strip())
                 if ref_id == user_id:
                     await message.answer(tr('error_own_ref', lang))
                 elif ref_id != user_id:
@@ -803,7 +801,7 @@ async def novateam(message: Message):
     await message.answer(summary)
 
 # ==================================================
-# ОСТАЛЬНЫЕ ОБРАБОТЧИКИ (С КНОПКАМИ-ССЫЛКАМИ)
+# ОСТАЛЬНЫЕ ОБРАБОТЧИКИ (ТЕКСТ ВИДЕН 100%)
 # ==================================================
 @dp.callback_query(F.data == "my_deals")
 async def my_deals(callback: CallbackQuery):
@@ -917,7 +915,7 @@ async def set_lang(callback: CallbackQuery):
     await callback.answer()
 
 # ==================================================
-# ПОДДЕРЖКА (КНОПКА-ССЫЛКА НА @GiftsforFunpay)
+# ПОДДЕРЖКА
 # ==================================================
 @dp.callback_query(F.data == "support")
 async def support(callback: CallbackQuery):
@@ -929,7 +927,6 @@ async def support(callback: CallbackQuery):
     except:
         lang = 'ru'
     text = tr('support', lang)
-    # Кнопка, которая кидает прямиком в чат поддержки
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📩 Написать в поддержку", url="https://t.me/GiftsforFunpay")]
     ])
@@ -937,7 +934,7 @@ async def support(callback: CallbackQuery):
     await callback.answer()
 
 # ==================================================
-# ВЕРИФИКАЦИЯ (КНОПКА-ССЫЛКА НА @GiftsforFunpay)
+# ВЕРИФИКАЦИЯ (ТЕКСТ + КНОПКА)
 # ==================================================
 @dp.callback_query(F.data == "verify")
 async def verify(callback: CallbackQuery):
@@ -949,7 +946,6 @@ async def verify(callback: CallbackQuery):
     except:
         lang = 'ru'
     text = tr('verify', lang)
-    # Кнопка "Подать заявку", которая кидает в чат поддержки
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📩 Подать заявку", url="https://t.me/GiftsforFunpay")]
     ])
@@ -957,7 +953,7 @@ async def verify(callback: CallbackQuery):
     await callback.answer()
 
 # ==================================================
-# РЕФЕРАЛЫ
+# РЕФЕРАЛЫ (РЕФКА)
 # ==================================================
 @dp.callback_query(F.data == "referral")
 async def referral(callback: CallbackQuery):
@@ -975,7 +971,7 @@ async def referral(callback: CallbackQuery):
     await callback.answer()
 
 # ==================================================
-# О СЕРВИСЕ (ФОТО + ТЕКСТ)
+# О СЕРВИСЕ (ФОТО + ГАРАНТИРОВАННЫЙ ТЕКСТ)
 # ==================================================
 @dp.callback_query(F.data == "about")
 async def about(callback: CallbackQuery):
@@ -986,8 +982,19 @@ async def about(callback: CallbackQuery):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    # Отправляем фото с текстом, как он и просил
-    await send_start_menu(callback.message.chat.id, tr('about', lang), parse_mode="HTML")
+    text = tr('about', lang)
+    
+    try:
+        # 1. Пытаемся отправить фото с подписью (на случай если Telegram примет)
+        await bot.send_photo(callback.message.chat.id, photo=PHOTO_URL, caption=text, parse_mode="HTML")
+    except Exception as e:
+        # 2. Если фото не загрузилось, отправляем чистый текст
+        await bot.send_message(callback.message.chat.id, text=text, parse_mode="HTML")
+    
+    # 3. ОТПРАВЛЯЕМ ТЕКСТ ОТДЕЛЬНО (чтобы он гарантированно был виден на экране, даже если капшен к фото слетел)
+    # Так пользователь точно увидит данные, которые ты просил.
+    await bot.send_message(callback.message.chat.id, text, parse_mode="HTML")
+    
     await callback.answer()
 
 # ==================================================
