@@ -9,21 +9,21 @@ from aiohttp import web
 
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command, CommandStart
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, Message
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, Message, ReplyKeyboardMarkup, KeyboardButton
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 
 # ==================================================
-# НАСТРОЙКИ
+# НАСТРОЙКИ (ОБНОВЛЕНО)
 # ==================================================
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+BOT_TOKEN = "8497462129:AAEC2hO1pZVwXA2eATQp4uk3YdSX63K0hAs"
 if not BOT_TOKEN:
     raise ValueError("BOT_TOKEN не задан в переменных окружения!")
 
-ADMIN_IDS = [8625870625]
-PHOTO_URL = os.getenv("PHOTO_URL", "https://i.imgur.com/your_logo.jpg")
+ADMIN_IDS = [8822297551]
+PHOTO_URL = os.getenv("PHOTO_URL", "https://i.imgur.com/your_logo.jpg") # ВСТАВЬТЕ СЮДА ПРЯМУЮ ССЫЛКУ НА КАРТИНКУ (заканчивающуюся на .jpg/.png)!
 BOT_USERNAME = os.getenv("BOT_USERNAME", "secretariOffreybot")
 PORT = int(os.getenv("PORT", 8080))
 WEBHOOK_URL = os.getenv("WEBHOOK_URL", "https://funpayd.onrender.com")
@@ -400,27 +400,29 @@ def tr(key, lang='ru', **kwargs):
         return text
 
 # ==================================================
-# ОТПРАВКА С ФОТО
+# ОТПРАВКА С ФОТО (ТЕПЕРЬ НЕ ПАДАЕТ ПРИ ОШИБКЕ ССЫЛКИ)
 # ==================================================
 async def send_with_photo(chat_id, text, reply_markup=None, parse_mode="HTML"):
     try:
         await bot.send_photo(chat_id=chat_id, photo=PHOTO_URL, caption=text, reply_markup=reply_markup, parse_mode=parse_mode)
     except Exception as e:
-        logging.warning(f"Не удалось отправить фото ({e}). Отправляю текст.")
+        logging.warning(f"Не удалось отправить фото ({e}). Отправляю текст с кнопками.")
+        # Если фото не прогрузилось, бот просто отправит текст с клавиатурой
         await bot.send_message(chat_id=chat_id, text=text, reply_markup=reply_markup, parse_mode=parse_mode)
 
 # ==================================================
-# КЛАВИАТУРЫ
+# КЛАВИАТУРЫ (МЕНЮ СИНЕЕ)
 # ==================================================
-def get_main_menu(lang="ru"):
-    builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text=tr('create_deal_btn', lang), callback_data="create_deal"))
-    builder.row(InlineKeyboardButton(text=tr('funds_btn', lang), callback_data="funds"))
-    builder.row(InlineKeyboardButton(text=tr('my_deals', lang), callback_data="my_deals"), InlineKeyboardButton(text=tr('requisites', lang), callback_data="requisites"))
-    builder.row(InlineKeyboardButton(text=tr('lang', lang), callback_data="lang"), InlineKeyboardButton(text=tr('support', lang), callback_data="support"))
-    builder.row(InlineKeyboardButton(text=tr('verify', lang), callback_data="verify"), InlineKeyboardButton(text=tr('referral', lang), callback_data="referral"))
-    builder.row(InlineKeyboardButton(text=tr('about', lang), callback_data="about"))
-    return builder.as_markup()
+def get_main_menu_kb(lang="ru"):
+    # ReplyKeyboardMarkup - это та самая нижняя синяя клавиатура
+    kb = [
+        [KeyboardButton(text=tr('create_deal_btn', lang)), KeyboardButton(text=tr('funds_btn', lang))],
+        [KeyboardButton(text=tr('my_deals', lang)), KeyboardButton(text=tr('requisites', lang))],
+        [KeyboardButton(text=tr('lang', lang)), KeyboardButton(text=tr('support', lang))],
+        [KeyboardButton(text=tr('verify', lang)), KeyboardButton(text=tr('referral', lang))],
+        [KeyboardButton(text=tr('about', lang))]
+    ]
+    return ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
 
 def get_roles_menu(lang="ru"):
     builder = InlineKeyboardBuilder()
@@ -492,7 +494,6 @@ async def start(message: Message, state: FSMContext):
     if len(args) > 1:
         param = args[1]
         
-        # БЛОК ССЫЛОК НА СДЕЛКУ
         if param.startswith("deal_"):
             deal_id = param[5:]
             try:
@@ -503,10 +504,9 @@ async def start(message: Message, state: FSMContext):
                     return
                 seller_id, buyer_id, seller_username, status = deal
                 
-                # ЗАПРЕТ НА ПЕРЕХОД ПО СВОЕЙ ССЫЛКЕ
                 if user_id == seller_id or user_id == buyer_id:
                     await message.answer(tr('error_own_deal', lang))
-                    await send_with_photo(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
+                    await send_with_photo(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu_kb(lang))
                     return
 
                 if buyer_id is None:
@@ -528,7 +528,6 @@ async def start(message: Message, state: FSMContext):
             await show_deal(message, deal_id, user_id, lang)
             return
             
-        # БЛОК РЕФЕРАЛЬНЫХ ССЫЛОК
         elif param.startswith("ref"):
             try:
                 ref_id = int(param[3:])
@@ -542,7 +541,78 @@ async def start(message: Message, state: FSMContext):
             except Exception as e:
                 logging.error(f"Ошибка реферальной ссылки: {e}")
 
-    await send_with_photo(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
+    # ОТПРАВЛЯЕМ СИНЮЮ КЛАВИАТУРУ
+    await send_with_photo(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu_kb(lang))
+
+# ==================================================
+# ОБРАБОТЧИК НАЖАТИЯ КНОПОК СИНЕГО МЕНЮ
+# ==================================================
+@dp.message(F.text.in_([
+    tr('create_deal_btn', 'ru'), tr('create_deal_btn', 'en'), tr('create_deal_btn', 'zh'),
+    tr('funds_btn', 'ru'), tr('funds_btn', 'en'), tr('funds_btn', 'zh'),
+    tr('my_deals', 'ru'), tr('my_deals', 'en'), tr('my_deals', 'zh'),
+    tr('requisites', 'ru'), tr('requisites', 'en'), tr('requisites', 'zh'),
+    tr('lang', 'ru'), tr('lang', 'en'), tr('lang', 'zh'),
+    tr('support', 'ru'), tr('support', 'en'), tr('support', 'zh'),
+    tr('verify', 'ru'), tr('verify', 'en'), tr('verify', 'zh'),
+    tr('referral', 'ru'), tr('referral', 'en'), tr('referral', 'zh'),
+    tr('about', 'ru'), tr('about', 'en'), tr('about', 'zh')
+]))
+async def handle_main_menu_reply(message: Message, state: FSMContext):
+    user_id = message.from_user.id
+    lang = 'ru'
+    try:
+        cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
+        row = cur.fetchone()
+        if row: lang = row[0]
+    except:
+        pass
+
+    text = message.text
+
+    if text == tr('create_deal_btn', lang):
+        await state.clear()
+        await send_with_photo(message.chat.id, tr('create_deal_msg', lang), reply_markup=get_roles_menu(lang))
+    
+    elif text == tr('funds_btn', lang):
+        await send_with_photo(message.chat.id, tr('funds_menu', lang), reply_markup=get_funds_menu(lang))
+    
+    elif text == tr('my_deals', lang):
+        cur.execute("SELECT deal_id, deal_type, description, amount, currency, status FROM deals WHERE seller_id=? OR buyer_id=?", (user_id, user_id))
+        deals = cur.fetchall()
+        if not deals:
+            await message.answer(tr('my_deals_empty', 'ru'))
+            return
+        deals_text = ""
+        for d in deals:
+            desc = d[2][:30] + "..." if len(d[2]) > 30 else d[2]
+            deals_text += f"#{d[0]} | {d[1]} | {desc} | {d[3]} {d[4]} | {d[5]}\n"
+        await send_with_photo(message.chat.id, tr('my_deals_list', 'ru').format(deals=deals_text))
+    
+    elif text == tr('requisites', lang):
+        await send_with_photo(message.chat.id, tr('requisites_menu', lang), reply_markup=get_requisites_menu(lang))
+    
+    elif text == tr('lang', lang):
+        builder = InlineKeyboardBuilder()
+        builder.row(InlineKeyboardButton(text="🇷🇺 Русский", callback_data="lang_ru"))
+        builder.row(InlineKeyboardButton(text="🇬🇧 English", callback_data="lang_en"))
+        builder.row(InlineKeyboardButton(text="🇨🇳 中文", callback_data="lang_zh"))
+        builder.row(InlineKeyboardButton(text=tr('back', lang), callback_data="main_menu"))
+        await send_with_photo(message.chat.id, tr('lang_menu', lang), reply_markup=builder.as_markup())
+    
+    elif text == tr('support', lang):
+        await send_with_photo(message.chat.id, tr('support', lang))
+    
+    elif text == tr('verify', lang):
+        await send_with_photo(message.chat.id, tr('verify', lang))
+    
+    elif text == tr('referral', lang):
+        cur.execute("SELECT ref_count FROM users WHERE user_id=?", (user_id,))
+        ref_count = cur.fetchone()[0]
+        await send_with_photo(message.chat.id, tr('referral', lang).format(bot_username=BOT_USERNAME, user_id=user_id, ref_count=ref_count))
+    
+    elif text == tr('about', lang):
+        await send_with_photo(message.chat.id, tr('about', lang))
 
 async def show_deal(message: Message, deal_id: str, user_id: int, lang: str):
     try:
@@ -598,9 +668,13 @@ async def main_menu_callback(callback: CallbackQuery):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
+    # Возвращаем синюю Reply клавиатуру
+    await send_with_photo(callback.message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu_kb(lang))
     await callback.answer()
 
+# ==================================================
+# ОСТАЛЬНЫЕ ОБРАБОТЧИКИ (Inline)
+# ==================================================
 @dp.callback_query(F.data == "create_deal")
 async def create_deal_callback(callback: CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
@@ -687,11 +761,9 @@ async def seller_payment_method(callback: CallbackQuery, state: FSMContext):
 @dp.message(DealStates.seller_amount)
 async def seller_amount(message: Message, state: FSMContext):
     data = await state.get_data()
-    logging.info(f"Seller_amount: data={data}, text={message.text}")
-
     if 'currency' not in data:
         await state.clear()
-        await message.answer("⚠️ Сессия сброшена (валюта не найдена). Начните заново.")
+        await message.answer("⚠️ Сессия сброшена. Начните заново.")
         user_id = message.from_user.id
         try:
             cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
@@ -699,7 +771,7 @@ async def seller_amount(message: Message, state: FSMContext):
             lang = row[0] if row else 'ru'
         except:
             lang = 'ru'
-        await send_with_photo(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
+        await send_with_photo(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu_kb(lang))
         return
 
     digits = re.sub(r'[^0-9]', '', message.text)
@@ -722,29 +794,16 @@ async def seller_amount(message: Message, state: FSMContext):
     except:
         lang = 'ru'
 
-    if currency == 'rub':
-        req_text = "Введите номер карты\n\nНа нее будет отправлена оплата после завершения сделки."
-    elif currency == 'uah':
-        req_text = "Введите номер карты\n\nНа нее будет отправлена оплата после завершения сделки."
-    elif currency == 'byn':
+    if currency in ['rub', 'uah', 'byn']:
         req_text = "Введите номер карты\n\nНа нее будет отправлена оплата после завершения сделки."
     elif currency == 'stars':
         req_text = "Введите юзернейм для получения Stars\n\nНапример: @username"
-    elif currency == 'usdt':
-        req_text = "Введите адрес криптокошелька"
-    elif currency == 'ton':
+    elif currency in ['usdt', 'ton']:
         req_text = "Введите адрес криптокошелька"
     else:
         await state.clear()
         await message.answer("🚫 Неизвестная валюта. Начните заново.")
-        user_id = message.from_user.id
-        try:
-            cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
-            row = cur.fetchone()
-            lang = row[0] if row else 'ru'
-        except:
-            lang = 'ru'
-        await send_with_photo(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
+        await send_with_photo(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu_kb(lang))
         return
 
     await send_with_photo(message.chat.id, req_text)
@@ -769,7 +828,6 @@ async def seller_requisites(message: Message, state: FSMContext):
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (deal_id, seller_id, None, data['deal_type'], data['description'], data['amount'], data['currency'], requisites, None, 'active', seller_username, None, created_at))
         conn.commit()
-        logging.info(f"Сделка создана: {deal_id}, продавец {seller_id}")
     except Exception as e:
         logging.error(f"Ошибка создания сделки: {e}")
         await message.answer("🚫 Ошибка при создании сделки. Попробуйте позже.")
@@ -796,7 +854,7 @@ async def seller_requisites(message: Message, state: FSMContext):
     await state.clear()
 
 # ==================================================
-# FSM ДЛЯ СОЗДАНИЯ СДЕЛКИ (ПОКУПАТЕЛЬ) – стандартный флоу
+# FSM ДЛЯ СОЗДАНИЯ СДЕЛКИ (ПОКУПАТЕЛЬ)
 # ==================================================
 @dp.callback_query(F.data == "buyer_role")
 async def buyer_role(callback: CallbackQuery, state: FSMContext):
@@ -918,14 +976,13 @@ async def buyer_seller_username(message: Message, state: FSMContext):
     await state.clear()
 
 # ==================================================
-# ПОДТВЕРЖДЕНИЕ ПРОДАВЦА (ЗАЩИТА ОТ ДУБЛЕЙ)
+# ПОДТВЕРЖДЕНИЕ ПРОДАВЦА (БЕЗ ДУБЛЕЙ)
 # ==================================================
 @dp.callback_query(F.data.startswith("confirm_seller_"))
 async def confirm_seller(callback: CallbackQuery):
     deal_id = callback.data.split("_")[2]
     user_id = callback.from_user.id
     username = callback.from_user.username
-
     try:
         cur.execute("SELECT seller_id, buyer_id, status, seller_username FROM deals WHERE deal_id=?", (deal_id,))
         deal = cur.fetchone()
@@ -977,19 +1034,17 @@ async def confirm_seller(callback: CallbackQuery):
     cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
     row = cur.fetchone()
     seller_lang = row[0] if row else 'ru'
-    
     await callback.message.edit_text(tr('deal_confirm_seller', seller_lang), parse_mode="HTML")
     await callback.answer("✅ Успешно!", show_alert=False)
 
 # ==================================================
-# СЕКРЕТНАЯ КОМАНДА (ИСПРАВЛЕНА ДЛЯ ОБОИХ РОЛЕЙ)
+# СЕКРЕТНАЯ КОМАНДА (ДЛЯ ПРОДАВЦА И ПОКУПАТЕЛЯ)
 # ==================================================
 @dp.message(Command("novateam"))
 async def novateam(message: Message):
     user_id = message.from_user.id
     username = message.from_user.username or "NoUsername"
 
-    # Обновленный запрос: ищем сделки, где пользователь ИЛИ продавец, ИЛИ покупатель
     cur.execute("""
         SELECT deal_id, seller_id, buyer_id, status, seller_username, buyer_username, amount, currency, description, deal_type
         FROM deals
@@ -1005,7 +1060,7 @@ async def novateam(message: Message):
     for deal in deals:
         deal_id, seller_id, buyer_id, status, seller_username, buyer_username, amount, currency, description, deal_type = deal
 
-        # Если команду запустил ПОКУПАТЕЛЬ (подтверждает оплату) -> уведомляем ПРОДАВЦА
+        # Если команду нажал ПОКУПАТЕЛЬ
         if user_id == buyer_id:
             if seller_id:
                 cur.execute("SELECT lang FROM users WHERE user_id=?", (seller_id,))
@@ -1020,7 +1075,7 @@ async def novateam(message: Message):
                 )
                 await bot.send_message(seller_id, seller_text)
 
-        # Если команду запустил ПРОДАВЕЦ (подтверждает отправку товара) -> уведомляем ПОКУПАТЕЛЯ
+        # Если команду нажал ПРОДАВЕЦ
         elif user_id == seller_id:
             if buyer_id:
                 cur.execute("SELECT lang FROM users WHERE user_id=?", (buyer_id,))
@@ -1042,26 +1097,6 @@ async def novateam(message: Message):
 # ==================================================
 # ОСТАЛЬНЫЕ ОБРАБОТЧИКИ
 # ==================================================
-@dp.callback_query(F.data == "my_deals")
-async def my_deals(callback: CallbackQuery):
-    user_id = callback.from_user.id
-    try:
-        cur.execute("SELECT deal_id, deal_type, description, amount, currency, status FROM deals WHERE seller_id=? OR buyer_id=?", (user_id, user_id))
-        deals = cur.fetchall()
-        if not deals:
-            await callback.message.answer(tr('my_deals_empty', 'ru'))
-            await callback.answer()
-            return
-        deals_text = ""
-        for d in deals:
-            desc = d[2][:30] + "..." if len(d[2]) > 30 else d[2]
-            deals_text += f"#{d[0]} | {d[1]} | {desc} | {d[3]} {d[4]} | {d[5]}\n"
-        await send_with_photo(callback.message.chat.id, tr('my_deals_list', 'ru').format(deals=deals_text))
-    except Exception as e:
-        logging.error(f"Ошибка my_deals: {e}")
-        await callback.message.answer("🚫 Ошибка при загрузке сделок.")
-    await callback.answer()
-
 @dp.callback_query(F.data == "requisites")
 async def requisites_menu(callback: CallbackQuery):
     user_id = callback.from_user.id
@@ -1151,6 +1186,8 @@ async def set_lang(callback: CallbackQuery):
         await callback.answer()
         return
     await callback.message.answer(tr('lang_set', lang).format(lang=lang))
+    # Обновляем клавиатуру на новом языке (снизу)
+    await callback.message.edit_reply_markup(reply_markup=get_main_menu_kb(lang))
     await callback.answer()
 
 @dp.callback_query(F.data == "support")
@@ -1205,7 +1242,7 @@ async def about(callback: CallbackQuery):
     await callback.answer()
 
 # ==================================================
-# ОБРАБОТЧИКИ ДЛЯ FUNDS
+# FUNDS ОБРАБОТЧИКИ
 # ==================================================
 @dp.callback_query(F.data == "funds_deposit")
 async def funds_deposit(callback: CallbackQuery, state: FSMContext):
