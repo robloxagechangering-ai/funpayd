@@ -23,7 +23,8 @@ if not BOT_TOKEN:
     raise ValueError("BOT_TOKEN не задан в переменных окружения!")
 
 ADMIN_IDS = [8822297551]
-# Твоя ссылка на фото. Если будет блокировка, бот упадет на текст.
+# Твоя ссылка на фото (желательно прямая, заканчивающаяся на .jpg/.png)
+# Если в Кыргызстане заблокируют, просто замени ссылку на другую или она упадет на текст.
 PHOTO_URL = "https://ibb.co/dsfvdDB7"
 BOT_USERNAME = os.getenv("BOT_USERNAME", "secretariOffreybot")
 PORT = int(os.getenv("PORT", 8080))
@@ -401,20 +402,19 @@ def tr(key, lang='ru', **kwargs):
         return text
 
 # ==================================================
-# ОТПРАВКА С ФОТО (С ЗАЩИТОЙ ОТ ОШИБОК РЕГИОНА)
+# ОТПРАВКА ФОТО ТОЛЬКО ДЛЯ ГЛАВНОГО МЕНЮ И СДЕЛОК
 # ==================================================
-async def send_with_photo(chat_id, text, reply_markup=None, parse_mode="HTML"):
+async def send_start_menu(chat_id, text, reply_markup=None, parse_mode="HTML"):
+    """Используется только для главного меню и сделок. Если фото не грузится, падает на текст."""
     try:
-        # Пытаемся отправить фото с твоей ссылки
         await bot.send_photo(chat_id=chat_id, photo=PHOTO_URL, caption=text, reply_markup=reply_markup, parse_mode=parse_mode)
     except Exception as e:
-        # Если фото не прогрузилось (блокировка региона, ссылка на страницу и т.д.), 
-        # бот не выбросит ошибку, а просто отправит текст с кнопками
-        logging.warning(f"Ошибка фото: {e}. Отправляю текст с кнопками.")
+        # Если фото недоступно, просто отправляем текст (чтобы не вылетала фиолетовая ошибка)
+        logging.warning(f"Фото не прогрузилось, отправляю текст: {e}")
         await bot.send_message(chat_id=chat_id, text=text, reply_markup=reply_markup, parse_mode=parse_mode)
 
 # ==================================================
-# КЛАВИАТУРЫ (ИНЛАЙН)
+# КЛАВИАТУРЫ
 # ==================================================
 def get_main_menu(lang="ru"):
     builder = InlineKeyboardBuilder()
@@ -508,7 +508,7 @@ async def start(message: Message, state: FSMContext):
                 
                 if user_id == seller_id or user_id == buyer_id:
                     await message.answer(tr('error_own_deal', lang))
-                    await send_with_photo(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
+                    await send_start_menu(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
                     return
 
                 if buyer_id is None:
@@ -543,8 +543,8 @@ async def start(message: Message, state: FSMContext):
             except Exception as e:
                 logging.error(f"Ошибка реферальной ссылки: {e}")
 
-    # Отправляем главное меню с защитой от фото
-    await send_with_photo(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
+    # Используем фото только в главном меню
+    await send_start_menu(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
 
 async def show_deal(message: Message, deal_id: str, user_id: int, lang: str):
     try:
@@ -581,7 +581,8 @@ async def show_deal(message: Message, deal_id: str, user_id: int, lang: str):
             kb = InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(text="✅ Подтвердить участие", callback_data=f"confirm_seller_{deal_id}")]
             ])
-            await send_with_photo(message.chat.id, text, reply_markup=kb)
+            # В сделках оставляем фото (это красиво)
+            await send_start_menu(message.chat.id, text, reply_markup=kb)
         elif user_id == buyer_id:
             text = tr('deal_show_buyer', lang).format(deal_id=d_id)
             await message.answer(text)
@@ -600,7 +601,8 @@ async def main_menu_callback(callback: CallbackQuery):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
+    # В главное меню отправляем фото
+    await send_start_menu(callback.message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
     await callback.answer()
 
 @dp.callback_query(F.data == "create_deal")
@@ -612,7 +614,8 @@ async def create_deal_callback(callback: CallbackQuery, state: FSMContext):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, tr('create_deal_msg', lang), reply_markup=get_roles_menu(lang))
+    # Везде ниже используем bot.send_message БЕЗ ФОТО (только текст и кнопки)
+    await bot.send_message(callback.message.chat.id, tr('create_deal_msg', lang), reply_markup=get_roles_menu(lang), parse_mode="HTML")
     await callback.answer()
 
 @dp.callback_query(F.data == "funds")
@@ -624,7 +627,7 @@ async def funds_callback(callback: CallbackQuery):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, tr('funds_menu', lang), reply_markup=get_funds_menu(lang))
+    await bot.send_message(callback.message.chat.id, tr('funds_menu', lang), reply_markup=get_funds_menu(lang), parse_mode="HTML")
     await callback.answer()
 
 # ==================================================
@@ -639,7 +642,7 @@ async def seller_role(callback: CallbackQuery, state: FSMContext):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, tr('seller_role', lang), reply_markup=get_deal_types(lang))
+    await bot.send_message(callback.message.chat.id, tr('seller_role', lang), reply_markup=get_deal_types(lang), parse_mode="HTML")
     await state.set_state(DealStates.seller_type)
     await callback.answer()
 
@@ -654,7 +657,7 @@ async def seller_type_chosen(callback: CallbackQuery, state: FSMContext):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, tr('deal_type_account' if deal_type == 'account' else 'deal_type_gift', lang))
+    await bot.send_message(callback.message.chat.id, tr('deal_type_account' if deal_type == 'account' else 'deal_type_gift', lang), parse_mode="HTML")
     await state.set_state(DealStates.seller_description)
     await callback.answer()
 
@@ -668,7 +671,7 @@ async def seller_description(message: Message, state: FSMContext):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(message.chat.id, tr('payment_method', lang), reply_markup=get_payment_methods(lang))
+    await bot.send_message(message.chat.id, tr('payment_method', lang), reply_markup=get_payment_methods(lang), parse_mode="HTML")
     await state.set_state(DealStates.seller_payment_method)
 
 @dp.callback_query(DealStates.seller_payment_method, F.data.startswith("payment_"))
@@ -682,7 +685,7 @@ async def seller_payment_method(callback: CallbackQuery, state: FSMContext):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, tr('amount', lang, currency=currency.upper()))
+    await bot.send_message(callback.message.chat.id, tr('amount', lang, currency=currency.upper()), parse_mode="HTML")
     await state.set_state(DealStates.seller_amount)
     await callback.answer()
 
@@ -699,7 +702,7 @@ async def seller_amount(message: Message, state: FSMContext):
             lang = row[0] if row else 'ru'
         except:
             lang = 'ru'
-        await send_with_photo(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
+        await send_start_menu(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
         return
 
     digits = re.sub(r'[^0-9]', '', message.text)
@@ -731,10 +734,10 @@ async def seller_amount(message: Message, state: FSMContext):
     else:
         await state.clear()
         await message.answer("🚫 Неизвестная валюта. Начните заново.")
-        await send_with_photo(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
+        await send_start_menu(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
         return
 
-    await send_with_photo(message.chat.id, req_text)
+    await bot.send_message(message.chat.id, req_text, parse_mode="HTML")
     await state.set_state(DealStates.seller_requisites)
 
 @dp.message(DealStates.seller_requisites)
@@ -778,7 +781,7 @@ async def seller_requisites(message: Message, state: FSMContext):
         requisites=requisites,
         bot_username=BOT_USERNAME
     )
-    await send_with_photo(message.chat.id, text)
+    await bot.send_message(message.chat.id, text, parse_mode="HTML")
     await state.clear()
 
 # ==================================================
@@ -793,7 +796,7 @@ async def buyer_role(callback: CallbackQuery, state: FSMContext):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, tr('buyer_role', lang), reply_markup=get_deal_types(lang))
+    await bot.send_message(callback.message.chat.id, tr('buyer_role', lang), reply_markup=get_deal_types(lang), parse_mode="HTML")
     await state.set_state(DealStates.buyer_type)
     await callback.answer()
 
@@ -808,7 +811,7 @@ async def buyer_type_chosen(callback: CallbackQuery, state: FSMContext):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, tr('deal_type_account' if deal_type == 'account' else 'deal_type_gift', lang))
+    await bot.send_message(callback.message.chat.id, tr('deal_type_account' if deal_type == 'account' else 'deal_type_gift', lang), parse_mode="HTML")
     await state.set_state(DealStates.buyer_description)
     await callback.answer()
 
@@ -822,7 +825,7 @@ async def buyer_description(message: Message, state: FSMContext):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(message.chat.id, tr('payment_method', lang), reply_markup=get_payment_methods(lang))
+    await bot.send_message(message.chat.id, tr('payment_method', lang), reply_markup=get_payment_methods(lang), parse_mode="HTML")
     await state.set_state(DealStates.buyer_payment_method)
 
 @dp.callback_query(DealStates.buyer_payment_method, F.data.startswith("payment_"))
@@ -836,7 +839,7 @@ async def buyer_payment_method(callback: CallbackQuery, state: FSMContext):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, tr('amount', lang, currency=currency.upper()))
+    await bot.send_message(callback.message.chat.id, tr('amount', lang, currency=currency.upper()), parse_mode="HTML")
     await state.set_state(DealStates.buyer_amount)
     await callback.answer()
 
@@ -850,7 +853,7 @@ async def buyer_amount(message: Message, state: FSMContext):
         await message.answer("⚠️ Сумма должна быть больше нуля.")
         return
     await state.update_data(amount=amount)
-    await send_with_photo(message.chat.id, "Введите @username продавца.\n\nНапример: @seller")
+    await bot.send_message(message.chat.id, "Введите @username продавца.\n\nНапример: @seller", parse_mode="HTML")
     await state.set_state(DealStates.buyer_seller_username)
 
 @dp.message(DealStates.buyer_seller_username)
@@ -893,7 +896,7 @@ async def buyer_seller_username(message: Message, state: FSMContext):
         seller_username=seller_username,
         bot_username=BOT_USERNAME
     )
-    await send_with_photo(message.chat.id, text)
+    await bot.send_message(message.chat.id, text, parse_mode="HTML")
 
     cur.execute("SELECT user_id FROM users WHERE username=?", (seller_username[1:],))
     row = cur.fetchone()
@@ -1021,8 +1024,28 @@ async def novateam(message: Message):
     await message.answer(summary)
 
 # ==================================================
-# ОСТАЛЬНЫЕ ОБРАБОТЧИКИ
+# ОСТАЛЬНЫЕ ОБРАБОТЧИКИ (БЕЗ ФОТО)
 # ==================================================
+@dp.callback_query(F.data == "my_deals")
+async def my_deals(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    try:
+        cur.execute("SELECT deal_id, deal_type, description, amount, currency, status FROM deals WHERE seller_id=? OR buyer_id=?", (user_id, user_id))
+        deals = cur.fetchall()
+        if not deals:
+            await callback.message.answer(tr('my_deals_empty', 'ru'))
+            await callback.answer()
+            return
+        deals_text = ""
+        for d in deals:
+            desc = d[2][:30] + "..." if len(d[2]) > 30 else d[2]
+            deals_text += f"#{d[0]} | {d[1]} | {desc} | {d[3]} {d[4]} | {d[5]}\n"
+        await bot.send_message(callback.message.chat.id, tr('my_deals_list', 'ru').format(deals=deals_text), parse_mode="HTML")
+    except Exception as e:
+        logging.error(f"Ошибка my_deals: {e}")
+        await callback.message.answer("🚫 Ошибка при загрузке сделок.")
+    await callback.answer()
+
 @dp.callback_query(F.data == "requisites")
 async def requisites_menu(callback: CallbackQuery):
     user_id = callback.from_user.id
@@ -1032,7 +1055,7 @@ async def requisites_menu(callback: CallbackQuery):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, tr('requisites_menu', lang), reply_markup=get_requisites_menu(lang))
+    await bot.send_message(callback.message.chat.id, tr('requisites_menu', lang), reply_markup=get_requisites_menu(lang), parse_mode="HTML")
     await callback.answer()
 
 @dp.callback_query(F.data.startswith("req_"))
@@ -1052,7 +1075,7 @@ async def requisites_edit(callback: CallbackQuery, state: FSMContext):
         text = tr('requisites_crypto', lang)
     else:
         text = tr('requisites_stars', lang)
-    await send_with_photo(callback.message.chat.id, text)
+    await bot.send_message(callback.message.chat.id, text, parse_mode="HTML")
     await state.set_state(DealStates.profile_requisites_input)
     await callback.answer()
 
@@ -1096,7 +1119,7 @@ async def lang_menu(callback: CallbackQuery):
     builder.row(InlineKeyboardButton(text="🇬🇧 English", callback_data="lang_en"))
     builder.row(InlineKeyboardButton(text="🇨🇳 中文", callback_data="lang_zh"))
     builder.row(InlineKeyboardButton(text=tr('back', lang), callback_data="main_menu"))
-    await send_with_photo(callback.message.chat.id, tr('lang_menu', lang), reply_markup=builder.as_markup())
+    await bot.send_message(callback.message.chat.id, tr('lang_menu', lang), reply_markup=builder.as_markup(), parse_mode="HTML")
     await callback.answer()
 
 @dp.callback_query(F.data.startswith("lang_"))
@@ -1123,7 +1146,7 @@ async def support(callback: CallbackQuery):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, tr('support', lang))
+    await bot.send_message(callback.message.chat.id, tr('support', lang), parse_mode="HTML")
     await callback.answer()
 
 @dp.callback_query(F.data == "verify")
@@ -1135,7 +1158,7 @@ async def verify(callback: CallbackQuery):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, tr('verify', lang))
+    await bot.send_message(callback.message.chat.id, tr('verify', lang), parse_mode="HTML")
     await callback.answer()
 
 @dp.callback_query(F.data == "referral")
@@ -1147,7 +1170,7 @@ async def referral(callback: CallbackQuery):
         lang = row[0] if row else 'ru'
         cur.execute("SELECT ref_count FROM users WHERE user_id=?", (user_id,))
         ref_count = cur.fetchone()[0]
-        await send_with_photo(callback.message.chat.id, tr('referral', lang).format(bot_username=BOT_USERNAME, user_id=user_id, ref_count=ref_count))
+        await bot.send_message(callback.message.chat.id, tr('referral', lang).format(bot_username=BOT_USERNAME, user_id=user_id, ref_count=ref_count), parse_mode="HTML")
     except Exception as e:
         logging.error(f"Ошибка рефералов: {e}")
         await callback.message.answer("🚫 Ошибка.")
@@ -1162,11 +1185,11 @@ async def about(callback: CallbackQuery):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, tr('about', lang))
+    await bot.send_message(callback.message.chat.id, tr('about', lang), parse_mode="HTML")
     await callback.answer()
 
 # ==================================================
-# FUNDS ОБРАБОТЧИКИ
+# FUNDS ОБРАБОТЧИКИ (БЕЗ ФОТО)
 # ==================================================
 @dp.callback_query(F.data == "funds_deposit")
 async def funds_deposit(callback: CallbackQuery, state: FSMContext):
@@ -1177,7 +1200,7 @@ async def funds_deposit(callback: CallbackQuery, state: FSMContext):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, tr('funds_deposit', lang))
+    await bot.send_message(callback.message.chat.id, tr('funds_deposit', lang), parse_mode="HTML")
     await state.set_state(DealStates.funds_deposit)
     await callback.answer()
 
@@ -1216,7 +1239,7 @@ async def funds_withdraw(callback: CallbackQuery):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, tr('funds_withdraw', lang))
+    await bot.send_message(callback.message.chat.id, tr('funds_withdraw', lang), parse_mode="HTML")
     await callback.answer()
 
 # ==================================================
