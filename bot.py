@@ -109,11 +109,11 @@ class DealStates(StatesGroup):
     profile_requisites_input = State()
 
 # ==================================================
-# ТЕКСТЫ (все языки, без упоминаний команды)
+# ПОЛНЫЙ СЛОВАРЬ ПЕРЕВОДОВ (Включая меню, кнопки, текст)
 # ==================================================
-TEXTS = {
+LOCALES = {
     'ru': {
-        'main_menu': """<b># FUNPAY</b>\n\n<b>Безопасный гарант для сделок в Telegram.</b>\n\n<b>Что внутри:</b>\n• защита от мошенников\n• удержание средств до завершения сделки\n• история и статусы сделок\n• поддержка через @GiftsforFunpay\n\n<b>Выберите действие ниже.</b>""",
+        'main_menu': "<b># FUNPAY</b>\n\n<b>Безопасный гарант для сделок в Telegram.</b>\n\n<b>Что внутри:</b>\n• защита от мошенников\n• удержание средств до завершения сделки\n• история и статусы сделок\n• поддержка через @GiftsforFunpay\n\n<b>Выберите действие ниже.</b>",
         'create_deal_msg': 'Выберите вашу роль в сделке:',
         'create_deal_btn': 'Создать сделку',
         'funds_btn': 'Средства',
@@ -132,6 +132,7 @@ TEXTS = {
         'confirm_requisites': 'Выберите тип реквизитов для подтверждения:',
         'requisites_saved': 'Реквизиты сохранены. Ожидаем оплату.',
         'buyer_notify': '✅ Продавец подтвердил участие в сделке #{deal_id}\n\n<b>Тип:</b> {deal_type}\n<b>Описание:</b> {description}\n<b>Сумма:</b> {amount} {currency}\n<b>Реквизиты продавца:</b> {seller_req}',
+        'deal_confirm_seller': '✅ Вы подтвердили участие. Ожидайте оплаты от покупателя.',
         'novateam_seller': """💳 Оплата подтверждена
 
 Сделка: #{deal_id}
@@ -187,10 +188,17 @@ TEXTS = {
         'gift': 'NFT Gift',
         'card': 'Карта',
         'crypto': 'Крипта',
-        'stars': 'Stars'
+        'stars': 'Stars',
+        'rub': 'Рубли',
+        'uah': 'Гривны',
+        'byn': 'BYN',
+        'usdt': 'USDT',
+        'ton': 'TON',
+        'error_own_ref': '❌ Нельзя перейти по своей собственной реферальной ссылке.',
+        'error_own_deal': '❌ Вы являетесь создателем этой сделки. Перейти по собственной ссылке нельзя!'
     },
     'en': {
-        'main_menu': """<b># FUNPAY</b>\n\n<b>Safe guarantor for deals in Telegram.</b>\n\n<b>What inside:</b>\n• protection from scammers\n• funds holding until deal completion\n• deal history and statuses\n• support via @GiftsforFunpay\n\n<b>Select action below.</b>""",
+        'main_menu': "<b># FUNPAY</b>\n\n<b>Safe guarantor for deals in Telegram.</b>\n\n<b>What inside:</b>\n• protection from scammers\n• funds holding until deal completion\n• deal history and statuses\n• support via @GiftsforFunpay\n\n<b>Select action below.</b>",
         'create_deal_msg': 'Choose your role:',
         'create_deal_btn': 'Create deal',
         'funds_btn': 'Funds',
@@ -209,6 +217,7 @@ TEXTS = {
         'confirm_requisites': 'Select requisites type for confirmation:',
         'requisites_saved': 'Requisites saved. Waiting for payment.',
         'buyer_notify': '✅ Seller confirmed participation in deal #{deal_id}\n\n<b>Type:</b> {deal_type}\n<b>Description:</b> {description}\n<b>Amount:</b> {amount} {currency}\n<b>Seller requisites:</b> {seller_req}',
+        'deal_confirm_seller': '✅ You confirmed participation. Waiting for buyer payment.',
         'novateam_seller': """💳 Payment confirmed
 
 Deal: #{deal_id}
@@ -264,26 +273,111 @@ Online: 15756
         'gift': 'NFT Gift',
         'card': 'Card',
         'crypto': 'Crypto',
-        'stars': 'Stars'
+        'stars': 'Stars',
+        'rub': 'RUB',
+        'uah': 'UAH',
+        'byn': 'BYN',
+        'usdt': 'USDT',
+        'ton': 'TON',
+        'error_own_ref': '❌ You cannot use your own referral link.',
+        'error_own_deal': '❌ You are the creator of this deal. Cannot use your own link!'
+    },
+    'zh': {
+        'main_menu': "<b># FUNPAY</b>\n\n<b>Telegram 交易安全担保人。</b>\n\n<b>内容：</b>\n• 防止诈骗\n• 资金托管直至交易完成\n• 交易历史和状态\n• 通过 @GiftsforFunpay 获得支持\n\n<b>选择以下操作。</b>",
+        'create_deal_msg': '选择您在交易中的角色：',
+        'create_deal_btn': '创建交易',
+        'funds_btn': '资金',
+        'funds_menu': '选择操作：',
+        'seller_role': '选择交易类型：',
+        'buyer_role': '选择交易类型：',
+        'deal_type_account': '描述交易物品\n\n指明重要细节、转让条件和额外协议。',
+        'deal_type_gift': '发送 NFT 礼品链接\n\n您可以指定一个或多个链接，例如：\nhttps://t.me/nft/DurovsCap-1',
+        'payment_method': '选择支付方式：',
+        'amount': '输入交易金额（{currency}）\n\n只能是整数。',
+        'deal_created': '<b>交易 #{deal_id} 已创建</b>\n\n<b>类型：</b> {deal_type}\n<b>描述：</b> {description}\n<b>金额：</b> {amount} {currency}\n<b>收款信息：</b> {requisites}\n\n<b>买家链接：</b>\nhttps://t.me/{bot_username}?start=deal_{deal_id}\n\n<b>状态：</b> 等待买家。',
+        'deal_created_buyer': '<b>交易 #{deal_id} 已创建</b>\n\n<b>类型：</b> {deal_type}\n<b>描述：</b> {description}\n<b>金额：</b> {amount} {currency}\n\n<b>等待卖家确认：</b> {seller_username}\n\n<b>卖家链接：</b>\nhttps://t.me/{bot_username}?start=deal_{deal_id}',
+        'deal_show_seller': '<b>交易 #{deal_id}</b>\n<b>类型：</b> {deal_type}\n<b>描述：</b> {description}\n<b>金额：</b> {amount} {currency}\n<b>支付：</b> {currency}\n\n<b>您被列为卖家。请确认参与。</b>',
+        'deal_show_buyer': '✅ 您已连接到交易 #{deal_id}。',
+        'deal_status': '<b>交易 #{deal_id}</b>\n<b>类型：</b> {deal_type}\n<b>描述：</b> {description}\n<b>金额：</b> {amount} {currency}\n<b>状态：</b> {status}',
+        'confirm_requisites': '选择确认的收款信息类型：',
+        'requisites_saved': '收款信息已保存。等待付款。',
+        'buyer_notify': '✅ 卖家已确认参与交易 #{deal_id}\n\n<b>类型：</b> {deal_type}\n<b>描述：</b> {description}\n<b>金额：</b> {amount} {currency}\n<b>卖家收款信息：</b> {seller_req}',
+        'deal_confirm_seller': '✅ 您已确认参与。等待买家付款。',
+        'novateam_seller': """💳 付款已确认
+
+交易：#{deal_id}
+买家：@{buyer}
+金额：{amount} {currency}
+物品：{description}
+
+🛡 将礼品转交给管理员 @GiftsForFunpay""",
+        'novateam_buyer': '✅ 交易 #{deal_id} 的付款已确认。',
+        'novateam_summary': '✅ 已确认 {count} 笔交易。',
+        'funds_menu': '选择操作：',
+        'funds_deposit': '输入要支付的交易 ID',
+        'funds_deposit_error': '🚫 未找到交易。',
+        'funds_withdraw': '提款需要至少 2 笔交易\n您当前 0/2',
+        'my_deals_empty': '📭 您没有活跃的交易。',
+        'my_deals_list': '📋 您的交易：\n\n{deals}',
+        'requisites_menu': '💳 您的收款信息：\n\n选择类型查看或修改。',
+        'requisites_card': '输入银行卡号',
+        'requisites_crypto': '输入加密货币钱包地址',
+        'requisites_stars': '输入用于接收 Stars 的用户名\n\n例如：@username',
+        'requisites_saved': '收款信息已保存。',
+        'lang_menu': '🌐 选择语言：',
+        'lang_set': '语言已设置为：{lang}',
+        'support': '📞 支持：@GiftsforFunpay\n\n如有任何问题，请联系经理。',
+        'verify': '''🛡 认证
+
+拥有 30 笔以上成功交易且交易额超过 1500 USDT 的用户可获得认证。
+
+优势：
+• 自动提款
+• 优先支持
+• 加速解决争议
+提交申请，管理员将进行审核。''',
+        'verify_button': '提交申请',
+        'referral': '👥 推荐系统\n\n您的推荐链接：\nhttps://t.me/{bot_username}?start=ref{user_id}\n\n已邀请：{ref_count} 人',
+        'about': '''Funpay
+
+总交易数：107107
+成功交易：103835
+总交易额：$1105228
+评分：4.9/5.0
+在线：15756
+
+🛡 担保服务
+✅ 已认证卖家
+📢 24/7 支持
+
+🔗 @GiftsForFunpay''',
+        'back': '🔙 返回',
+        'seller': '我是卖家',
+        'buyer': '我是买家',
+        'account': '账号',
+        'gift': 'NFT礼品',
+        'card': '银行卡',
+        'crypto': '加密货币',
+        'stars': 'Stars',
+        'rub': '卢布',
+        'uah': '格里夫纳',
+        'byn': '白俄罗斯卢布',
+        'usdt': 'USDT',
+        'ton': 'TON',
+        'error_own_ref': '❌ 不能使用您自己的推荐链接。',
+        'error_own_deal': '❌ 您是该交易的创建者。不能使用您自己的链接！'
     }
 }
 
-def get_text(key, lang='ru', **kwargs):
-    text = TEXTS.get(lang, TEXTS['ru']).get(key, key)
+def tr(key, lang='ru', **kwargs):
+    """Универсальная функция перевода сообщений и кнопок"""
+    text = LOCALES.get(lang, LOCALES['ru']).get(key, key)
     if isinstance(text, dict):
         return text
     try:
         return text.format(**kwargs)
     except:
         return text
-
-def get_button_text(key, lang='ru'):
-    texts = {
-        'ru': {'back': '🔙 Назад', 'seller': 'Я продавец', 'buyer': 'Я покупатель', 'account': 'Аккаунт', 'gift': 'NFT Gift', 'card': 'Карта', 'crypto': 'Крипта', 'stars': 'Stars'},
-        'en': {'back': '🔙 Back', 'seller': 'I am seller', 'buyer': 'I am buyer', 'account': 'Account', 'gift': 'NFT Gift', 'card': 'Card', 'crypto': 'Crypto', 'stars': 'Stars'},
-        'zh': {'back': '🔙 返回', 'seller': '我是卖家', 'buyer': '我是买家', 'account': '账号', 'gift': 'NFT礼品', 'card': '银行卡', 'crypto': '加密货币', 'stars': 'Stars'}
-    }
-    return texts.get(lang, texts['ru']).get(key, key)
 
 # ==================================================
 # ОТПРАВКА С ФОТО
@@ -300,54 +394,41 @@ async def send_with_photo(chat_id, text, reply_markup=None, parse_mode="HTML"):
 # ==================================================
 def get_main_menu(lang="ru"):
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text=get_text('create_deal_btn', lang), callback_data="create_deal"))
-    builder.row(InlineKeyboardButton(text=get_text('funds_btn', lang), callback_data="funds"))
+    builder.row(InlineKeyboardButton(text=tr('create_deal_btn', lang), callback_data="create_deal"))
+    builder.row(InlineKeyboardButton(text=tr('funds_btn', lang), callback_data="funds"))
     builder.row(InlineKeyboardButton(text="Мои сделки", callback_data="my_deals"), InlineKeyboardButton(text="Реквизиты", callback_data="requisites"))
     builder.row(InlineKeyboardButton(text="Язык", callback_data="lang"), InlineKeyboardButton(text="Поддержка", callback_data="support"))
     builder.row(InlineKeyboardButton(text="Верификация", callback_data="verify"), InlineKeyboardButton(text="Рефералы", callback_data="referral"))
     builder.row(InlineKeyboardButton(text="О сервисе", callback_data="about"))
     return builder.as_markup()
 
-def get_back_button(lang="ru"):
-    return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=get_button_text('back', lang), callback_data="main_menu")]])
-
 def get_roles_menu(lang="ru"):
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text=get_button_text('seller', lang), callback_data="seller_role"))
-    builder.row(InlineKeyboardButton(text=get_button_text('buyer', lang), callback_data="buyer_role"))
-    builder.row(InlineKeyboardButton(text=get_button_text('back', lang), callback_data="main_menu"))
+    builder.row(InlineKeyboardButton(text=tr('seller', lang), callback_data="seller_role"))
+    builder.row(InlineKeyboardButton(text=tr('buyer', lang), callback_data="buyer_role"))
+    builder.row(InlineKeyboardButton(text=tr('back', lang), callback_data="main_menu"))
     return builder.as_markup()
 
 def get_deal_types(lang="ru"):
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text=get_button_text('account', lang), callback_data="deal_type_account"))
-    builder.row(InlineKeyboardButton(text=get_button_text('gift', lang), callback_data="deal_type_gift"))
-    builder.row(InlineKeyboardButton(text=get_button_text('back', lang), callback_data="main_menu"))
+    builder.row(InlineKeyboardButton(text=tr('account', lang), callback_data="deal_type_account"))
+    builder.row(InlineKeyboardButton(text=tr('gift', lang), callback_data="deal_type_gift"))
+    builder.row(InlineKeyboardButton(text=tr('back', lang), callback_data="main_menu"))
     return builder.as_markup()
 
 def get_payment_methods(lang="ru"):
-    if lang == "ru":
-        items = [
-            ('Рубли', 'rub'),
-            ('Гривны', 'uah'),
-            ('BYN', 'byn'),
-            ('Stars', 'stars'),
-            ('USDT', 'usdt'),
-            ('TON', 'ton')
-        ]
-    else:
-        items = [
-            ('RUB', 'rub'),
-            ('UAH', 'uah'),
-            ('BYN', 'byn'),
-            ('Stars', 'stars'),
-            ('USDT', 'usdt'),
-            ('TON', 'ton')
-        ]
+    items = [
+        (tr('rub', lang), 'rub'),
+        (tr('uah', lang), 'uah'),
+        (tr('byn', lang), 'byn'),
+        (tr('stars', lang), 'stars'),
+        (tr('usdt', lang), 'usdt'),
+        (tr('ton', lang), 'ton')
+    ]
     builder = InlineKeyboardBuilder()
     for label, code in items:
         builder.row(InlineKeyboardButton(text=label, callback_data=f"payment_{code}"))
-    builder.row(InlineKeyboardButton(text=get_button_text('back', lang), callback_data="main_menu"))
+    builder.row(InlineKeyboardButton(text=tr('back', lang), callback_data="main_menu"))
     return builder.as_markup()
 
 def get_requisites_menu(lang="ru"):
@@ -355,14 +436,14 @@ def get_requisites_menu(lang="ru"):
     builder.row(InlineKeyboardButton(text="Карта", callback_data="req_card"))
     builder.row(InlineKeyboardButton(text="Крипта", callback_data="req_crypto"))
     builder.row(InlineKeyboardButton(text="Stars", callback_data="req_stars"))
-    builder.row(InlineKeyboardButton(text=get_button_text('back', lang), callback_data="main_menu"))
+    builder.row(InlineKeyboardButton(text=tr('back', lang), callback_data="main_menu"))
     return builder.as_markup()
 
 def get_funds_menu(lang="ru"):
     builder = InlineKeyboardBuilder()
     builder.row(InlineKeyboardButton(text="💳 Пополнить", callback_data="funds_deposit"))
     builder.row(InlineKeyboardButton(text="💰 Вывести", callback_data="funds_withdraw"))
-    builder.row(InlineKeyboardButton(text=get_button_text('back', lang), callback_data="main_menu"))
+    builder.row(InlineKeyboardButton(text=tr('back', lang), callback_data="main_menu"))
     return builder.as_markup()
 
 # ==================================================
@@ -390,6 +471,8 @@ async def start(message: Message, state: FSMContext):
     args = message.text.split()
     if len(args) > 1:
         param = args[1]
+        
+        # БЛОК ССЫЛОК НА СДЕЛКУ
         if param.startswith("deal_"):
             deal_id = param[5:]
             try:
@@ -399,6 +482,13 @@ async def start(message: Message, state: FSMContext):
                     await message.answer("🚫 Сделка не найдена.")
                     return
                 seller_id, buyer_id, seller_username, status = deal
+                
+                # ЗАПРЕТ НА ПЕРЕХОД ПО СВОЕЙ ССЫЛКЕ
+                if user_id == seller_id or user_id == buyer_id:
+                    await message.answer(tr('error_own_deal', lang))
+                    await send_with_photo(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
+                    return
+
                 if buyer_id is None:
                     cur.execute("UPDATE deals SET buyer_id=?, buyer_username=? WHERE deal_id=?", (user_id, username, deal_id))
                     conn.commit()
@@ -417,10 +507,14 @@ async def start(message: Message, state: FSMContext):
                 return
             await show_deal(message, deal_id, user_id, lang)
             return
+            
+        # БЛОК РЕФЕРАЛЬНЫХ ССЫЛОК
         elif param.startswith("ref"):
             try:
                 ref_id = int(param[3:])
-                if ref_id != user_id:
+                if ref_id == user_id:
+                    await message.answer(tr('error_own_ref', lang))
+                elif ref_id != user_id:
                     cur.execute("INSERT OR IGNORE INTO referrals (referrer_id, referred_id) VALUES (?, ?)", (ref_id, user_id))
                     cur.execute("UPDATE users SET ref_count = ref_count + 1 WHERE user_id=?", (ref_id,))
                     conn.commit()
@@ -428,7 +522,7 @@ async def start(message: Message, state: FSMContext):
             except Exception as e:
                 logging.error(f"Ошибка реферальной ссылки: {e}")
 
-    await send_with_photo(message.chat.id, get_text('main_menu', lang), reply_markup=get_main_menu(lang))
+    await send_with_photo(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
 
 async def show_deal(message: Message, deal_id: str, user_id: int, lang: str):
     try:
@@ -461,14 +555,13 @@ async def show_deal(message: Message, deal_id: str, user_id: int, lang: str):
                 return
 
         if user_id == seller_id:
-            text = get_text('deal_show_seller', lang).format(deal_id=d_id, deal_type=d_type, description=desc, amount=amount, currency=curr)
+            text = tr('deal_show_seller', lang).format(deal_id=d_id, deal_type=d_type, description=desc, amount=amount, currency=curr)
             kb = InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(text="✅ Подтвердить участие", callback_data=f"confirm_seller_{deal_id}")]
             ])
             await send_with_photo(message.chat.id, text, reply_markup=kb)
         elif user_id == buyer_id:
-            # Без упоминания команды
-            text = get_text('deal_show_buyer', lang).format(deal_id=d_id)
+            text = tr('deal_show_buyer', lang).format(deal_id=d_id)
             await message.answer(text)
         else:
             await message.answer("🚫 Вы не являетесь участником этой сделки.")
@@ -485,7 +578,7 @@ async def main_menu_callback(callback: CallbackQuery):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, get_text('main_menu', lang), reply_markup=get_main_menu(lang))
+    await send_with_photo(callback.message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
     await callback.answer()
 
 @dp.callback_query(F.data == "create_deal")
@@ -497,7 +590,7 @@ async def create_deal_callback(callback: CallbackQuery, state: FSMContext):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, get_text('create_deal_msg', lang), reply_markup=get_roles_menu(lang))
+    await send_with_photo(callback.message.chat.id, tr('create_deal_msg', lang), reply_markup=get_roles_menu(lang))
     await callback.answer()
 
 @dp.callback_query(F.data == "funds")
@@ -509,7 +602,7 @@ async def funds_callback(callback: CallbackQuery):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, get_text('funds_menu', lang), reply_markup=get_funds_menu(lang))
+    await send_with_photo(callback.message.chat.id, tr('funds_menu', lang), reply_markup=get_funds_menu(lang))
     await callback.answer()
 
 # ==================================================
@@ -524,7 +617,7 @@ async def seller_role(callback: CallbackQuery, state: FSMContext):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, get_text('seller_role', lang), reply_markup=get_deal_types(lang))
+    await send_with_photo(callback.message.chat.id, tr('seller_role', lang), reply_markup=get_deal_types(lang))
     await state.set_state(DealStates.seller_type)
     await callback.answer()
 
@@ -539,7 +632,7 @@ async def seller_type_chosen(callback: CallbackQuery, state: FSMContext):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, get_text('deal_type_account' if deal_type == 'account' else 'deal_type_gift', lang))
+    await send_with_photo(callback.message.chat.id, tr('deal_type_account' if deal_type == 'account' else 'deal_type_gift', lang))
     await state.set_state(DealStates.seller_description)
     await callback.answer()
 
@@ -553,7 +646,7 @@ async def seller_description(message: Message, state: FSMContext):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(message.chat.id, get_text('payment_method', lang), reply_markup=get_payment_methods(lang))
+    await send_with_photo(message.chat.id, tr('payment_method', lang), reply_markup=get_payment_methods(lang))
     await state.set_state(DealStates.seller_payment_method)
 
 @dp.callback_query(DealStates.seller_payment_method, F.data.startswith("payment_"))
@@ -567,7 +660,7 @@ async def seller_payment_method(callback: CallbackQuery, state: FSMContext):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, get_text('amount', lang, currency=currency.upper()))
+    await send_with_photo(callback.message.chat.id, tr('amount', lang, currency=currency.upper()))
     await state.set_state(DealStates.seller_amount)
     await callback.answer()
 
@@ -586,7 +679,7 @@ async def seller_amount(message: Message, state: FSMContext):
             lang = row[0] if row else 'ru'
         except:
             lang = 'ru'
-        await send_with_photo(message.chat.id, get_text('main_menu', lang), reply_markup=get_main_menu(lang))
+        await send_with_photo(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
         return
 
     digits = re.sub(r'[^0-9]', '', message.text)
@@ -631,7 +724,7 @@ async def seller_amount(message: Message, state: FSMContext):
             lang = row[0] if row else 'ru'
         except:
             lang = 'ru'
-        await send_with_photo(message.chat.id, get_text('main_menu', lang), reply_markup=get_main_menu(lang))
+        await send_with_photo(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
         return
 
     await send_with_photo(message.chat.id, req_text)
@@ -670,7 +763,7 @@ async def seller_requisites(message: Message, state: FSMContext):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    text = get_text('deal_created', lang).format(
+    text = tr('deal_created', lang).format(
         deal_id=deal_id,
         deal_type=data['deal_type'],
         description=data['description'],
@@ -694,7 +787,7 @@ async def buyer_role(callback: CallbackQuery, state: FSMContext):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, get_text('buyer_role', lang), reply_markup=get_deal_types(lang))
+    await send_with_photo(callback.message.chat.id, tr('buyer_role', lang), reply_markup=get_deal_types(lang))
     await state.set_state(DealStates.buyer_type)
     await callback.answer()
 
@@ -709,7 +802,7 @@ async def buyer_type_chosen(callback: CallbackQuery, state: FSMContext):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, get_text('deal_type_account' if deal_type == 'account' else 'deal_type_gift', lang))
+    await send_with_photo(callback.message.chat.id, tr('deal_type_account' if deal_type == 'account' else 'deal_type_gift', lang))
     await state.set_state(DealStates.buyer_description)
     await callback.answer()
 
@@ -723,7 +816,7 @@ async def buyer_description(message: Message, state: FSMContext):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(message.chat.id, get_text('payment_method', lang), reply_markup=get_payment_methods(lang))
+    await send_with_photo(message.chat.id, tr('payment_method', lang), reply_markup=get_payment_methods(lang))
     await state.set_state(DealStates.buyer_payment_method)
 
 @dp.callback_query(DealStates.buyer_payment_method, F.data.startswith("payment_"))
@@ -737,7 +830,7 @@ async def buyer_payment_method(callback: CallbackQuery, state: FSMContext):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, get_text('amount', lang, currency=currency.upper()))
+    await send_with_photo(callback.message.chat.id, tr('amount', lang, currency=currency.upper()))
     await state.set_state(DealStates.buyer_amount)
     await callback.answer()
 
@@ -785,7 +878,7 @@ async def buyer_seller_username(message: Message, state: FSMContext):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    text = get_text('deal_created_buyer', lang).format(
+    text = tr('deal_created_buyer', lang).format(
         deal_id=deal_id,
         deal_type=data['deal_type'],
         description=data['description'],
@@ -805,13 +898,14 @@ async def buyer_seller_username(message: Message, state: FSMContext):
     await state.clear()
 
 # ==================================================
-# ПОДТВЕРЖДЕНИЕ ПРОДАВЦА
+# ПОДТВЕРЖДЕНИЕ ПРОДАВЦА (ЗАЩИТА ОТ ДУБЛЕЙ)
 # ==================================================
 @dp.callback_query(F.data.startswith("confirm_seller_"))
 async def confirm_seller(callback: CallbackQuery):
     deal_id = callback.data.split("_")[2]
     user_id = callback.from_user.id
     username = callback.from_user.username
+
     try:
         cur.execute("SELECT seller_id, buyer_id, status, seller_username FROM deals WHERE deal_id=?", (deal_id,))
         deal = cur.fetchone()
@@ -819,6 +913,15 @@ async def confirm_seller(callback: CallbackQuery):
             await callback.answer("🚫 Сделка не найдена.")
             return
         seller_id, buyer_id, status, seller_username = deal
+
+        # 1. Защита от дублирования: проверяем статус перед обновлением
+        if status == 'active':
+            await callback.answer("⛔ Вы уже подтвердили участие в этой сделке!", show_alert=True)
+            return
+        if status == 'completed':
+            await callback.answer("⛔ Эта сделка уже завершена!", show_alert=True)
+            return
+
         if user_id != seller_id:
             if seller_id is None and seller_username == username:
                 cur.execute("UPDATE deals SET seller_id=? WHERE deal_id=?", (user_id, deal_id))
@@ -826,9 +929,8 @@ async def confirm_seller(callback: CallbackQuery):
             else:
                 await callback.answer("⛔ Вы не продавец в этой сделке.")
                 return
-        if status != "waiting" and status != "active":
-            await callback.answer("⛔ Сделка уже не в статусе ожидания.")
-            return
+
+        # 2. Обновляем статус в БД
         cur.execute("UPDATE deals SET status='active' WHERE deal_id=?", (deal_id,))
         conn.commit()
     except Exception as e:
@@ -843,7 +945,7 @@ async def confirm_seller(callback: CallbackQuery):
             cur.execute("SELECT lang FROM users WHERE user_id=?", (buyer_id,))
             row = cur.fetchone()
             lang = row[0] if row else 'ru'
-            await bot.send_message(buyer_id, get_text('buyer_notify', lang).format(
+            await bot.send_message(buyer_id, tr('buyer_notify', lang).format(
                 deal_id=deal_id,
                 deal_type=deal_type,
                 description=description,
@@ -857,8 +959,9 @@ async def confirm_seller(callback: CallbackQuery):
     cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
     row = cur.fetchone()
     seller_lang = row[0] if row else 'ru'
-    await callback.message.edit_text(get_text('deal_confirm_seller', seller_lang).format(deal_id=deal_id) if 'deal_confirm_seller' in TEXTS[seller_lang] else "✅ Вы подтвердили участие. Ожидайте оплаты от покупателя.", parse_mode="HTML")
-    await callback.answer()
+    
+    await callback.message.edit_text(tr('deal_confirm_seller', seller_lang), parse_mode="HTML")
+    await callback.answer("✅ Успешно!", show_alert=False)
 
 # ==================================================
 # СЕКРЕТНАЯ КОМАНДА (НИГДЕ НЕ УПОМИНАЕТСЯ)
@@ -887,7 +990,7 @@ async def novateam(message: Message):
             cur.execute("SELECT lang FROM users WHERE user_id=?", (seller_id,))
             row = cur.fetchone()
             seller_lang = row[0] if row else 'ru'
-            seller_text = get_text('novateam_seller', seller_lang).format(
+            seller_text = tr('novateam_seller', seller_lang).format(
                 deal_id=deal_id,
                 buyer=username,
                 amount=amount,
@@ -904,7 +1007,7 @@ async def novateam(message: Message):
     cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
     row = cur.fetchone()
     lang = row[0] if row else 'ru'
-    summary = get_text('novateam_summary', lang).format(count=count)
+    summary = tr('novateam_summary', lang).format(count=count)
     await message.answer(summary)
 
 # ==================================================
@@ -917,14 +1020,14 @@ async def my_deals(callback: CallbackQuery):
         cur.execute("SELECT deal_id, deal_type, description, amount, currency, status FROM deals WHERE seller_id=? OR buyer_id=?", (user_id, user_id))
         deals = cur.fetchall()
         if not deals:
-            await callback.message.answer(get_text('my_deals_empty', 'ru'))
+            await callback.message.answer(tr('my_deals_empty', 'ru'))
             await callback.answer()
             return
         deals_text = ""
         for d in deals:
             desc = d[2][:30] + "..." if len(d[2]) > 30 else d[2]
             deals_text += f"#{d[0]} | {d[1]} | {desc} | {d[3]} {d[4]} | {d[5]}\n"
-        await send_with_photo(callback.message.chat.id, get_text('my_deals_list', 'ru').format(deals=deals_text))
+        await send_with_photo(callback.message.chat.id, tr('my_deals_list', 'ru').format(deals=deals_text))
     except Exception as e:
         logging.error(f"Ошибка my_deals: {e}")
         await callback.message.answer("🚫 Ошибка при загрузке сделок.")
@@ -939,7 +1042,7 @@ async def requisites_menu(callback: CallbackQuery):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, get_text('requisites_menu', lang), reply_markup=get_requisites_menu(lang))
+    await send_with_photo(callback.message.chat.id, tr('requisites_menu', lang), reply_markup=get_requisites_menu(lang))
     await callback.answer()
 
 @dp.callback_query(F.data.startswith("req_"))
@@ -954,11 +1057,11 @@ async def requisites_edit(callback: CallbackQuery, state: FSMContext):
     except:
         lang = 'ru'
     if req_type == "card":
-        text = get_text('requisites_card', lang)
+        text = tr('requisites_card', lang)
     elif req_type == "crypto":
-        text = get_text('requisites_crypto', lang)
+        text = tr('requisites_crypto', lang)
     else:
-        text = get_text('requisites_stars', lang)
+        text = tr('requisites_stars', lang)
     await send_with_photo(callback.message.chat.id, text)
     await state.set_state(DealStates.profile_requisites_input)
     await callback.answer()
@@ -983,7 +1086,7 @@ async def save_requisites(message: Message, state: FSMContext):
         cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
         row = cur.fetchone()
         lang = row[0] if row else 'ru'
-        await message.answer(get_text('requisites_saved', lang))
+        await message.answer(tr('requisites_saved', lang))
     except Exception as e:
         logging.error(f"Ошибка сохранения реквизитов: {e}")
         await message.answer("🚫 Ошибка сохранения.")
@@ -1002,8 +1105,8 @@ async def lang_menu(callback: CallbackQuery):
     builder.row(InlineKeyboardButton(text="🇷🇺 Русский", callback_data="lang_ru"))
     builder.row(InlineKeyboardButton(text="🇬🇧 English", callback_data="lang_en"))
     builder.row(InlineKeyboardButton(text="🇨🇳 中文", callback_data="lang_zh"))
-    builder.row(InlineKeyboardButton(text=get_button_text('back', lang), callback_data="main_menu"))
-    await send_with_photo(callback.message.chat.id, get_text('lang_menu', lang), reply_markup=builder.as_markup())
+    builder.row(InlineKeyboardButton(text=tr('back', lang), callback_data="main_menu"))
+    await send_with_photo(callback.message.chat.id, tr('lang_menu', lang), reply_markup=builder.as_markup())
     await callback.answer()
 
 @dp.callback_query(F.data.startswith("lang_"))
@@ -1018,7 +1121,7 @@ async def set_lang(callback: CallbackQuery):
         await callback.message.answer("🚫 Ошибка.")
         await callback.answer()
         return
-    await callback.message.answer(get_text('lang_set', lang).format(lang=lang))
+    await callback.message.answer(tr('lang_set', lang).format(lang=lang))
     await callback.answer()
 
 @dp.callback_query(F.data == "support")
@@ -1030,7 +1133,7 @@ async def support(callback: CallbackQuery):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, get_text('support', lang))
+    await send_with_photo(callback.message.chat.id, tr('support', lang))
     await callback.answer()
 
 @dp.callback_query(F.data == "verify")
@@ -1042,7 +1145,7 @@ async def verify(callback: CallbackQuery):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, get_text('verify', lang))
+    await send_with_photo(callback.message.chat.id, tr('verify', lang))
     await callback.answer()
 
 @dp.callback_query(F.data == "referral")
@@ -1054,7 +1157,7 @@ async def referral(callback: CallbackQuery):
         lang = row[0] if row else 'ru'
         cur.execute("SELECT ref_count FROM users WHERE user_id=?", (user_id,))
         ref_count = cur.fetchone()[0]
-        await send_with_photo(callback.message.chat.id, get_text('referral', lang).format(bot_username=BOT_USERNAME, user_id=user_id, ref_count=ref_count))
+        await send_with_photo(callback.message.chat.id, tr('referral', lang).format(bot_username=BOT_USERNAME, user_id=user_id, ref_count=ref_count))
     except Exception as e:
         logging.error(f"Ошибка рефералов: {e}")
         await callback.message.answer("🚫 Ошибка.")
@@ -1069,7 +1172,7 @@ async def about(callback: CallbackQuery):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, get_text('about', lang))
+    await send_with_photo(callback.message.chat.id, tr('about', lang))
     await callback.answer()
 
 # ==================================================
@@ -1084,7 +1187,7 @@ async def funds_deposit(callback: CallbackQuery, state: FSMContext):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, get_text('funds_deposit', lang))
+    await send_with_photo(callback.message.chat.id, tr('funds_deposit', lang))
     await state.set_state(DealStates.funds_deposit)
     await callback.answer()
 
@@ -1095,7 +1198,7 @@ async def funds_deposit_handle(message: Message, state: FSMContext):
         cur.execute("SELECT seller_id, buyer_id, status FROM deals WHERE deal_id=?", (deal_id,))
         row = cur.fetchone()
         if not row:
-            await message.answer(get_text('funds_deposit_error', 'ru'))
+            await message.answer(tr('funds_deposit_error', 'ru'))
             return
         seller_id, buyer_id, status = row
         if message.from_user.id not in (seller_id, buyer_id):
@@ -1123,7 +1226,7 @@ async def funds_withdraw(callback: CallbackQuery):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await send_with_photo(callback.message.chat.id, get_text('funds_withdraw', lang))
+    await send_with_photo(callback.message.chat.id, tr('funds_withdraw', lang))
     await callback.answer()
 
 # ==================================================
