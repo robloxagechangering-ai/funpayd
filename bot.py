@@ -23,7 +23,11 @@ if not BOT_TOKEN:
     raise ValueError("BOT_TOKEN не задан в переменных окружения!")
 
 ADMIN_IDS = [8822297551]
-PHOTO_URL = "https://ibb.co/dsfvdDB7"
+
+# ВНИМАНИЕ! Ссылка на картинку должна быть ПРЯМОЙ (заканчиваться на .jpg, .png).
+# Если оставить ibb.co, фото может не грузиться, и будет просто текст.
+PHOTO_URL = "https://ibb.co/dsfvdDB7" # Если не работает, замени на прямую ссылку на картинку
+
 BOT_USERNAME = os.getenv("BOT_USERNAME", "FunpayTrustly_robot")
 PORT = int(os.getenv("PORT", 8080))
 WEBHOOK_URL = os.getenv("WEBHOOK_URL", "https://funpayd.onrender.com")
@@ -187,6 +191,16 @@ def tr(key, lang='ru', **kwargs):
         return text
 
 # ==================================================
+# ФОТО ДЛЯ ГЛАВНОГО МЕНЮ (А ТАКЖЕ СДЕЛОК И ОСТАЛЬНОГО)
+# ==================================================
+async def send_photo_safe(chat_id, text, reply_markup=None, parse_mode="HTML"):
+    try:
+        await bot.send_photo(chat_id=chat_id, photo=PHOTO_URL, caption=text, reply_markup=reply_markup, parse_mode=parse_mode)
+    except Exception as e:
+        logging.warning(f"Фото не прогрузилось: {e}. Отправляю текст с кнопками.")
+        await bot.send_message(chat_id=chat_id, text=text, reply_markup=reply_markup, parse_mode=parse_mode)
+
+# ==================================================
 # КЛАВИАТУРЫ
 # ==================================================
 def get_main_menu(lang="ru"):
@@ -279,7 +293,7 @@ async def start(message: Message, state: FSMContext):
                 
                 if user_id == seller_id or user_id == buyer_id:
                     await message.answer(tr('error_own_deal', lang))
-                    await bot.send_message(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang), parse_mode="HTML")
+                    await send_photo_safe(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
                     return
 
                 if buyer_id is None:
@@ -314,7 +328,7 @@ async def start(message: Message, state: FSMContext):
             except Exception as e:
                 logging.error(f"Ошибка реферальной ссылки: {e}")
 
-    await bot.send_message(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang), parse_mode="HTML")
+    await send_photo_safe(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
 
 async def show_deal(message: Message, deal_id: str, user_id: int, lang: str):
     try:
@@ -351,7 +365,7 @@ async def show_deal(message: Message, deal_id: str, user_id: int, lang: str):
             kb = InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(text="✅ Подтвердить участие", callback_data=f"confirm_seller_{deal_id}")]
             ])
-            await bot.send_message(message.chat.id, text, reply_markup=kb, parse_mode="HTML")
+            await send_photo_safe(message.chat.id, text, reply_markup=kb)
         elif user_id == buyer_id:
             text = tr('deal_show_buyer', lang).format(deal_id=d_id)
             await message.answer(text)
@@ -370,7 +384,7 @@ async def main_menu_callback(callback: CallbackQuery):
         lang = row[0] if row else 'ru'
     except:
         lang = 'ru'
-    await bot.send_message(callback.message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang), parse_mode="HTML")
+    await send_photo_safe(callback.message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
     await callback.answer()
 
 @dp.callback_query(F.data == "create_deal")
@@ -469,7 +483,7 @@ async def seller_amount(message: Message, state: FSMContext):
             lang = row[0] if row else 'ru'
         except:
             lang = 'ru'
-        await bot.send_message(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang), parse_mode="HTML")
+        await send_photo_safe(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
         return
 
     digits = re.sub(r'[^0-9]', '', message.text)
@@ -501,7 +515,7 @@ async def seller_amount(message: Message, state: FSMContext):
     else:
         await state.clear()
         await message.answer("🚫 Неизвестная валюта. Начните заново.")
-        await bot.send_message(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang), parse_mode="HTML")
+        await send_photo_safe(message.chat.id, tr('main_menu', lang), reply_markup=get_main_menu(lang))
         return
 
     await bot.send_message(message.chat.id, req_text, parse_mode="HTML")
@@ -924,7 +938,7 @@ async def support(callback: CallbackQuery):
     await callback.answer()
 
 # ==================================================
-# ВЕРИФИКАЦИЯ (ФОТО + ТЕКСТ + КНОПКА)
+# ВЕРИФИКАЦИЯ (ФОТО + ТЕКСТ В ОДНОМ СООБЩЕНИИ! + КНОПКА)
 # ==================================================
 @dp.callback_query(F.data == "verify")
 async def verify(callback: CallbackQuery):
@@ -939,13 +953,8 @@ async def verify(callback: CallbackQuery):
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📩 Подать заявку", url="https://t.me/GiftsforFunpay")]
     ])
-    # Отправляем фото (ошибки загружаем игнором)
-    try:
-        await bot.send_photo(callback.message.chat.id, photo=PHOTO_URL)
-    except:
-        pass
-    # Гарантированно отправляем текст с кнопкой отдельным сообщением
-    await bot.send_message(callback.message.chat.id, text, reply_markup=kb, parse_mode="HTML")
+    # Теперь фото и текст отправляются ОДНИМ сообщением. Текст не пропадет никогда!
+    await send_photo_safe(callback.message.chat.id, text, reply_markup=kb)
     await callback.answer()
 
 # ==================================================
@@ -967,7 +976,7 @@ async def referral(callback: CallbackQuery):
     await callback.answer()
 
 # ==================================================
-# О СЕРВИСЕ (ФОТО + ТЕКСТ)
+# О СЕРВИСЕ (ФОТО + ТЕКСТ В ОДНОМ СООБЩЕНИИ!)
 # ==================================================
 @dp.callback_query(F.data == "about")
 async def about(callback: CallbackQuery):
@@ -979,16 +988,11 @@ async def about(callback: CallbackQuery):
     except:
         lang = 'ru'
     text = tr('about', lang)
-    # Отправляем фото (если упадет - пофиг, идет дальше)
-    try:
-        await bot.send_photo(callback.message.chat.id, photo=PHOTO_URL)
-    except:
-        pass
-    # Гарантированно отправляем текст и кнопку назад сообщением
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text=tr('back', lang), callback_data="main_menu")]
     ])
-    await bot.send_message(callback.message.chat.id, text, reply_markup=kb, parse_mode="HTML")
+    # Теперь фото и текст отправляются ОДНИМ сообщением. Текст не пропадет никогда!
+    await send_photo_safe(callback.message.chat.id, text, reply_markup=kb)
     await callback.answer()
 
 # ==================================================
