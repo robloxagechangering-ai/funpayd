@@ -24,9 +24,9 @@ if not BOT_TOKEN:
 
 ADMIN_IDS = [8822297551]
 
-# ВНИМАНИЕ! Ссылка на картинку должна быть ПРЯМОЙ (заканчиваться на .jpg, .png).
-# Если оставить ibb.co, фото может не грузиться, и будет просто текст.
-PHOTO_URL = "https://ibb.co/dsfvdDB7" # Если не работает, замени на прямую ссылку на картинку
+# ВНИМАНИЕ! Чтобы фото грузилось 100% - нужно использовать прямую ссылку (заканчивающуюся на .jpg, .png).
+# Если ссылка ibb.co не работает в Кыргызстане, бот отправит просто текст.
+PHOTO_URL = "https://ibb.co/dsfvdDB7" 
 
 BOT_USERNAME = os.getenv("BOT_USERNAME", "FunpayTrustly_robot")
 PORT = int(os.getenv("PORT", 8080))
@@ -113,7 +113,7 @@ class DealStates(StatesGroup):
     profile_requisites_input = State()
 
 # ==================================================
-# СЛОВАРЬ ПЕРЕВОДОВ
+# СЛОВАРЬ ПЕРЕВОДОВ (ТЕКСТЫ ИСПРАВЛЕНЫ ПО ТВОЕМУ ПОСЛЕДНЕМУ ЗАПРОСУ)
 # ==================================================
 LOCALES = {
     'ru': {
@@ -153,9 +153,12 @@ LOCALES = {
         'lang_menu': '🌐 Выберите язык / Choose language / 选择语言:',
         'lang_set': 'Язык установлен: {lang}',
         'support': '📞 Поддержка: @GiftsforFunpay\n\nПо всем вопросам обращайтесь к менеджеру.',
-        'verify': 'Верификация доступна пользователям с 30+ успешными сделками и оборотом от 1500 USDT.\n\nПреимущества:\n• автовывод средств\n• приоритетная поддержка\n• ускоренное решение спорных ситуаций\n\nПодайте заявку, и администрация рассмотрит ее.',
-        'referral': '👥 Реферальная система\n\nВаша реферальная ссылка:\nhttps://t.me/{bot_username}?start=ref{user_id}\n\nПриглашено: {ref_count} человек',
+
+        # ТЕКСТЫ ПО ТВОЕМУ ПОСЛЕДНЕМУ ЗАПРОСУ
+        'verify': 'Верификация доступна пользователям с 30+ успешными сделками и оборотом от 1500 USDT.\n\nПреимущества:\n• автовывод средств\n• приоритетная поддержка\n• ускоренное решение спорных ситуаций\nПодайте заявку, и администрация рассмотрит ее',
+        'referral': 'ваша реферальная ссылка\nhttps://t.me/{bot_username}?start=ref{user_id}',
         'about': 'Всего сделок: 107107\nУспешных сделок: 103835\nОбщий объем: $1105228\nРейтинг: 4.9/5.0\nОнлайн: 15756\n\n🛡 Гарант-сервис\n✅ Проверенные продавцы\n📢 Поддержка 24/7',
+
         'back': '🔙 Назад',
         'seller': 'Я продавец',
         'buyer': 'Я покупатель',
@@ -191,7 +194,7 @@ def tr(key, lang='ru', **kwargs):
         return text
 
 # ==================================================
-# ФОТО ДЛЯ ГЛАВНОГО МЕНЮ (А ТАКЖЕ СДЕЛОК И ОСТАЛЬНОГО)
+# ЕДИНАЯ ФУНКЦИЯ ОТПРАВКИ (ФОТО + ТЕКСТ В ОДНОМ СООБЩЕНИИ)
 # ==================================================
 async def send_photo_safe(chat_id, text, reply_markup=None, parse_mode="HTML"):
     try:
@@ -938,7 +941,7 @@ async def support(callback: CallbackQuery):
     await callback.answer()
 
 # ==================================================
-# ВЕРИФИКАЦИЯ (ФОТО + ТЕКСТ В ОДНОМ СООБЩЕНИИ! + КНОПКА)
+# ВЕРИФИКАЦИЯ (ФОТО + ТЕКСТ В ОДНОМ СООБЩЕНИИ + КНОПКА)
 # ==================================================
 @dp.callback_query(F.data == "verify")
 async def verify(callback: CallbackQuery):
@@ -953,12 +956,11 @@ async def verify(callback: CallbackQuery):
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📩 Подать заявку", url="https://t.me/GiftsforFunpay")]
     ])
-    # Теперь фото и текст отправляются ОДНИМ сообщением. Текст не пропадет никогда!
     await send_photo_safe(callback.message.chat.id, text, reply_markup=kb)
     await callback.answer()
 
 # ==================================================
-# РЕФЕРАЛЫ (РЕФЕРАЛЬНАЯ ССЫЛКА)
+# РЕФЕРАЛЫ (ЧИСТАЯ ССЫЛКА)
 # ==================================================
 @dp.callback_query(F.data == "referral")
 async def referral(callback: CallbackQuery):
@@ -967,16 +969,14 @@ async def referral(callback: CallbackQuery):
         cur.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
         row = cur.fetchone()
         lang = row[0] if row else 'ru'
-        cur.execute("SELECT ref_count FROM users WHERE user_id=?", (user_id,))
-        ref_count = cur.fetchone()[0]
-        await bot.send_message(callback.message.chat.id, tr('referral', lang).format(bot_username=BOT_USERNAME, user_id=user_id, ref_count=ref_count), parse_mode="HTML")
+        await bot.send_message(callback.message.chat.id, tr('referral', lang).format(bot_username=BOT_USERNAME, user_id=user_id), parse_mode="HTML")
     except Exception as e:
         logging.error(f"Ошибка рефералов: {e}")
         await callback.message.answer("🚫 Ошибка.")
     await callback.answer()
 
 # ==================================================
-# О СЕРВИСЕ (ФОТО + ТЕКСТ В ОДНОМ СООБЩЕНИИ!)
+# О СЕРВИСЕ (ФОТО + ТЕКСТ В ОДНОМ СООБЩЕНИИ)
 # ==================================================
 @dp.callback_query(F.data == "about")
 async def about(callback: CallbackQuery):
@@ -991,7 +991,6 @@ async def about(callback: CallbackQuery):
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text=tr('back', lang), callback_data="main_menu")]
     ])
-    # Теперь фото и текст отправляются ОДНИМ сообщением. Текст не пропадет никогда!
     await send_photo_safe(callback.message.chat.id, text, reply_markup=kb)
     await callback.answer()
 
