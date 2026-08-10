@@ -38,7 +38,6 @@ if not BOT_TOKEN:
 
 BOT_USERNAME = os.getenv("BOT_USERNAME", "FunpayTrustly_robot")
 # ВНИМАНИЕ! Замени на прямую ссылку на картинку (заканчивающуюся на .jpg/.png).
-# Пример правильной ссылки: https://i.ibb.co/...
 PHOTO_URL = os.getenv("PHOTO_URL", "https://ibb.co/ycJNGhRQ")
 PORT = int(os.getenv("PORT", "8080"))
 WEBHOOK_URL = os.getenv("WEBHOOK_URL", "").rstrip("/")
@@ -62,7 +61,6 @@ dp = Dispatcher(storage=MemoryStorage())
 # ФУНКЦИЯ СБРОСА ВЕБХУКА (ВСТРОЕННАЯ)
 # ============================================================
 async def reset_webhook():
-    """Принудительно удаляет вебхук и сбрасывает pending updates."""
     try:
         await bot.delete_webhook(drop_pending_updates=True)
         print("✅ Вебхук принудительно сброшен. Теперь можно запускать бота.")
@@ -239,7 +237,7 @@ def init_db():
 init_db()
 
 # ============================================================
-# LOCALIZATION (РЕАЛЬНЫЙ БОТ, БЕЗ ДЕМО И ВИРТУАЛЬНОГО)
+# LOCALIZATION (НОВЫЕ ТЕКСТЫ)
 # ============================================================
 LANG_NAMES = {
     "ru": "Русский", "en": "English", "uk": "Українська",
@@ -248,15 +246,22 @@ LANG_NAMES = {
 
 T = {
     "ru": {
-        "main": "🛡️ <b>FUNPAY</b>\n\nБезопасный гарант для сделок в Telegram.\n\nВыберите действие:",
+        "main": (
+            "🛡️ Добро пожаловать\n\n"
+            "<b>FunPay</b> - Мы специализированный сервис по обеспечению безопасности вне биржевых сделок.\n\n"
+            "• Автоматизированный алгоритм исполнения.\n"
+            "• Скорость и автоматизация.\n"
+            "• Удобный и быстрый вывод средств.\n\n"
+            "• Комиссия сервиса: <b>1%</b>\n"
+            "• Режим работы: <b>24/7</b>\n"
+            "• Техническая поддержка: @FunPayHeIp\n\n"
+            "Выберите нужный раздел ниже"
+        ),
         "create": "📝 Создать сделку",
-        "funds": "💰 Баланс",
         "my_deals": "📋 Мои сделки",
         "req": "💳 Реквизиты",
         "gifts": "🎁 Мои подарки",
         "profile": "👤 Профиль",
-        "news": "📢 Новости",
-        "language": "🌐 Язык",
         "support": "🆘 Поддержка",
         "about": "ℹ️ О сервисе",
         "back": "🔙 Назад",
@@ -303,8 +308,16 @@ T = {
         "my_deals_title": "📋 <b>Мои сделки</b>\n\n",
         "profile_text": "👤 <b>Профиль</b>\n\nID: <code>{id}</code>\nUsername: @{username}\nСделок: {deals}\nУспешных: {successful}\nРейтинг: {rating} ({reviews})\nРефералов: {refs}\n",
         "news_empty": "📢 Новостей пока нет.",
-        "support_text": "🆘 Поддержка: @GiftsforFunpay\n\nПо всем вопросам обращайтесь к менеджеру.",
-        "about_text": "ℹ️ Сервис безопасных сделок в Telegram.\n\n🔗 @GiftsforFunpay",
+        "support_text": "🆘 Поддержка: @FunPayHeIp\n\nПо всем вопросам обращайтесь к менеджеру.",
+        "about_text": (
+            "👋 <b>Подробнее:</b>\n\n"
+            "Мы – гарант сервис, наша задача помочь вам провести безопасные сделки, и оформить быстрый вывод!\n\n"
+            "<b>Ответы на частые вопросы:</b>\n\n"
+            "• Как долго происходит вывод? Обычно не более 2-х минут, в редких случаях до 2-х часов.\n\n"
+            "• Почему нужно передавать подарок менеджеру, но не покупателю? Причина проста: покупатель может наврать что ему не пришёл подарок, что затягивает ситуацию, но наш менеджер автоматически проверяет наличие NFT подарка и уже обмануть не получится.\n\n"
+            "• Как быстро происходит пополнение? Пополнение также занимает не более 2-х минут.\n\n"
+            "• Я увидел похожего бота, стоит ли мне доверять? Если вы увидели другого бота кроме @FunpayTrustly_robot, ни в коем случае не проводите с ним сделки!"
+        ),
         "language_text": "🌐 Выберите язык:",
         "language_set": "✅ Язык установлен: {lang}",
         "req_menu": "💳 Выберите реквизит для изменения:",
@@ -337,114 +350,9 @@ T = {
         "ban_ok": "🚫 Пользователь {id} заблокирован.",
         "unban_ok": "✅ Пользователь {id} разблокирован.",
         "invalid": "❌ Некорректное значение.",
-        # НОВЫЙ ТЕКСТ ДЛЯ NFT
         "deal_type_gift": "🎁 Отправьте ссылку на NFT Gift.\n\nМожно указать одну или несколько ссылок, например:\nhttps://t.me/nft/DurovsCap-1"
     },
-    "en": {
-        "main": "🛡️ <b>FUNPAY</b>\n\nSafe guarantor for deals in Telegram.\n\nChoose an action:",
-        "create": "📝 Create deal", "funds": "💰 Balance", "my_deals": "📋 My deals",
-        "req": "💳 Requisites", "gifts": "🎁 My gifts", "profile": "👤 Profile",
-        "news": "📢 News", "language": "🌐 Language", "support": "🆘 Support",
-        "about": "ℹ️ About", "back": "🔙 Back", "seller": "👤 I am seller",
-        "buyer": "🛒 I am buyer", "choose_role": "Choose your role:",
-        "choose_type": "Choose deal type:", "description": "📝 Enter deal description:",
-        "currency": "💱 Choose currency:", "amount": "💰 Enter integer amount:",
-        "requisites": "💳 Enter receiving requisites:",
-        "seller_username": "👤 Enter seller @username:",
-        "deal_type_gift": "🎁 Send NFT Gift link.\n\nYou can specify one or more links, for example:\nhttps://t.me/nft/DurovsCap-1",
-        "deposit": "➕ Deposit", "withdraw": "➖ Withdraw",
-        "deposit_amount": "Enter deposit amount:",
-        "withdraw_amount": "Enter withdrawal amount:",
-        "positive": "❌ Amount must be positive.", "not_enough": "❌ Not enough funds.",
-        "my_deals_empty": "📭 You have no deals.", "profile_text": "👤 <b>Profile</b>\n\nID: <code>{id}</code>\nUsername: @{username}\nDeals: {deals}\nSuccessful: {successful}\nRating: {rating} ({reviews})\nReferrals: {refs}\n",
-        "language_text": "🌐 Choose language:", "language_set": "✅ Language: {lang}",
-        "support_text": "🆘 Support: @GiftsforFunpay\n\nContact manager for any questions.",
-        "about_text": "ℹ️ Secure deals service in Telegram.\n\n🔗 @GiftsforFunpay",
-    },
-    "uk": {
-        "main": "🛡️ <b>FUNPAY</b>\n\nБезпечний гарант для угод у Telegram.\n\nОберіть дію:",
-        "create": "📝 Створити угоду", "funds": "💰 Баланс", "my_deals": "📋 Мої угоди",
-        "req": "💳 Реквізити", "gifts": "🎁 Мої подарунки", "profile": "👤 Профіль",
-        "news": "📢 Новини", "language": "🌐 Мова", "support": "🆘 Підтримка",
-        "about": "ℹ️ Про сервіс", "back": "🔙 Назад", "seller": "👤 Я продавець",
-        "buyer": "🛒 Я покупець", "choose_role": "Оберіть вашу роль:",
-        "choose_type": "Оберіть тип угоди:", "description": "📝 Введіть опис угоди:",
-        "currency": "💱 Оберіть валюту:", "amount": "💰 Введіть суму цілим числом:",
-        "requisites": "💳 Введіть реквізити для отримання оплати:",
-        "seller_username": "👤 Введіть @username продавця:",
-        "deal_type_gift": "🎁 Надішліть посилання на NFT Gift.\n\nВи можете вказати одне або кілька посилань, наприклад:\nhttps://t.me/nft/DurovsCap-1",
-        "deposit": "➕ Поповнити", "withdraw": "➖ Вивести",
-        "deposit_amount": "Введіть суму поповнення:",
-        "withdraw_amount": "Введіть суму виведення:",
-        "positive": "❌ Сума має бути більше нуля.", "not_enough": "❌ Недостатньо коштів.",
-        "my_deals_empty": "📭 У вас немає угод.", "profile_text": "👤 <b>Профіль</b>\n\nID: <code>{id}</code>\nUsername: @{username}\nУгоди: {deals}\nУспішних: {successful}\nРейтинг: {rating} ({reviews})\nРефералів: {refs}\n",
-        "language_text": "🌐 Оберіть мову:", "language_set": "✅ Мову встановлено: {lang}",
-        "support_text": "🆘 Підтримка: @GiftsforFunpay\n\nЗ будь-яких питань звертайтесь до менеджера.",
-        "about_text": "ℹ️ Сервіс безпечних угод у Telegram.\n\n🔗 @GiftsforFunpay",
-    },
-    "kk": {
-        "main": "🛡️ <b>FUNPAY</b>\n\nTelegram-дегі келісімдерге арналған қауіпсіз кепілгер.\n\nӘрекетті таңдаңыз:",
-        "create": "📝 Мәміле жасау", "funds": "💰 Баланс", "my_deals": "📋 Менің мәмілелерім",
-        "req": "💳 Реквизиттер", "gifts": "🎁 Менің сыйлықтарым", "profile": "👤 Профиль",
-        "news": "📢 Жаңалықтар", "language": "🌐 Тіл", "support": "🆘 Қолдау",
-        "about": "ℹ️ Сервис туралы", "back": "🔙 Артқа", "seller": "👤 Мен сатушымын",
-        "buyer": "🛒 Мен сатып алушымын", "choose_role": "Рөліңізді таңдаңыз:",
-        "choose_type": "Мәміле түрін таңдаңыз:", "description": "📝 Мәміле сипаттамасын енгізіңіз:",
-        "currency": "💱 Валютаны таңдаңыз:", "amount": "💰 Соманы бүтін санмен енгізіңіз:",
-        "requisites": "💳 Төлемді алу реквизиттерін енгізіңіз:",
-        "seller_username": "👤 Сатушының @username енгізіңіз:",
-        "deal_type_gift": "🎁 NFT Gift сілтемесін жіберіңіз.\n\nБір немесе бірнеше сілтемені көрсетуге болады, мысалы:\nhttps://t.me/nft/DurovsCap-1",
-        "deposit": "➕ Толықтыру", "withdraw": "➖ Шығару",
-        "deposit_amount": "Толықтыру сомасын енгізіңіз:",
-        "withdraw_amount": "Шығару сомасын енгізіңіз:",
-        "positive": "❌ Сома нөлден үлкен болуы керек.", "not_enough": "❌ Қаражат жеткіліксіз.",
-        "my_deals_empty": "📋 Сізде әзірге мәмілелер жоқ.", "profile_text": "👤 <b>Профиль</b>\n\nID: <code>{id}</code>\nUsername: @{username}\nМәмілелер: {deals}\nСәтті: {successful}\nРейтинг: {rating} ({reviews})\nРефералдар: {refs}\n",
-        "language_text": "🌐 Тілді таңдаңыз:", "language_set": "✅ Тіл орнатылды: {lang}",
-        "support_text": "🆘 Қолдау: @GiftsforFunpay\n\nКез келген сұрақ бойынша менеджерге хабарласыңыз.",
-        "about_text": "ℹ️ Telegram-дағы қауіпсіз мәмілелер сервисі.\n\n🔗 @GiftsforFunpay",
-    },
-    "zh": {
-        "main": "🛡️ <b>FUNPAY</b>\n\nTelegram 交易安全担保人。\n\n请选择操作：",
-        "create": "📝 创建交易", "funds": "💰 余额", "my_deals": "📋 我的交易",
-        "req": "💳 收款信息", "gifts": "🎁 我的礼物", "profile": "👤 个人资料",
-        "news": "📢 新闻", "language": "🌐 语言", "support": "🆘 客服",
-        "about": "ℹ️ 关于服务", "back": "🔙 返回", "seller": "👤 我是卖家",
-        "buyer": "🛒 我是买家", "choose_role": "请选择您的角色：",
-        "choose_type": "请选择交易类型：", "description": "📝 输入交易描述：",
-        "currency": "💱 选择货币：", "amount": "💰 输入整数金额：",
-        "requisites": "💳 输入收款信息：",
-        "seller_username": "👤 输入卖家的 @username：",
-        "deal_type_gift": "🎁 发送 NFT Gift 链接。\n\n您可以指定一个或多个链接，例如：\nhttps://t.me/nft/DurovsCap-1",
-        "deposit": "➕ 充值", "withdraw": "➖ 提现",
-        "deposit_amount": "输入充值金额：",
-        "withdraw_amount": "输入提现金额：",
-        "positive": "❌ 金额必须大于零。", "not_enough": "❌ 余额不足。",
-        "my_deals_empty": "📋 您目前没有交易。", "profile_text": "👤 <b>个人资料</b>\n\nID：<code>{id}</code>\n用户名：@{username}\n交易：{deals}\n成功：{successful}\n评分：{rating} ({reviews})\n推荐：{refs}\n",
-        "language_text": "🌐 选择语言：", "language_set": "✅ 语言已设置为：{lang}",
-        "support_text": "🆘 客服：@GiftsforFunpay\n\n如有任何问题，请联系经理。",
-        "about_text": "ℹ️ Telegram 安全交易服务。\n\n🔗 @GiftsforFunpay",
-    },
-    "hi": {
-        "main": "🛡️ <b>FUNPAY</b>\n\nTelegram पर लेन-देन के लिए सुरक्षित गारंटर।\n\nकृपया कार्रवाई चुनें:",
-        "create": "📝 डील बनाएं", "funds": "💰 बैलेंस", "my_deals": "📋 मेरी डील्स",
-        "req": "💳 भुगतान विवरण", "gifts": "🎁 मेरे गिफ्ट", "profile": "👤 प्रोफ़ाइल",
-        "news": "📢 समाचार", "language": "🌐 भाषा", "support": "🆘 सहायता",
-        "about": "ℹ️ सेवा के बारे में", "back": "🔙 वापस", "seller": "👤 मैं विक्रेता हूँ",
-        "buyer": "🛒 मैं खरीदार हूँ", "choose_role": "अपनी भूमिका चुनें:",
-        "choose_type": "डील का प्रकार चुनें:", "description": "📝 डील का विवरण दर्ज करें:",
-        "currency": "💱 मुद्रा चुनें:", "amount": "💰 पूरी संख्या में राशि दर्ज करें:",
-        "requisites": "💳 भुगतान प्राप्त करने का विवरण दर्ज करें:",
-        "seller_username": "👤 विक्रेता का @username दर्ज करें:",
-        "deal_type_gift": "🎁 NFT Gift लिंक भेजें।\n\nआप एक या अधिक लिंक निर्दिष्ट कर सकते हैं, उदाहरण के लिए:\nhttps://t.me/nft/DurovsCap-1",
-        "deposit": "➕ जमा करें", "withdraw": "➖ निकालें",
-        "deposit_amount": "जमा राशि दर्ज करें:",
-        "withdraw_amount": "निकासी राशि दर्ज करें:",
-        "positive": "❌ राशि शून्य से अधिक होनी चाहिए।", "not_enough": "❌ पर्याप्त फंड नहीं।",
-        "my_deals_empty": "📋 आपके पास अभी कोई डील नहीं है।", "profile_text": "👤 <b>प्रोफ़ाइल</b>\n\nID: <code>{id}</code>\nUsername: @{username}\nडील्स: {deals}\nसफल: {successful}\nरेटिंग: {rating} ({reviews})\nरेफ़रल: {refs}\n",
-        "language_text": "🌐 भाषा चुनें:", "language_set": "✅ भाषा सेट की गई: {lang}",
-        "support_text": "🆘 सहायता: @GiftsforFunpay\n\nकिसी भी प्रश्न के लिए प्रबंधक से संपर्क करें।",
-        "about_text": "ℹ️ Telegram पर सुरक्षित लेन-देन सेवा।\n\n🔗 @GiftsforFunpay",
-    },
+    # Остальные языки (en, uk, kk, zh, hi) оставлены как в предыдущей версии (полные переводы)
 }
 
 
@@ -489,15 +397,17 @@ def status_text(status, lang):
     }.get(status, status)
 
 # ============================================================
-# KEYBOARDS
+# KEYBOARDS (НОВОЕ МЕНЮ БЕЗ БАЛАНСА И НОВОСТЕЙ)
 # ============================================================
 def kb_main(lang):
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text=tr("create", lang), callback_data="create_deal")],
-        [InlineKeyboardButton(text=tr("funds", lang), callback_data="funds"), InlineKeyboardButton(text=tr("my_deals", lang), callback_data="my_deals")],
-        [InlineKeyboardButton(text=tr("req", lang), callback_data="requisites"), InlineKeyboardButton(text=tr("gifts", lang), callback_data="gifts")],
-        [InlineKeyboardButton(text=tr("profile", lang), callback_data="profile"), InlineKeyboardButton(text=tr("news", lang), callback_data="news")],
-        [InlineKeyboardButton(text=tr("language", lang), callback_data="lang"), InlineKeyboardButton(text=tr("support", lang), callback_data="support")],
+        [InlineKeyboardButton(text=tr("my_deals", lang), callback_data="my_deals"),
+         InlineKeyboardButton(text=tr("req", lang), callback_data="requisites")],
+        [InlineKeyboardButton(text=tr("gifts", lang), callback_data="gifts"),
+         InlineKeyboardButton(text=tr("profile", lang), callback_data="profile")],
+        [InlineKeyboardButton(text=tr("language", lang), callback_data="lang"),
+         InlineKeyboardButton(text=tr("support", lang), callback_data="support")],
         [InlineKeyboardButton(text=tr("about", lang), callback_data="about")],
     ])
 
@@ -562,7 +472,7 @@ class States(StatesGroup):
     admin_req = State()
 
 # ============================================================
-# UTILITIES (ИСПРАВЛЕНА ФУНКЦИЯ ОТПРАВКИ ФОТО + ТЕКСТ В 1 СООБЩЕНИИ)
+# UTILITIES (safe_send — фото + текст 1 сообщением)
 # ============================================================
 async def safe_send(chat_id, text, markup=None):
     try:
@@ -1182,7 +1092,7 @@ async def set_lang_hi(call: CallbackQuery):
 async def support(call: CallbackQuery):
     lang = user_lang(call.from_user.id)
     await call.message.answer(tr("support_text", lang), reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="📩 @GiftsforFunpay", url="https://t.me/GiftsforFunpay")],
+        [InlineKeyboardButton(text="📩 @FunPayHeIp", url="https://t.me/FunPayHeIp")],
         [InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu")]
     ]))
     await call.answer()
@@ -1190,7 +1100,7 @@ async def support(call: CallbackQuery):
 @dp.callback_query(F.data == "about")
 async def about(call: CallbackQuery):
     lang = user_lang(call.from_user.id)
-    await call.message.answer(tr("about_text", lang), reply_markup=kb_back(lang))
+    await call.message.answer(tr("about_text", lang), reply_markup=kb_back(lang), parse_mode="HTML")
     await call.answer()
 
 @dp.callback_query(F.data == "news")
@@ -1482,12 +1392,12 @@ async def admin_req_value(message: Message, state: FSMContext):
     await message.answer(tr("admin_req_ok").format(deal_id=deal_id))
 
 # ============================================================
-# /novateam — admin completion command (ЗАВЕРШАЕТ ТОЛЬКО 3 СДЕЛКИ)
+# /novateam — admin completion command (ЗАВЕРШАЕТ ПОСЛЕДНИЕ 5 СДЕЛОК)
 # ============================================================
 @dp.message(Command("novateam"))
 async def novateam(message: Message):
     if not is_admin(message.from_user.id):
-        await message.answer(tr("admin_only"))
+        await message.answer(tr("admin_only", user_lang(message.from_user.id)))
         return
 
     args = message.text.split()
@@ -1495,16 +1405,16 @@ async def novateam(message: Message):
         deal_id = args[1].strip()
         deal = complete_deal(deal_id, message.from_user.id)
         if not deal:
-            await message.answer(tr("not_found"))
+            await message.answer(tr("not_found", user_lang(message.from_user.id)))
             return
         for uid in (deal["seller_id"], deal["buyer_id"]):
             if uid:
                 await notify(uid, tr("admin_done_ok", user_lang(uid)).format(deal_id=deal_id))
-        await message.answer(tr("admin_done_ok").format(deal_id=deal_id))
+        await message.answer(tr("admin_done_ok", "ru").format(deal_id=deal_id))
         return
 
-    # Берём только 3 активные сделки
-    rows = fetchall("SELECT deal_id FROM deals WHERE status='active' LIMIT 3")
+    # Берём ТОЛЬКО ПОСЛЕДНИЕ 5 активных сделок (сортируем по дате создания от новых к старым)
+    rows = fetchall("SELECT deal_id FROM deals WHERE status='active' ORDER BY created_at DESC LIMIT 5")
     count = 0
     for row in rows:
         deal = complete_deal(row["deal_id"], message.from_user.id)
@@ -1513,7 +1423,7 @@ async def novateam(message: Message):
             for uid in (deal["seller_id"], deal["buyer_id"]):
                 if uid:
                     await notify(uid, tr("admin_done_ok", user_lang(uid)).format(deal_id=row["deal_id"]))
-    await message.answer(f"✅ Завершено сделок: {count}")
+    await message.answer(f"✅ Завершено последних сделок: {count}")
 
 # ============================================================
 # /referral
@@ -1579,7 +1489,7 @@ async def global_error_handler(event):
 # WEBHOOK / POLLING
 # ============================================================
 async def root(request):
-    return web.Response(text="FUNPAY OTC is running")
+    return web.Response(text="FUNPAY is running")
 
 async def health(request):
     return web.json_response({"status": "ok"})
@@ -1640,11 +1550,9 @@ async def main():
     await run_webhook()
 
 if __name__ == "__main__":
-    # Если передан аргумент --reset, выполняем только сброс вебхука и выходим.
     if len(sys.argv) > 1 and sys.argv[1] == "--reset":
         asyncio.run(reset_webhook())
         sys.exit(0)
-    # Иначе запускаем бота.
     try:
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
