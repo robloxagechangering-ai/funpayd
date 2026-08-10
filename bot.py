@@ -3,7 +3,8 @@ import logging
 import os
 import sqlite3
 import uuid
-from datetime import datetime, timedelta
+import re
+from datetime import datetime, timedelta, timezone
 
 from aiohttp import web
 from aiogram import Bot, Dispatcher, F
@@ -33,6 +34,9 @@ TEST_MODE = False
 TEST_CHAT_ID = ""
 DB_FILE = "funpay.db"
 
+# Ссылка на логотип. Если в Кыргызстане он заблокирован, бот просто отправит текст с кнопками.
+PHOTO_URL = "https://ibb.co/dsfvdDB7"
+
 # Настройка логов
 logging.basicConfig(
     level=logging.INFO,
@@ -55,34 +59,41 @@ dp = Dispatcher(storage=MemoryStorage())
 
 
 # ============================================================
-# DATABASE
+# DATABASE (ПЕРЕПИСАНО ДЛЯ ПОТОКОБЕЗОПАСНОСТИ)
 # ============================================================
 
-conn = sqlite3.connect(DB_FILE, check_same_thread=False)
-conn.row_factory = sqlite3.Row
+def get_db_connection():
+    conn = sqlite3.connect(DB_FILE, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    return conn
 
-
-def execute(sql, params=()):
+def db_execute(sql, params=()):
+    conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(sql, params)
     conn.commit()
+    conn.close()
     return cur
 
-
-def fetchone(sql, params=()):
+def db_fetchone(sql, params=()):
+    conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(sql, params)
-    return cur.fetchone()
+    row = cur.fetchone()
+    conn.close()
+    return row
 
-
-def fetchall(sql, params=()):
+def db_fetchall(sql, params=()):
+    conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(sql, params)
-    return cur.fetchall()
+    rows = cur.fetchall()
+    conn.close()
+    return rows
 
 
 def column_exists(table, column):
-    row = fetchone(
+    row = db_fetchone(
         "SELECT name FROM pragma_table_info(?) WHERE name=?",
         (table, column),
     )
@@ -91,14 +102,13 @@ def column_exists(table, column):
 
 def add_column(table, column, definition):
     if not column_exists(table, column):
-        execute(
+        db_execute(
             f"ALTER TABLE {table} ADD COLUMN {column} {definition}"
         )
 
 
 def init_db():
-
-    execute("""
+    db_execute("""
         CREATE TABLE IF NOT EXISTS users (
             user_id INTEGER PRIMARY KEY,
             username TEXT,
@@ -117,36 +127,28 @@ def init_db():
         )
     """)
 
-    execute("""
+    db_execute("""
         CREATE TABLE IF NOT EXISTS deals (
             deal_id TEXT PRIMARY KEY,
             seller_id INTEGER,
             buyer_id INTEGER,
-
             deal_type TEXT,
             description TEXT,
-
             amount INTEGER DEFAULT 0,
             currency TEXT,
-
             seller_req TEXT,
             buyer_req TEXT,
-
             gift_link TEXT,
-
             status TEXT DEFAULT 'waiting_buyer',
-
             seller_username TEXT,
             buyer_username TEXT,
-
             seller_confirmed INTEGER DEFAULT 0,
-
             created_at TEXT,
             completed_at TEXT
         )
     """)
 
-    execute("""
+    db_execute("""
         CREATE TABLE IF NOT EXISTS referrals (
             referrer_id INTEGER,
             referred_id INTEGER,
@@ -154,7 +156,7 @@ def init_db():
         )
     """)
 
-    execute("""
+    db_execute("""
         CREATE TABLE IF NOT EXISTS gifts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER,
@@ -164,7 +166,7 @@ def init_db():
         )
     """)
 
-    execute("""
+    db_execute("""
         CREATE TABLE IF NOT EXISTS news (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             admin_id INTEGER,
@@ -174,7 +176,7 @@ def init_db():
         )
     """)
 
-    execute("""
+    db_execute("""
         CREATE TABLE IF NOT EXISTS admin_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             admin_id INTEGER,
@@ -184,7 +186,7 @@ def init_db():
         )
     """)
 
-    execute("""
+    db_execute("""
         CREATE TABLE IF NOT EXISTS reviews (
             review_id INTEGER PRIMARY KEY AUTOINCREMENT,
             from_user_id INTEGER,
@@ -193,12 +195,11 @@ def init_db():
             rating INTEGER,
             comment TEXT,
             created_at TEXT,
-
             UNIQUE(from_user_id, deal_id)
         )
     """)
 
-    execute("""
+    db_execute("""
         CREATE TABLE IF NOT EXISTS archived_deals (
             deal_id TEXT PRIMARY KEY,
             seller_id INTEGER,
@@ -219,22 +220,19 @@ def init_db():
         )
     """)
 
-    execute("""
+    db_execute("""
         CREATE TABLE IF NOT EXISTS service_balance (
             id INTEGER PRIMARY KEY CHECK(id = 1),
             balance INTEGER DEFAULT 0
         )
     """)
 
-    execute("""
+    db_execute("""
         INSERT OR IGNORE INTO service_balance(id, balance)
         VALUES(1, 0)
     """)
 
-    # --------------------------------------------------------
-    # Migration of old databases
-    # --------------------------------------------------------
-
+    # Миграции старых колонок
     user_columns = {
         "rating": "REAL DEFAULT 5.0",
         "reviews_count": "INTEGER DEFAULT 0",
@@ -261,8 +259,6 @@ def init_db():
     for name, definition in deal_columns.items():
         add_column("deals", name, definition)
 
-    conn.commit()
-
 
 init_db()
 
@@ -272,7 +268,6 @@ init_db()
 # ============================================================
 
 class States(StatesGroup):
-
     # Deal creation
     deal_role = State()
     deal_type = State()
@@ -301,7 +296,7 @@ class States(StatesGroup):
 
 
 # ============================================================
-# TEXTS (обновлённое меню)
+# TEXTS (ДОБАВЛЕН КИТАЙСКИЙ, ИСПРАВЛЕНЫ ОТСУТСТВУЮЩИЕ КЛЮЧИ)
 # ============================================================
 
 TEXTS = {
@@ -327,6 +322,8 @@ TEXTS = {
         "about": "ℹ️ О сервисе",
         "support": "🆘 Поддержка",
         "language": "🌐 Язык",
+        "verify_btn": "✅ Верификация",
+        "referral_btn": "👥 Рефералы",
 
         "choose_role": "Выберите вашу роль:",
         "seller": "🛒 Продавец",
@@ -361,6 +358,9 @@ TEXTS = {
             "Обе стороны теперь подключены."
         ),
 
+        "seller_joined": "✅ Продавец присоединился к сделке #{id}.\n\nЕго реквизиты:\n{reqs}",
+        "buyer_joined": "✅ Покупатель присоединился к сделке #{id}.",
+
         "already": "Вы уже являетесь участником этой сделки.",
         "full": "❌ Эта сделка уже укомплектована.",
         "not_found": "❌ Сделка не найдена.",
@@ -392,6 +392,34 @@ TEXTS = {
 
         "cancelled": "❌ Сделка отменена.",
         "completed": "✅ Сделка завершена администратором.",
+        "confirm_already": "Вы уже подтвердили участие.",
+        "confirm_btn": "✅ Подтвердить участие",
+        "cancel_btn": "❌ Отменить",
+
+        "verify_text": (
+            "✅ <b>Верификация</b>\n\n"
+            "Верификация доступна пользователям с 30+ успешными сделками и оборотом от 1500 USDT.\n\n"
+            "Преимущества:\n"
+            "• автовывод средств\n"
+            "• приоритетная поддержка\n"
+            "• ускоренное решение спорных ситуаций\n\n"
+            "Подайте заявку, и администрация рассмотрит её."
+        ),
+        "referral_text": (
+            "👥 <b>Реферальная система</b>\n\n"
+            "Приглашено: <b>{count}</b> человек\n\n"
+            "Ваша реферальная ссылка:\n"
+            "<code>{link}</code>"
+        ),
+        "about_text": (
+            "ℹ️ <b>О сервисе</b>\n\n"
+            "FunPay OTC — демонстрационный P2P-сервис для безопасных сделок в Telegram.\n\n"
+            "Все операции в этой версии являются виртуальными."
+        ),
+        "support_text": (
+            "🆘 <b>Поддержка</b>\n\n"
+            "По всем вопросам обращайтесь к @GiftsforFunpay"
+        ),
     },
 
     "en": {
@@ -416,6 +444,8 @@ TEXTS = {
         "about": "ℹ️ About",
         "support": "🆘 Support",
         "language": "🌐 Language",
+        "verify_btn": "✅ Verification",
+        "referral_btn": "👥 Referrals",
 
         "choose_role": "Choose your role:",
         "seller": "🛒 Seller",
@@ -443,6 +473,9 @@ TEXTS = {
         ),
 
         "joined": "✅ You joined deal <code>{id}</code>.",
+        "seller_joined": "✅ Seller joined deal #{id}.\n\nRequisites:\n{reqs}",
+        "buyer_joined": "✅ Buyer joined deal #{id}.",
+
         "already": "You are already a participant.",
         "full": "❌ This deal is already full.",
         "not_found": "❌ Deal not found.",
@@ -474,12 +507,155 @@ TEXTS = {
 
         "cancelled": "❌ Deal cancelled.",
         "completed": "✅ Deal completed by administrator.",
+        "confirm_already": "You have already confirmed participation.",
+        "confirm_btn": "✅ Confirm participation",
+        "cancel_btn": "❌ Cancel",
+
+        "verify_text": (
+            "✅ <b>Verification</b>\n\n"
+            "Verification is available to users with 30+ successful deals and turnover from 1500 USDT.\n\n"
+            "Advantages:\n"
+            "• auto withdrawal\n"
+            "• priority support\n"
+            "• faster dispute resolution\n\n"
+            "Submit a request, and the administration will review it."
+        ),
+        "referral_text": (
+            "👥 <b>Referral system</b>\n\n"
+            "Invited: <b>{count}</b> people\n\n"
+            "Your referral link:\n"
+            "<code>{link}</code>"
+        ),
+        "about_text": (
+            "ℹ️ <b>About</b>\n\n"
+            "FunPay OTC is a demo P2P service for secure deals in Telegram.\n\n"
+            "All operations in this version are virtual."
+        ),
+        "support_text": (
+            "🆘 <b>Support</b>\n\n"
+            "For any questions, contact @GiftsforFunpay"
+        ),
+    },
+
+    "zh": {
+        "menu": (
+            "🛡️ <b>FUNPAY</b>\n\n"
+            "Telegram 交易安全担保人。\n\n"
+            "📌 <b>内容：</b>\n"
+            "• 防止诈骗\n"
+            "• 资金托管直至交易完成\n"
+            "• 交易历史和状态\n"
+            "• 通过 @GiftsforFunpay 获得支持\n\n"
+            "⬇️ 选择以下操作。"
+        ),
+
+        "deal": "📝 创建交易",
+        "my_deals": "📂 我的交易",
+        "req": "💳 收款信息",
+        "balance": "💰 资金",
+        "gifts": "🎁 我的礼品",
+        "profile": "👤 个人资料",
+        "news": "📢 新闻",
+        "about": "ℹ️ 关于服务",
+        "support": "🆘 支持",
+        "language": "🌐 语言",
+        "verify_btn": "✅ 认证",
+        "referral_btn": "👥 推荐",
+
+        "choose_role": "选择您的角色：",
+        "seller": "🛒 卖家",
+        "buyer": "🛍 买家",
+
+        "choose_type": "选择交易类型：",
+        "goods": "📦 商品",
+        "service": "🛠 服务",
+        "gift": "🎁 礼品",
+
+        "description": "输入交易描述：",
+        "amount": "输入整数金额：",
+        "currency": "选择货币：",
+
+        "username": "输入卖家用户名。例如：@username",
+
+        "req_input": "输入卖家收款信息：",
+
+        "created": (
+            "✅ 交易已创建。\n\n"
+            "ID：<code>{id}</code>\n"
+            "金额：<b>{amount} {currency}</b>\n\n"
+            "对方加入链接：\n"
+            "<code>{link}</code>"
+        ),
+
+        "joined": "✅ 您已加入交易 <code>{id}</code>。",
+        "seller_joined": "✅ 卖家已加入交易 #{id}。\n\n收款信息：\n{reqs}",
+        "buyer_joined": "✅ 买家已加入交易 #{id}。",
+
+        "already": "您已经是该交易的参与者。",
+        "full": "❌ 此交易已满员。",
+        "not_found": "❌ 未找到交易。",
+        "banned": "🚫 您的账户已被封锁。",
+
+        "balance_text": (
+            "💰 <b>余额</b>\n\n"
+            "可用：<b>{balance}</b>\n"
+            "冻结：<b>{frozen}</b>"
+        ),
+
+        "profile_text": (
+            "👤 <b>个人资料</b>\n\n"
+            "ID：<code>{id}</code>\n"
+            "用户名：@{username}\n"
+            "评分：⭐ {rating:.2f}\n"
+            "评论数：{reviews}"
+        ),
+
+        "deal_details": (
+            "📄 <b>交易 #{id}</b>\n\n"
+            "类型：{type}\n"
+            "描述：{description}\n"
+            "金额：<b>{amount} {currency}</b>\n"
+            "状态：<b>{status}</b>\n\n"
+            "卖家：@{seller}\n"
+            "买家：@{buyer}"
+        ),
+
+        "cancelled": "❌ 交易已取消。",
+        "completed": "✅ 交易已由管理员完成。",
+        "confirm_already": "您已确认参与。",
+        "confirm_btn": "✅ 确认参与",
+        "cancel_btn": "❌ 取消",
+
+        "verify_text": (
+            "✅ <b>认证</b>\n\n"
+            "拥有 30 笔以上成功交易且交易额超过 1500 USDT 的用户可获得认证。\n\n"
+            "优势：\n"
+            "• 自动提款\n"
+            "• 优先支持\n"
+            "• 加速解决争议\n\n"
+            "提交申请，管理员将进行审核。"
+        ),
+        "referral_text": (
+            "👥 <b>推荐系统</b>\n\n"
+            "已邀请：<b>{count}</b> 人\n\n"
+            "您的推荐链接：\n"
+            "<code>{link}</code>"
+        ),
+        "about_text": (
+            "ℹ️ <b>关于服务</b>\n\n"
+            "FunPay OTC 是 Telegram 中用于安全交易的演示 P2P 服务。\n\n"
+            "此版本中的所有操作均为虚拟操作。"
+        ),
+        "support_text": (
+            "🆘 <b>支持</b>\n\n"
+            "如有任何问题，请联系 @GiftsforFunpay"
+        ),
     }
 }
 
 
 def get_lang(user_id):
-    row = fetchone(
+    row = db_fetchone(
         "SELECT lang FROM users WHERE user_id=?",
         (user_id,),
     )
@@ -501,7 +677,7 @@ def t(user_id, key, **kwargs):
 
 
 # ============================================================
-# KEYBOARDS (НОВОЕ ГЛАВНОЕ МЕНЮ)
+# KEYBOARDS (НОВОЕ ГЛАВНОЕ МЕНЮ - ПОЛНОСТЬЮ ПЕРЕВОДНОЕ)
 # ============================================================
 
 def main_keyboard(user_id):
@@ -546,11 +722,11 @@ def main_keyboard(user_id):
     # Четвёртая строка: Верификация | Рефералы
     kb.row(
         InlineKeyboardButton(
-            text="✅ Верификация",
+            text=t(user_id, "verify_btn"),
             callback_data="verify",
         ),
         InlineKeyboardButton(
-            text="👥 Рефералы",
+            text=t(user_id, "referral_btn"),
             callback_data="referral",
         )
     )
@@ -588,14 +764,13 @@ def username_of(user):
 
 
 def ensure_user(user):
-
-    exists = fetchone(
+    exists = db_fetchone(
         "SELECT user_id FROM users WHERE user_id=?",
         (user.id,),
     )
 
     if not exists:
-        execute(
+        db_execute(
             """
             INSERT INTO users(
                 user_id,
@@ -613,7 +788,7 @@ def ensure_user(user):
             ),
         )
     else:
-        execute(
+        db_execute(
             """
             UPDATE users
             SET username=?
@@ -627,7 +802,7 @@ def ensure_user(user):
 
 
 def is_banned(user_id):
-    row = fetchone(
+    row = db_fetchone(
         "SELECT banned FROM users WHERE user_id=?",
         (user_id,),
     )
@@ -636,8 +811,7 @@ def is_banned(user_id):
 
 
 def active_deals_count(user_id):
-
-    row = fetchone(
+    row = db_fetchone(
         """
         SELECT COUNT(*) AS count
         FROM deals
@@ -651,8 +825,7 @@ def active_deals_count(user_id):
 
 
 def frozen_balance(user_id):
-
-    row = fetchone(
+    row = db_fetchone(
         """
         SELECT COALESCE(SUM(amount),0) AS amount
         FROM deals
@@ -666,7 +839,6 @@ def frozen_balance(user_id):
 
 
 async def notify(user_id, text, reply_markup=None):
-
     if not user_id:
         return
 
@@ -675,6 +847,7 @@ async def notify(user_id, text, reply_markup=None):
             user_id,
             text,
             reply_markup=reply_markup,
+            parse_mode="HTML",
         )
     except Exception:
         logger.exception(
@@ -684,8 +857,7 @@ async def notify(user_id, text, reply_markup=None):
 
 
 async def admin_log(admin_id, action, details):
-
-    execute(
+    db_execute(
         """
         INSERT INTO admin_logs(
             admin_id,
@@ -705,7 +877,6 @@ async def admin_log(admin_id, action, details):
 
 
 async def admin_error(text):
-
     for admin_id in ADMIN_IDS:
         try:
             await bot.send_message(
@@ -716,7 +887,6 @@ async def admin_error(text):
             pass
 
     if TEST_MODE and TEST_CHAT_ID.isdigit():
-
         try:
             await bot.send_message(
                 int(TEST_CHAT_ID),
@@ -727,13 +897,37 @@ async def admin_error(text):
 
 
 # ============================================================
-# START
+# ФУНКЦИЯ ОТПРАВКИ ФОТО (ЗАЩИТА ОТ ПРОПАЖИ ТЕКСТА В РЕГИОНЕ)
+# ============================================================
+async def send_safe_media(target, text, reply_markup=None, parse_mode="HTML"):
+    """
+    Сначала отправляет фото, потом гарантированно отправляет текст с кнопками.
+    """
+    chat_id = target.chat.id if hasattr(target, 'chat') else target
+    try:
+        await bot.send_photo(chat_id=chat_id, photo=PHOTO_URL)
+    except Exception as e:
+        logger.warning(f"Ошибка отправки фото: {e}")
+    await bot.send_message(chat_id=chat_id, text=text, reply_markup=reply_markup, parse_mode=parse_mode)
+
+
+# ============================================================
+# START (ЗАЩИТА ОТ СПАМА)
 # ============================================================
 
 @dp.message(CommandStart())
 async def start(message: Message, state: FSMContext):
 
     ensure_user(message.from_user)
+
+    # ЗАЩИТА ОТ СПАМА /start
+    data = await state.get_data()
+    last_time = data.get("last_start")
+    if last_time:
+        diff = (datetime.now(timezone.utc) - datetime.fromisoformat(last_time)).total_seconds()
+        if diff < 2:
+            return
+    await state.update_data(last_start=datetime.now(timezone.utc).isoformat())
 
     await state.clear()
 
@@ -746,31 +940,23 @@ async def start(message: Message, state: FSMContext):
     args = message.text.split(maxsplit=1)
 
     if len(args) > 1:
-
-        payload = args[1]
+        payload = args[1].strip()
 
         if payload.startswith("deal_"):
-
-            deal_id = payload[5:]
-
-            await join_deal(
-                message,
-                deal_id,
-            )
-
+            deal_id = payload[5:].strip()
+            await join_deal(message, deal_id)
             return
 
-        # ==================== РЕФЕРАЛЬНАЯ СИСТЕМА ====================
         elif payload.startswith("ref_"):
             try:
                 ref_id = int(payload[4:])
                 if ref_id != message.from_user.id:
-                    referrer = fetchone(
+                    referrer = db_fetchone(
                         "SELECT user_id FROM users WHERE user_id=?",
                         (ref_id,)
                     )
                     if referrer:
-                        exists = fetchone(
+                        exists = db_fetchone(
                             """
                             SELECT 1 FROM referrals
                             WHERE referrer_id=? AND referred_id=?
@@ -778,14 +964,14 @@ async def start(message: Message, state: FSMContext):
                             (ref_id, message.from_user.id)
                         )
                         if not exists:
-                            execute(
+                            db_execute(
                                 """
                                 INSERT INTO referrals (referrer_id, referred_id)
                                 VALUES (?, ?)
                                 """,
                                 (ref_id, message.from_user.id)
                             )
-                            execute(
+                            db_execute(
                                 """
                                 UPDATE users
                                 SET ref_count = ref_count + 1
@@ -799,11 +985,11 @@ async def start(message: Message, state: FSMContext):
             except Exception:
                 pass
 
-    await message.answer(
+    # ОТПРАВКА С ФОТО
+    await send_safe_media(
+        message,
         t(message.from_user.id, "menu"),
-        reply_markup=main_keyboard(
-            message.from_user.id
-        ),
+        reply_markup=main_keyboard(message.from_user.id),
         parse_mode="HTML"
     )
 
@@ -817,9 +1003,7 @@ async def cancel_command(
     message: Message,
     state: FSMContext,
 ):
-
     await state.clear()
-
     await message.answer(
         "❌ Текущее действие отменено.",
         reply_markup=main_keyboard(
@@ -834,17 +1018,15 @@ async def cancel_command(
 
 @dp.callback_query(F.data == "main_menu")
 async def main_menu(callback: CallbackQuery):
-
     ensure_user(callback.from_user)
-
-    await callback.message.edit_text(
+    
+    # ОТПРАВКА С ФОТО
+    await send_safe_media(
+        callback.message,
         t(callback.from_user.id, "menu"),
-        reply_markup=main_keyboard(
-            callback.from_user.id
-        ),
+        reply_markup=main_keyboard(callback.from_user.id),
         parse_mode="HTML"
     )
-
     await callback.answer()
 
 
@@ -857,35 +1039,27 @@ async def create_deal(
     callback: CallbackQuery,
     state: FSMContext,
 ):
-
     ensure_user(callback.from_user)
 
     if is_banned(callback.from_user.id):
-        await callback.answer(
-            "🚫 Заблокировано",
-            show_alert=True,
-        )
+        await callback.answer("🚫 Заблокировано", show_alert=True)
         return
 
     if active_deals_count(callback.from_user.id) >= 5:
-
-        await callback.answer(
-            "❌ Максимум 5 активных сделок.",
-            show_alert=True,
-        )
+        await callback.answer("❌ Максимум 5 активных сделок.", show_alert=True)
         return
 
     kb = InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="🛒 Продавец",
+                    text=t(callback.from_user.id, "seller"),
                     callback_data="role_seller",
                 )
             ],
             [
                 InlineKeyboardButton(
-                    text="🛍 Покупатель",
+                    text=t(callback.from_user.id, "buyer"),
                     callback_data="role_buyer",
                 )
             ],
@@ -903,10 +1077,7 @@ async def create_deal(
         reply_markup=kb,
     )
 
-    await state.set_state(
-        States.deal_role
-    )
-
+    await state.set_state(States.deal_role)
     await callback.answer()
 
 
@@ -918,32 +1089,24 @@ async def deal_role(
     callback: CallbackQuery,
     state: FSMContext,
 ):
-
-    role = (
-        "seller"
-        if callback.data == "role_seller"
-        else "buyer"
-    )
-
-    await state.update_data(
-        role=role
-    )
+    role = "seller" if callback.data == "role_seller" else "buyer"
+    await state.update_data(role=role)
 
     kb = InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="📦 Товар",
+                    text=t(callback.from_user.id, "goods"),
                     callback_data="type_goods",
                 ),
                 InlineKeyboardButton(
-                    text="🛠 Услуга",
+                    text=t(callback.from_user.id, "service"),
                     callback_data="type_service",
                 ),
             ],
             [
                 InlineKeyboardButton(
-                    text="🎁 Подарок",
+                    text=t(callback.from_user.id, "gift"),
                     callback_data="type_gift",
                 )
             ],
@@ -955,10 +1118,7 @@ async def deal_role(
         reply_markup=kb,
     )
 
-    await state.set_state(
-        States.deal_type
-    )
-
+    await state.set_state(States.deal_type)
     await callback.answer()
 
 
@@ -974,25 +1134,15 @@ async def deal_type(
     callback: CallbackQuery,
     state: FSMContext,
 ):
-
     mapping = {
         "type_goods": "goods",
         "type_service": "service",
         "type_gift": "gift",
     }
 
-    await state.update_data(
-        deal_type=mapping[callback.data]
-    )
-
-    await callback.message.answer(
-        t(callback.from_user.id, "description")
-    )
-
-    await state.set_state(
-        States.deal_description
-    )
-
+    await state.update_data(deal_type=mapping[callback.data])
+    await callback.message.answer(t(callback.from_user.id, "description"))
+    await state.set_state(States.deal_description)
     await callback.answer()
 
 
@@ -1001,18 +1151,9 @@ async def deal_description(
     message: Message,
     state: FSMContext,
 ):
-
-    await state.update_data(
-        description=message.text[:2000]
-    )
-
-    await message.answer(
-        t(message.from_user.id, "amount")
-    )
-
-    await state.set_state(
-        States.deal_amount
-    )
+    await state.update_data(description=message.text[:2000])
+    await message.answer(t(message.from_user.id, "amount"))
+    await state.set_state(States.deal_amount)
 
 
 @dp.message(States.deal_amount)
@@ -1020,28 +1161,17 @@ async def deal_amount(
     message: Message,
     state: FSMContext,
 ):
-
     if not message.text.isdigit():
-
-        await message.answer(
-            "❌ Введите целое положительное число."
-        )
-
+        await message.answer("❌ Введите целое положительное число.")
         return
 
     amount = int(message.text)
 
     if amount <= 0:
-
-        await message.answer(
-            "❌ Сумма должна быть больше нуля."
-        )
-
+        await message.answer("❌ Сумма должна быть больше нуля.")
         return
 
-    await state.update_data(
-        amount=amount
-    )
+    await state.update_data(amount=amount)
 
     kb = InlineKeyboardMarkup(
         inline_keyboard=[
@@ -1071,7 +1201,7 @@ async def deal_amount(
                     callback_data="currency_BYN",
                 ),
                 InlineKeyboardButton(
-                    text="Stars",
+                    text="⭐Stars",
                     callback_data="currency_Stars",
                 ),
             ],
@@ -1083,9 +1213,7 @@ async def deal_amount(
         reply_markup=kb,
     )
 
-    await state.set_state(
-        States.deal_currency
-    )
+    await state.set_state(States.deal_currency)
 
 
 @dp.callback_query(
@@ -1096,37 +1224,17 @@ async def deal_currency(
     callback: CallbackQuery,
     state: FSMContext,
 ):
-
-    currency = callback.data.replace(
-        "currency_",
-        "",
-    )
-
-    await state.update_data(
-        currency=currency
-    )
+    currency = callback.data.replace("currency_", "")
+    await state.update_data(currency=currency)
 
     data = await state.get_data()
 
     if data["role"] == "buyer":
-
-        await callback.message.answer(
-            t(callback.from_user.id, "username")
-        )
-
-        await state.set_state(
-            States.deal_seller_username
-        )
-
+        await callback.message.answer(t(callback.from_user.id, "username"))
+        await state.set_state(States.deal_seller_username)
     else:
-
-        await callback.message.answer(
-            t(callback.from_user.id, "req_input")
-        )
-
-        await state.set_state(
-            States.deal_requisites
-        )
+        await callback.message.answer(t(callback.from_user.id, "req_input"))
+        await state.set_state(States.deal_requisites)
 
     await callback.answer()
 
@@ -1136,10 +1244,9 @@ async def deal_seller_username(
     message: Message,
     state: FSMContext,
 ):
-
     username = message.text.strip().lstrip("@")
 
-    row = fetchone(
+    row = db_fetchone(
         """
         SELECT user_id, username
         FROM users
@@ -1149,19 +1256,11 @@ async def deal_seller_username(
     )
 
     if not row:
-
-        await message.answer(
-            "❌ Этот продавец ещё не запускал бота."
-        )
-
+        await message.answer("❌ Этот продавец ещё не запускал бота.")
         return
 
     if row["user_id"] == message.from_user.id:
-
-        await message.answer(
-            "❌ Нельзя создать сделку с самим собой."
-        )
-
+        await message.answer("❌ Нельзя создать сделку с самим собой.")
         return
 
     await state.update_data(
@@ -1174,9 +1273,7 @@ async def deal_seller_username(
         "или напишите «нет»:"
     )
 
-    await state.set_state(
-        States.deal_requisites
-    )
+    await state.set_state(States.deal_requisites)
 
 
 @dp.message(States.deal_requisites)
@@ -1184,61 +1281,27 @@ async def deal_requisites(
     message: Message,
     state: FSMContext,
 ):
-
     data = await state.get_data()
-
     req = message.text.strip()
 
     if req.lower() == "нет":
         req = ""
 
     deal_id = uuid.uuid4().hex[:10]
-
     role = data["role"]
 
-    seller_id = (
-        message.from_user.id
-        if role == "seller"
-        else None
-    )
+    seller_id = message.from_user.id if role == "seller" else None
+    buyer_id = message.from_user.id if role == "buyer" else None
 
-    buyer_id = (
-        message.from_user.id
-        if role == "buyer"
-        else None
-    )
+    seller_username = username_of(message.from_user) if role == "seller" else data.get("seller_username")
+    buyer_username = username_of(message.from_user) if role == "buyer" else ""
 
-    seller_username = (
-        username_of(message.from_user)
-        if role == "seller"
-        else data.get("seller_username")
-    )
+    status = "waiting_buyer" if role == "seller" else "waiting_seller"
 
-    buyer_username = (
-        username_of(message.from_user)
-        if role == "buyer"
-        else ""
-    )
+    seller_req = req if role == "seller" else ""
+    buyer_req = req if role == "buyer" else ""
 
-    status = (
-        "waiting_buyer"
-        if role == "seller"
-        else "waiting_seller"
-    )
-
-    seller_req = (
-        req
-        if role == "seller"
-        else ""
-    )
-
-    buyer_req = (
-        req
-        if role == "buyer"
-        else ""
-    )
-
-    execute(
+    db_execute(
         """
         INSERT INTO deals(
             deal_id,
@@ -1274,13 +1337,9 @@ async def deal_requisites(
         ),
     )
 
-    link = (
-        f"https://t.me/{BOT_USERNAME}"
-        f"?start=deal_{deal_id}"
-    )
+    link = f"https://t.me/{BOT_USERNAME}?start=deal_{deal_id}"
 
     await state.clear()
-
     await message.answer(
         t(
             message.from_user.id,
@@ -1290,70 +1349,45 @@ async def deal_requisites(
             currency=data["currency"],
             link=link,
         ),
-        reply_markup=main_keyboard(
-            message.from_user.id
-        ),
+        reply_markup=main_keyboard(message.from_user.id),
+        parse_mode="HTML"
     )
 
 
 # ============================================================
-# JOIN DEAL
+# JOIN DEAL (ИСПРАВЛЕНО)
 # ============================================================
 
 async def join_deal(
     message: Message,
     deal_id: str,
 ):
-
     user_id = message.from_user.id
 
     if is_banned(user_id):
-
-        await message.answer(
-            t(user_id, "banned")
-        )
-
+        await message.answer(t(user_id, "banned"))
         return
 
-    deal = fetchone(
+    deal = db_fetchone(
         "SELECT * FROM deals WHERE deal_id=?",
         (deal_id,),
     )
 
     if not deal:
-
-        await message.answer(
-            t(user_id, "not_found")
-        )
-
+        await message.answer(t(user_id, "not_found"))
         return
 
-    if (
-        deal["seller_id"] == user_id
-        or deal["buyer_id"] == user_id
-    ):
-
-        await message.answer(
-            t(user_id, "already")
-        )
-
+    if deal["seller_id"] == user_id or deal["buyer_id"] == user_id:
+        await message.answer(t(user_id, "already"))
         return
 
-    if (
-        deal["seller_id"]
-        and deal["buyer_id"]
-    ):
-
-        await message.answer(
-            t(user_id, "full")
-        )
-
+    if deal["seller_id"] and deal["buyer_id"]:
+        await message.answer(t(user_id, "full"))
         return
 
     if deal["seller_id"] is None:
-
-        # ----------- ПОДТЯГИВАЕМ РЕКВИЗИТЫ ПРОДАВЦА ИЗ ПРОФИЛЯ -----------
-        user_row = fetchone(
+        # Подтягиваем реквизиты продавца из профиля
+        user_row = db_fetchone(
             "SELECT card, crypto, stars_username FROM users WHERE user_id=?",
             (user_id,)
         )
@@ -1367,7 +1401,7 @@ async def join_deal(
                 req_parts.append(f"Stars: @{user_row['stars_username']}")
         seller_req = "\n".join(req_parts) if req_parts else "Не указаны, свяжитесь с продавцом вручную."
 
-        execute(
+        db_execute(
             """
             UPDATE deals
             SET seller_id=?,
@@ -1384,15 +1418,19 @@ async def join_deal(
             ),
         )
 
+        # Отправляем покупателю уведомление, что продавец присоединился
         await notify(
             deal["buyer_id"],
-            f"✅ Продавец присоединился к сделке #{deal_id}.\n"
-            f"Его реквизиты:\n{seller_req}",
+            t(
+                deal["buyer_id"],
+                "seller_joined",
+                id=deal_id,
+                reqs=seller_req
+            ),
         )
 
     elif deal["buyer_id"] is None:
-
-        execute(
+        db_execute(
             """
             UPDATE deals
             SET buyer_id=?,
@@ -1409,36 +1447,38 @@ async def join_deal(
 
         await notify(
             deal["seller_id"],
-            f"✅ Покупатель присоединился к сделке #{deal_id}.",
+            t(
+                deal["seller_id"],
+                "buyer_joined",
+                id=deal_id,
+            ),
         )
 
+    # Выдаем подтверждение с кнопками
     await message.answer(
-        t(
-            user_id,
-            "joined",
-            id=deal_id,
-        ),
+        t(user_id, "joined", id=deal_id),
         reply_markup=InlineKeyboardMarkup(
             inline_keyboard=[
                 [
                     InlineKeyboardButton(
-                        text="✅ Подтвердить участие",
+                        text=t(user_id, "confirm_btn"),
                         callback_data=f"confirm:{deal_id}",
                     )
                 ],
                 [
                     InlineKeyboardButton(
-                        text="❌ Отменить",
+                        text=t(user_id, "cancel_btn"),
                         callback_data=f"canceldeal:{deal_id}",
                     )
                 ],
             ]
         ),
+        parse_mode="HTML"
     )
 
 
 # ============================================================
-# CONFIRM
+# CONFIRM (С ЗАЩИТОЙ ОТ ДУБЛЕЙ)
 # ============================================================
 
 @dp.callback_query(
@@ -1447,33 +1487,30 @@ async def join_deal(
 async def confirm_deal(
     callback: CallbackQuery,
 ):
-
     deal_id = callback.data.split(":", 1)[1]
 
-    deal = fetchone(
+    deal = db_fetchone(
         "SELECT * FROM deals WHERE deal_id=?",
         (deal_id,),
     )
 
     if not deal:
-
-        await callback.answer(
-            "Сделка не найдена",
-            show_alert=True,
-        )
-
+        await callback.answer("Сделка не найдена", show_alert=True)
         return
 
     if callback.from_user.id != deal["seller_id"]:
-
-        await callback.answer(
-            "Подтвердить может продавец.",
-            show_alert=True,
-        )
-
+        await callback.answer("Подтвердить может продавец.", show_alert=True)
         return
 
-    execute(
+    # ЗАЩИТА ОТ ПОВТОРНОГО НАЖАТИЯ
+    if deal["seller_confirmed"] == 1:
+        await callback.answer(
+            t(callback.from_user.id, "confirm_already"),
+            show_alert=True
+        )
+        return
+
+    db_execute(
         """
         UPDATE deals
         SET seller_confirmed=1
@@ -1482,7 +1519,6 @@ async def confirm_deal(
         (deal_id,),
     )
 
-    # ----------- ОТПРАВЛЯЕМ РЕКВИЗИТЫ ПРОДАВЦА ПОКУПАТЕЛЮ -----------
     seller_req = deal["seller_req"] or "не указаны"
     await notify(
         deal["buyer_id"],
@@ -1491,13 +1527,8 @@ async def confirm_deal(
         f"Ожидайте дальнейших действий.",
     )
 
-    await callback.message.edit_reply_markup(
-        reply_markup=None
-    )
-
-    await callback.answer(
-        "Участие подтверждено."
-    )
+    await callback.message.edit_reply_markup(reply_markup=None)
+    await callback.answer("Участие подтверждено.")
 
 
 # ============================================================
@@ -1510,48 +1541,26 @@ async def confirm_deal(
 async def cancel_deal(
     callback: CallbackQuery,
 ):
-
     deal_id = callback.data.split(":", 1)[1]
 
-    deal = fetchone(
+    deal = db_fetchone(
         "SELECT * FROM deals WHERE deal_id=?",
         (deal_id,),
     )
 
     if not deal:
-
-        await callback.answer(
-            "Сделка не найдена",
-            show_alert=True,
-        )
-
+        await callback.answer("Сделка не найдена", show_alert=True)
         return
 
-    if callback.from_user.id not in (
-        deal["seller_id"],
-        deal["buyer_id"],
-    ):
-
-        await callback.answer(
-            "Нет доступа.",
-            show_alert=True,
-        )
-
+    if callback.from_user.id not in (deal["seller_id"], deal["buyer_id"]):
+        await callback.answer("Нет доступа.", show_alert=True)
         return
 
-    if deal["status"] not in (
-        "waiting_seller",
-        "waiting_buyer",
-    ):
-
-        await callback.answer(
-            "Активную сделку отменяет администратор.",
-            show_alert=True,
-        )
-
+    if deal["status"] not in ("waiting_seller", "waiting_buyer"):
+        await callback.answer("Активную сделку отменяет администратор.", show_alert=True)
         return
 
-    execute(
+    db_execute(
         """
         UPDATE deals
         SET status='cancelled'
@@ -1560,24 +1569,12 @@ async def cancel_deal(
         (deal_id,),
     )
 
-    for uid in (
-        deal["seller_id"],
-        deal["buyer_id"],
-    ):
-
+    for uid in (deal["seller_id"], deal["buyer_id"]):
         if uid:
-            await notify(
-                uid,
-                t(uid, "cancelled"),
-            )
+            await notify(uid, t(uid, "cancelled"))
 
-    await callback.message.edit_reply_markup(
-        reply_markup=None
-    )
-
-    await callback.answer(
-        "Сделка отменена."
-    )
+    await callback.message.edit_reply_markup(reply_markup=None)
+    await callback.answer("Сделка отменена.")
 
 
 # ============================================================
@@ -1588,8 +1585,7 @@ async def cancel_deal(
 async def my_deals(
     callback: CallbackQuery,
 ):
-
-    rows = fetchall(
+    rows = db_fetchall(
         """
         SELECT *
         FROM deals
@@ -1605,26 +1601,18 @@ async def my_deals(
     )
 
     if not rows:
-
         await callback.message.edit_text(
             "📂 У вас пока нет сделок.",
             reply_markup=back_keyboard(),
         )
-
         await callback.answer()
         return
 
     kb = InlineKeyboardBuilder()
 
     for row in rows:
-
         status = row["status"]
-
-        button_text = (
-            f"#{row['deal_id']} | "
-            f"{row['amount']} {row['currency']} | "
-            f"{status}"
-        )
+        button_text = f"#{row['deal_id']} | {row['amount']} {row['currency']} | {status}"
 
         kb.row(
             InlineKeyboardButton(
@@ -1641,11 +1629,10 @@ async def my_deals(
     )
 
     await callback.message.edit_text(
-        "📂 <b>Мои сделки</b>\n\n"
-        "Выберите сделку:",
+        "📂 <b>Мои сделки</b>\n\nВыберите сделку:",
         reply_markup=kb.as_markup(),
+        parse_mode="HTML"
     )
-
     await callback.answer()
 
 
@@ -1655,33 +1642,19 @@ async def my_deals(
 async def deal_view(
     callback: CallbackQuery,
 ):
-
     deal_id = callback.data.split(":", 1)[1]
 
-    deal = fetchone(
+    deal = db_fetchone(
         "SELECT * FROM deals WHERE deal_id=?",
         (deal_id,),
     )
 
     if not deal:
-
-        await callback.answer(
-            "Не найдена",
-            show_alert=True,
-        )
-
+        await callback.answer("Не найдена", show_alert=True)
         return
 
-    if callback.from_user.id not in (
-        deal["seller_id"],
-        deal["buyer_id"],
-    ):
-
-        await callback.answer(
-            "Нет доступа.",
-            show_alert=True,
-        )
-
+    if callback.from_user.id not in (deal["seller_id"], deal["buyer_id"]):
+        await callback.answer("Нет доступа.", show_alert=True)
         return
 
     seller = deal["seller_username"] or "—"
@@ -1702,15 +1675,11 @@ async def deal_view(
 
     buttons = []
 
-    if deal["status"] in (
-        "waiting_seller",
-        "waiting_buyer",
-    ):
-
+    if deal["status"] in ("waiting_seller", "waiting_buyer"):
         buttons.append(
             [
                 InlineKeyboardButton(
-                    text="❌ Отменить",
+                    text=t(callback.from_user.id, "cancel_btn"),
                     callback_data=f"canceldeal:{deal_id}",
                 )
             ]
@@ -1727,11 +1696,9 @@ async def deal_view(
 
     await callback.message.edit_text(
         text,
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=buttons
-        ),
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
+        parse_mode="HTML"
     )
-
     await callback.answer()
 
 
@@ -1743,16 +1710,13 @@ async def deal_view(
 async def balance_menu(
     callback: CallbackQuery,
 ):
-
-    row = fetchone(
+    row = db_fetchone(
         "SELECT balance FROM users WHERE user_id=?",
         (callback.from_user.id,),
     )
 
     balance = row["balance"] if row else 0
-    frozen = frozen_balance(
-        callback.from_user.id
-    )
+    frozen = frozen_balance(callback.from_user.id)
 
     await callback.message.edit_text(
         t(
@@ -1762,8 +1726,8 @@ async def balance_menu(
             frozen=frozen,
         ),
         reply_markup=back_keyboard(),
+        parse_mode="HTML"
     )
-
     await callback.answer()
 
 
@@ -1775,8 +1739,7 @@ async def balance_menu(
 async def profile(
     callback: CallbackQuery,
 ):
-
-    row = fetchone(
+    row = db_fetchone(
         "SELECT * FROM users WHERE user_id=?",
         (callback.from_user.id,),
     )
@@ -1795,8 +1758,8 @@ async def profile(
             reviews=row["reviews_count"] or 0,
         ),
         reply_markup=back_keyboard(),
+        parse_mode="HTML"
     )
-
     await callback.answer()
 
 
@@ -1808,8 +1771,7 @@ async def profile(
 async def requisites(
     callback: CallbackQuery,
 ):
-
-    row = fetchone(
+    row = db_fetchone(
         """
         SELECT card, crypto, stars_username
         FROM users
@@ -1857,8 +1819,8 @@ async def requisites(
         f"Крипто: <code>{crypto}</code>\n"
         f"Stars: <code>{stars}</code>",
         reply_markup=kb,
+        parse_mode="HTML"
     )
-
     await callback.answer()
 
 
@@ -1867,16 +1829,10 @@ async def req_card(
     callback: CallbackQuery,
     state: FSMContext,
 ):
-
     await callback.message.answer(
-        "Введите номер карты или другой "
-        "демонстрационный реквизит:"
+        "Введите номер карты или другой демонстрационный реквизит:"
     )
-
-    await state.set_state(
-        States.req_card
-    )
-
+    await state.set_state(States.req_card)
     await callback.answer()
 
 
@@ -1885,26 +1841,18 @@ async def req_card_save(
     message: Message,
     state: FSMContext,
 ):
-
-    execute(
+    db_execute(
         """
         UPDATE users
         SET card=?
         WHERE user_id=?
         """,
-        (
-            message.text[:500],
-            message.from_user.id,
-        ),
+        (message.text[:500], message.from_user.id),
     )
-
     await state.clear()
-
     await message.answer(
         "✅ Реквизит сохранён.",
-        reply_markup=main_keyboard(
-            message.from_user.id
-        ),
+        reply_markup=main_keyboard(message.from_user.id),
     )
 
 
@@ -1913,15 +1861,10 @@ async def req_crypto(
     callback: CallbackQuery,
     state: FSMContext,
 ):
-
     await callback.message.answer(
         "Введите крипто-адрес:"
     )
-
-    await state.set_state(
-        States.req_crypto
-    )
-
+    await state.set_state(States.req_crypto)
     await callback.answer()
 
 
@@ -1930,26 +1873,18 @@ async def req_crypto_save(
     message: Message,
     state: FSMContext,
 ):
-
-    execute(
+    db_execute(
         """
         UPDATE users
         SET crypto=?
         WHERE user_id=?
         """,
-        (
-            message.text[:500],
-            message.from_user.id,
-        ),
+        (message.text[:500], message.from_user.id),
     )
-
     await state.clear()
-
     await message.answer(
         "✅ Крипто-реквизит сохранён.",
-        reply_markup=main_keyboard(
-            message.from_user.id
-        ),
+        reply_markup=main_keyboard(message.from_user.id),
     )
 
 
@@ -1958,15 +1893,10 @@ async def req_stars(
     callback: CallbackQuery,
     state: FSMContext,
 ):
-
     await callback.message.answer(
         "Введите Telegram username для Stars:"
     )
-
-    await state.set_state(
-        States.req_stars
-    )
-
+    await state.set_state(States.req_stars)
     await callback.answer()
 
 
@@ -1975,26 +1905,18 @@ async def req_stars_save(
     message: Message,
     state: FSMContext,
 ):
-
-    execute(
+    db_execute(
         """
         UPDATE users
         SET stars_username=?
         WHERE user_id=?
         """,
-        (
-            message.text[:100],
-            message.from_user.id,
-        ),
+        (message.text[:100], message.from_user.id),
     )
-
     await state.clear()
-
     await message.answer(
         "✅ Stars-реквизит сохранён.",
-        reply_markup=main_keyboard(
-            message.from_user.id
-        ),
+        reply_markup=main_keyboard(message.from_user.id),
     )
 
 
@@ -2006,8 +1928,7 @@ async def req_stars_save(
 async def gifts(
     callback: CallbackQuery,
 ):
-
-    rows = fetchall(
+    rows = db_fetchall(
         """
         SELECT gift_link, description
         FROM gifts
@@ -2018,20 +1939,11 @@ async def gifts(
     )
 
     if not rows:
-
         text = "🎁 У вас пока нет сохранённых подарков."
-
     else:
-
         parts = ["🎁 <b>Мои подарки</b>\n"]
-
         for row in rows:
-
-            parts.append(
-                f"🔗 {row['gift_link']}\n"
-                f"📝 {row['description']}\n"
-            )
-
+            parts.append(f"🔗 {row['gift_link']}\n📝 {row['description']}\n")
         text = "\n".join(parts)
 
     kb = InlineKeyboardMarkup(
@@ -2054,8 +1966,8 @@ async def gifts(
     await callback.message.edit_text(
         text,
         reply_markup=kb,
+        parse_mode="HTML"
     )
-
     await callback.answer()
 
 
@@ -2064,15 +1976,10 @@ async def gift_add(
     callback: CallbackQuery,
     state: FSMContext,
 ):
-
     await callback.message.answer(
         "Введите ссылку на подарок:"
     )
-
-    await state.set_state(
-        States.gift_link
-    )
-
+    await state.set_state(States.gift_link)
     await callback.answer()
 
 
@@ -2081,18 +1988,9 @@ async def gift_link(
     message: Message,
     state: FSMContext,
 ):
-
-    await state.update_data(
-        gift_link=message.text.strip()
-    )
-
-    await message.answer(
-        "Введите описание подарка:"
-    )
-
-    await state.set_state(
-        States.gift_description
-    )
+    await state.update_data(gift_link=message.text.strip())
+    await message.answer("Введите описание подарка:")
+    await state.set_state(States.gift_description)
 
 
 @dp.message(States.gift_description)
@@ -2100,10 +1998,9 @@ async def gift_description(
     message: Message,
     state: FSMContext,
 ):
-
     data = await state.get_data()
 
-    execute(
+    db_execute(
         """
         INSERT INTO gifts(
             user_id,
@@ -2122,12 +2019,9 @@ async def gift_description(
     )
 
     await state.clear()
-
     await message.answer(
         "✅ Подарок сохранён.",
-        reply_markup=main_keyboard(
-            message.from_user.id
-        ),
+        reply_markup=main_keyboard(message.from_user.id),
     )
 
 
@@ -2139,7 +2033,6 @@ async def gift_description(
 async def language(
     callback: CallbackQuery,
 ):
-
     kb = InlineKeyboardMarkup(
         inline_keyboard=[
             [
@@ -2156,6 +2049,12 @@ async def language(
             ],
             [
                 InlineKeyboardButton(
+                    text="🇨🇳 中文",
+                    callback_data="lang_zh",
+                )
+            ],
+            [
+                InlineKeyboardButton(
                     text="🔙 Меню",
                     callback_data="main_menu",
                 )
@@ -2167,62 +2066,48 @@ async def language(
         "🌐 Выберите язык:",
         reply_markup=kb,
     )
-
     await callback.answer()
 
 
 @dp.callback_query(
-    F.data.in_({"lang_ru", "lang_en"})
+    F.data.in_({"lang_ru", "lang_en", "lang_zh"})
 )
 async def set_language(
     callback: CallbackQuery,
 ):
-
     lang = callback.data[-2:]
 
-    execute(
+    db_execute(
         """
         UPDATE users
         SET lang=?
         WHERE user_id=?
         """,
-        (
-            lang,
-            callback.from_user.id,
-        ),
+        (lang, callback.from_user.id),
     )
 
     await callback.message.edit_text(
-        t(
-            callback.from_user.id,
-            "menu",
-        ),
-        reply_markup=main_keyboard(
-            callback.from_user.id
-        ),
+        t(callback.from_user.id, "menu"),
+        reply_markup=main_keyboard(callback.from_user.id),
+        parse_mode="HTML"
     )
-
-    await callback.answer(
-        "Язык изменён."
-    )
+    await callback.answer("Язык изменён.")
 
 
 # ============================================================
-# ABOUT
+# ABOUT (С ФОТО)
 # ============================================================
 
 @dp.callback_query(F.data == "about")
 async def about(
     callback: CallbackQuery,
 ):
-
-    await callback.message.edit_text(
-        "ℹ️ <b>О сервисе</b>\n\n"
-        "FunPay OTC — демонстрационный P2P-сервис для безопасных сделок в Telegram.\n\n"
-        "Все операции в этой версии являются виртуальными.",
+    await send_safe_media(
+        callback.message,
+        t(callback.from_user.id, "about_text"),
         reply_markup=back_keyboard(),
+        parse_mode="HTML"
     )
-
     await callback.answer()
 
 
@@ -2234,33 +2119,8 @@ async def about(
 async def support(
     callback: CallbackQuery,
 ):
-
     await callback.message.edit_text(
-        "🆘 <b>Поддержка</b>\n\n"
-        "По всем вопросам обращайтесь к @GiftsforFunpay",
-        reply_markup=back_keyboard(),
-    )
-
-    await callback.answer()
-
-
-# ============================================================
-# VERIFICATION (НОВЫЙ ОБРАБОТЧИК)
-# ============================================================
-
-@dp.callback_query(F.data == "verify")
-async def verify_callback(callback: CallbackQuery):
-    text = (
-        "✅ <b>Верификация</b>\n\n"
-        "Верификация доступна пользователям с 30+ успешными сделками и оборотом от 1500 USDT.\n\n"
-        "Преимущества:\n"
-        "• автовывод средств\n"
-        "• приоритетная поддержка\n"
-        "• ускоренное решение спорных ситуаций\n\n"
-        "Подайте заявку, и администрация рассмотрит её."
-    )
-    await callback.message.edit_text(
-        text,
+        t(callback.from_user.id, "support_text"),
         reply_markup=back_keyboard(),
         parse_mode="HTML"
     )
@@ -2268,25 +2128,35 @@ async def verify_callback(callback: CallbackQuery):
 
 
 # ============================================================
-# REFERRAL (НОВЫЙ ОБРАБОТЧИК)
+# VERIFICATION (С ФОТО)
+# ============================================================
+
+@dp.callback_query(F.data == "verify")
+async def verify_callback(callback: CallbackQuery):
+    await send_safe_media(
+        callback.message,
+        t(callback.from_user.id, "verify_text"),
+        reply_markup=back_keyboard(),
+        parse_mode="HTML"
+    )
+    await callback.answer()
+
+
+# ============================================================
+# REFERRAL (С ФОТО)
 # ============================================================
 
 @dp.callback_query(F.data == "referral")
 async def referral_callback(callback: CallbackQuery):
     user_id = callback.from_user.id
     ensure_user(callback.from_user)
-    row = fetchone("SELECT ref_count FROM users WHERE user_id=?", (user_id,))
+    row = db_fetchone("SELECT ref_count FROM users WHERE user_id=?", (user_id,))
     ref_count = row["ref_count"] if row else 0
 
     link = f"https://t.me/{BOT_USERNAME}?start=ref_{user_id}"
-    text = (
-        "👥 <b>Реферальная система</b>\n\n"
-        f"Приглашено: <b>{ref_count}</b> человек\n\n"
-        "Ваша реферальная ссылка:\n"
-        f"<code>{link}</code>"
-    )
+    
     await callback.message.edit_text(
-        text,
+        t(user_id, "referral_text", count=ref_count, link=link),
         reply_markup=back_keyboard(),
         parse_mode="HTML"
     )
@@ -2301,8 +2171,7 @@ async def referral_callback(callback: CallbackQuery):
 async def news(
     callback: CallbackQuery,
 ):
-
-    rows = fetchall(
+    rows = db_fetchall(
         """
         SELECT content, created_at
         FROM news
@@ -2312,24 +2181,15 @@ async def news(
     )
 
     if not rows:
-
         text = "📢 Новостей пока нет."
-
     else:
-
         text = "📢 <b>Последние новости</b>\n\n"
-
         for row in rows:
-
-            text += (
-                f"📌 {row['content']}\n"
-                f"🕒 {row['created_at']}\n\n"
-            )
+            text += f"📌 {row['content']}\n🕒 {row['created_at']}\n\n"
 
     buttons = []
 
     if callback.from_user.id in ADMIN_IDS:
-
         buttons.append(
             [
                 InlineKeyboardButton(
@@ -2338,7 +2198,6 @@ async def news(
                 )
             ]
         )
-
         buttons.append(
             [
                 InlineKeyboardButton(
@@ -2359,11 +2218,9 @@ async def news(
 
     await callback.message.edit_text(
         text,
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=buttons
-        ),
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
+        parse_mode="HTML"
     )
-
     await callback.answer()
 
 
@@ -2376,24 +2233,12 @@ async def admin_news(
     callback: CallbackQuery,
     state: FSMContext,
 ):
-
     if callback.from_user.id not in ADMIN_IDS:
-
-        await callback.answer(
-            "Нет доступа.",
-            show_alert=True,
-        )
-
+        await callback.answer("Нет доступа.", show_alert=True)
         return
 
-    await callback.message.answer(
-        "Введите текст новости:"
-    )
-
-    await state.set_state(
-        States.news_text
-    )
-
+    await callback.message.answer("Введите текст новости:")
+    await state.set_state(States.news_text)
     await callback.answer()
 
 
@@ -2402,15 +2247,13 @@ async def news_text(
     message: Message,
     state: FSMContext,
 ):
-
     if message.from_user.id not in ADMIN_IDS:
-
         await state.clear()
         return
 
     content = message.text[:4000]
 
-    execute(
+    db_execute(
         """
         INSERT INTO news(
             admin_id,
@@ -2426,26 +2269,21 @@ async def news_text(
         ),
     )
 
-    rows = fetchall(
+    rows = db_fetchall(
         "SELECT user_id FROM users WHERE banned=0"
     )
 
     sent = 0
 
     for row in rows:
-
         try:
-
             await bot.send_message(
                 row["user_id"],
-                "📢 <b>Новость</b>\n\n"
-                + content,
+                "📢 <b>Новость</b>\n\n" + content,
+                parse_mode="HTML"
             )
-
             sent += 1
-
         except Exception:
-
             pass
 
     await admin_log(
@@ -2455,12 +2293,9 @@ async def news_text(
     )
 
     await state.clear()
-
     await message.answer(
         f"✅ Новость отправлена: {sent}",
-        reply_markup=main_keyboard(
-            message.from_user.id
-        ),
+        reply_markup=main_keyboard(message.from_user.id),
     )
 
 
@@ -2472,17 +2307,11 @@ async def news_text(
 async def admin_deals(
     callback: CallbackQuery,
 ):
-
     if callback.from_user.id not in ADMIN_IDS:
-
-        await callback.answer(
-            "Нет доступа.",
-            show_alert=True,
-        )
-
+        await callback.answer("Нет доступа.", show_alert=True)
         return
 
-    rows = fetchall(
+    rows = db_fetchall(
         """
         SELECT *
         FROM deals
@@ -2493,31 +2322,22 @@ async def admin_deals(
     )
 
     if not rows:
-
         text = "🛠 Активных сделок нет."
-
     else:
-
         text = "🛠 <b>Активные сделки</b>\n\n"
-
         for row in rows:
-
             text += (
-                f"#{row['deal_id']} — "
-                f"{row['amount']} {row['currency']}\n"
+                f"#{row['deal_id']} — {row['amount']} {row['currency']}\n"
                 f"Seller: @{row['seller_username'] or '—'}\n"
                 f"Buyer: @{row['buyer_username'] or '—'}\n"
                 f"Status: {row['status']}\n\n"
             )
 
     buttons = []
-
-    # Ограничиваем количество кнопок, чтобы не превысить лимит Telegram (макс 100 кнопок)
     max_buttons = 10
     display_rows = rows[:max_buttons]
 
     for row in display_rows:
-
         buttons.append(
             [
                 InlineKeyboardButton(
@@ -2526,7 +2346,6 @@ async def admin_deals(
                 )
             ]
         )
-
         buttons.append(
             [
                 InlineKeyboardButton(
@@ -2535,7 +2354,6 @@ async def admin_deals(
                 )
             ]
         )
-
         buttons.append(
             [
                 InlineKeyboardButton(
@@ -2566,11 +2384,9 @@ async def admin_deals(
 
     await callback.message.edit_text(
         text,
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=buttons
-        ),
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
+        parse_mode="HTML"
     )
-
     await callback.answer()
 
 
@@ -2584,84 +2400,45 @@ async def admin_deals(
 async def admin_complete(
     callback: CallbackQuery,
 ):
-
     if callback.from_user.id not in ADMIN_IDS:
-
-        await callback.answer(
-            "Нет доступа.",
-            show_alert=True,
-        )
-
+        await callback.answer("Нет доступа.", show_alert=True)
         return
 
     deal_id = callback.data.split(":", 1)[1]
 
-    deal = fetchone(
+    deal = db_fetchone(
         "SELECT * FROM deals WHERE deal_id=?",
         (deal_id,),
     )
 
     if not deal:
-
-        await callback.answer(
-            "Сделка не найдена.",
-            show_alert=True,
-        )
-
+        await callback.answer("Сделка не найдена.", show_alert=True)
         return
 
-    if deal["status"] in (
-        "completed",
-        "cancelled",
-    ):
-
-        await callback.answer(
-            "Сделка уже закрыта.",
-            show_alert=True,
-        )
-
+    if deal["status"] in ("completed", "cancelled"):
+        await callback.answer("Сделка уже закрыта.", show_alert=True)
         return
 
-    # Проверяем, подтвердил ли продавец участие
     if deal["seller_confirmed"] != 1:
-
-        await callback.answer(
-            "❌ Продавец ещё не подтвердил участие.\n"
-            "Дождитесь его подтверждения.",
-            show_alert=True,
-        )
-
+        await callback.answer("❌ Продавец ещё не подтвердил участие. Дождитесь его подтверждения.", show_alert=True)
         return
 
     amount = deal["amount"] or 0
-
-    # 1% virtual service fee
-    fee = max(
-        1,
-        int(amount * 0.01),
-    )
-
-    payout = max(
-        0,
-        amount - fee,
-    )
+    fee = max(1, int(amount * 0.01))
+    payout = max(0, amount - fee)
 
     if deal["seller_id"]:
-
-        execute(
+        db_execute(
             """
             UPDATE users
             SET balance=balance+?,
                 successful_deals=successful_deals+1
             WHERE user_id=?
             """,
-            (
-                payout,
-                deal["seller_id"],
-            ),
+            (payout, deal["seller_id"]),
         )
 
-    execute(
+    db_execute(
         """
         UPDATE service_balance
         SET balance=balance+?
@@ -2670,17 +2447,14 @@ async def admin_complete(
         (fee,),
     )
 
-    execute(
+    db_execute(
         """
         UPDATE deals
         SET status='completed',
             completed_at=?
         WHERE deal_id=?
         """,
-        (
-            datetime.utcnow().isoformat(),
-            deal_id,
-        ),
+        (datetime.utcnow().isoformat(), deal_id),
     )
 
     await admin_log(
@@ -2689,13 +2463,8 @@ async def admin_complete(
         f"deal={deal_id};fee={fee};payout={payout}",
     )
 
-    for uid in (
-        deal["seller_id"],
-        deal["buyer_id"],
-    ):
-
+    for uid in (deal["seller_id"], deal["buyer_id"]):
         if uid:
-
             await notify(
                 uid,
                 t(uid, "completed")
@@ -2703,10 +2472,7 @@ async def admin_complete(
                   f"Зачислено продавцу: {payout}",
             )
 
-    await callback.answer(
-        "Сделка завершена."
-    )
-
+    await callback.answer("Сделка завершена.")
     await admin_deals(callback)
 
 
@@ -2720,33 +2486,22 @@ async def admin_complete(
 async def admin_cancel(
     callback: CallbackQuery,
 ):
-
     if callback.from_user.id not in ADMIN_IDS:
-
-        await callback.answer(
-            "Нет доступа.",
-            show_alert=True,
-        )
-
+        await callback.answer("Нет доступа.", show_alert=True)
         return
 
     deal_id = callback.data.split(":", 1)[1]
 
-    deal = fetchone(
+    deal = db_fetchone(
         "SELECT * FROM deals WHERE deal_id=?",
         (deal_id,),
     )
 
     if not deal:
-
-        await callback.answer(
-            "Сделка не найдена.",
-            show_alert=True,
-        )
-
+        await callback.answer("Сделка не найдена.", show_alert=True)
         return
 
-    execute(
+    db_execute(
         """
         UPDATE deals
         SET status='cancelled'
@@ -2761,22 +2516,11 @@ async def admin_cancel(
         f"deal={deal_id}",
     )
 
-    for uid in (
-        deal["seller_id"],
-        deal["buyer_id"],
-    ):
-
+    for uid in (deal["seller_id"], deal["buyer_id"]):
         if uid:
+            await notify(uid, t(uid, "cancelled"))
 
-            await notify(
-                uid,
-                t(uid, "cancelled"),
-            )
-
-    await callback.answer(
-        "Сделка отменена."
-    )
-
+    await callback.answer("Сделка отменена.")
     await admin_deals(callback)
 
 
@@ -2791,44 +2535,24 @@ async def admin_req(
     callback: CallbackQuery,
     state: FSMContext,
 ):
-
     if callback.from_user.id not in ADMIN_IDS:
-
-        await callback.answer(
-            "Нет доступа.",
-            show_alert=True,
-        )
-
+        await callback.answer("Нет доступа.", show_alert=True)
         return
 
     deal_id = callback.data.split(":", 1)[1]
 
-    deal = fetchone(
+    deal = db_fetchone(
         "SELECT * FROM deals WHERE deal_id=?",
         (deal_id,),
     )
 
     if not deal:
-
-        await callback.answer(
-            "Сделка не найдена.",
-            show_alert=True,
-        )
-
+        await callback.answer("Сделка не найдена.", show_alert=True)
         return
 
-    await state.update_data(
-        admin_deal_id=deal_id
-    )
-
-    await callback.message.answer(
-        "Введите новые демонстрационные реквизиты продавца:"
-    )
-
-    await state.set_state(
-        States.admin_req_deal
-    )
-
+    await state.update_data(admin_deal_id=deal_id)
+    await callback.message.answer("Введите новые демонстрационные реквизиты продавца:")
+    await state.set_state(States.admin_req_deal)
     await callback.answer()
 
 
@@ -2837,29 +2561,23 @@ async def admin_req_save(
     message: Message,
     state: FSMContext,
 ):
-
     if message.from_user.id not in ADMIN_IDS:
-
         await state.clear()
         return
 
     data = await state.get_data()
-
     deal_id = data["admin_deal_id"]
 
-    execute(
+    db_execute(
         """
         UPDATE deals
         SET seller_req=?
         WHERE deal_id=?
         """,
-        (
-            message.text[:1000],
-            deal_id,
-        ),
+        (message.text[:1000], deal_id),
     )
 
-    deal = fetchone(
+    deal = db_fetchone(
         "SELECT * FROM deals WHERE deal_id=?",
         (deal_id,),
     )
@@ -2871,7 +2589,6 @@ async def admin_req_save(
     )
 
     if deal and deal["buyer_id"]:
-
         await notify(
             deal["buyer_id"],
             f"💳 Реквизиты сделки #{deal_id} были обновлены администрацией.\n\n"
@@ -2879,12 +2596,9 @@ async def admin_req_save(
         )
 
     await state.clear()
-
     await message.answer(
         "✅ Реквизиты обновлены.",
-        reply_markup=main_keyboard(
-            message.from_user.id
-        ),
+        reply_markup=main_keyboard(message.from_user.id),
     )
 
 
@@ -2896,15 +2610,14 @@ async def admin_req_save(
 async def stats(
     message: Message,
 ):
-
     if message.from_user.id not in ADMIN_IDS:
         return
 
-    users = fetchone(
+    users = db_fetchone(
         "SELECT COUNT(*) AS c FROM users"
     )["c"]
 
-    active = fetchone(
+    active = db_fetchone(
         """
         SELECT COUNT(*) AS c
         FROM deals
@@ -2912,7 +2625,7 @@ async def stats(
         """
     )["c"]
 
-    completed = fetchone(
+    completed = db_fetchone(
         """
         SELECT COUNT(*) AS c
         FROM deals
@@ -2920,7 +2633,7 @@ async def stats(
         """
     )["c"]
 
-    cancelled = fetchone(
+    cancelled = db_fetchone(
         """
         SELECT COUNT(*) AS c
         FROM deals
@@ -2928,11 +2641,11 @@ async def stats(
         """
     )["c"]
 
-    logs = fetchone(
+    logs = db_fetchone(
         "SELECT COUNT(*) AS c FROM admin_logs"
     )["c"]
 
-    service = fetchone(
+    service = db_fetchone(
         "SELECT balance FROM service_balance WHERE id=1"
     )["balance"]
 
@@ -2943,7 +2656,8 @@ async def stats(
         f"Завершённых: {completed}\n"
         f"Отменённых: {cancelled}\n"
         f"Логов админов: {logs}\n"
-        f"Баланс сервиса: {service}"
+        f"Баланс сервиса: {service}",
+        parse_mode="HTML"
     )
 
 
@@ -2951,23 +2665,18 @@ async def stats(
 async def ban(
     message: Message,
 ):
-
     if message.from_user.id not in ADMIN_IDS:
         return
 
     parts = message.text.split()
 
     if len(parts) != 2 or not parts[1].isdigit():
-
-        await message.answer(
-            "Использование: /ban USER_ID"
-        )
-
+        await message.answer("Использование: /ban USER_ID")
         return
 
     user_id = int(parts[1])
 
-    execute(
+    db_execute(
         """
         UPDATE users
         SET banned=1
@@ -2982,32 +2691,25 @@ async def ban(
         f"user={user_id}",
     )
 
-    await message.answer(
-        f"🚫 Пользователь {user_id} заблокирован."
-    )
+    await message.answer(f"🚫 Пользователь {user_id} заблокирован.")
 
 
 @dp.message(Command("unban"))
 async def unban(
     message: Message,
 ):
-
     if message.from_user.id not in ADMIN_IDS:
         return
 
     parts = message.text.split()
 
     if len(parts) != 2 or not parts[1].isdigit():
-
-        await message.answer(
-            "Использование: /unban USER_ID"
-        )
-
+        await message.answer("Использование: /unban USER_ID")
         return
 
     user_id = int(parts[1])
 
-    execute(
+    db_execute(
         """
         UPDATE users
         SET banned=0
@@ -3022,9 +2724,7 @@ async def unban(
         f"user={user_id}",
     )
 
-    await message.answer(
-        f"✅ Пользователь {user_id} разблокирован."
-    )
+    await message.answer(f"✅ Пользователь {user_id} разблокирован.")
 
 
 # ============================================================
@@ -3032,17 +2732,11 @@ async def unban(
 # ============================================================
 
 async def archive_worker():
-
     while True:
-
         try:
+            border = (datetime.utcnow() - timedelta(hours=24)).isoformat()
 
-            border = (
-                datetime.utcnow()
-                - timedelta(hours=24)
-            ).isoformat()
-
-            rows = fetchall(
+            rows = db_fetchall(
                 """
                 SELECT *
                 FROM deals
@@ -3054,8 +2748,7 @@ async def archive_worker():
             )
 
             for row in rows:
-
-                execute(
+                db_execute(
                     """
                     INSERT OR REPLACE INTO archived_deals(
                         deal_id,
@@ -3099,16 +2792,13 @@ async def archive_worker():
                     ),
                 )
 
-                execute(
+                db_execute(
                     "DELETE FROM deals WHERE deal_id=?",
                     (row["deal_id"],),
                 )
 
         except Exception:
-
-            logger.exception(
-                "Archive worker error"
-            )
+            logger.exception("Archive worker error")
 
         await asyncio.sleep(3600)
 
@@ -3122,20 +2812,14 @@ async def global_error_handler(
     event,
     exception,
 ):
-
     logger.exception(
         "Unhandled bot error",
         exc_info=exception,
     )
 
     try:
-
-        await admin_error(
-            str(exception)
-        )
-
+        await admin_error(str(exception))
     except Exception:
-
         pass
 
 
@@ -3144,42 +2828,20 @@ async def global_error_handler(
 # ============================================================
 
 async def health(request):
-
-    return web.Response(
-        text="OK"
-    )
+    return web.Response(text="OK")
 
 
 async def start_web_server():
-
     app = web.Application()
-
-    app.router.add_get(
-        "/",
-        health,
-    )
-
-    app.router.add_get(
-        "/health",
-        health,
-    )
+    app.router.add_get("/", health)
+    app.router.add_get("/health", health)
 
     runner = web.AppRunner(app)
-
     await runner.setup()
-
-    site = web.TCPSite(
-        runner,
-        "0.0.0.0",
-        PORT,
-    )
-
+    site = web.TCPSite(runner, "0.0.0.0", PORT)
     await site.start()
 
-    logger.info(
-        "Web server started on port %s",
-        PORT,
-    )
+    logger.info("Web server started on port %s", PORT)
 
 
 # ============================================================
@@ -3187,71 +2849,34 @@ async def start_web_server():
 # ============================================================
 
 async def main():
+    logger.info("Starting bot...")
 
-    logger.info(
-        "Starting bot..."
-    )
-
-    asyncio.create_task(
-        archive_worker()
-    )
-
+    asyncio.create_task(archive_worker())
     await start_web_server()
 
     # --------------------------------------------------------
     # WEBHOOK
     # --------------------------------------------------------
-
     if WEBHOOK_URL:
-
-        webhook = (
-            WEBHOOK_URL.rstrip("/")
-            + "/webhook"
-        )
+        webhook = WEBHOOK_URL.rstrip("/") + "/webhook"
 
         try:
-
-            await bot.set_webhook(
-                webhook,
-                drop_pending_updates=True,
-            )
-
+            await bot.set_webhook(webhook, drop_pending_updates=True)
             info = await bot.get_webhook_info()
-
             if info.url != webhook:
+                raise RuntimeError("Webhook verification failed")
 
-                raise RuntimeError(
-                    "Webhook verification failed"
-                )
-
-            logger.info(
-                "Webhook configured: %s",
-                webhook,
-            )
-
-            # aiohttp route for Telegram
-            # polling is not started when webhook is configured.
-
-            return
+            logger.info("Webhook configured: %s", webhook)
+            return # aiohttp route for Telegram, polling is not started
 
         except Exception:
-
-            logger.exception(
-                "Webhook failed, switching to polling"
-            )
+            logger.exception("Webhook failed, switching to polling")
 
     # --------------------------------------------------------
     # POLLING
     # --------------------------------------------------------
-
-    await bot.delete_webhook(
-        drop_pending_updates=True
-    )
-
-    logger.info(
-        "Starting polling..."
-    )
-
+    await bot.delete_webhook(drop_pending_updates=True)
+    logger.info("Starting polling...")
     await dp.start_polling(
         bot,
         allowed_updates=dp.resolve_used_update_types(),
@@ -3259,15 +2884,7 @@ async def main():
 
 
 if __name__ == "__main__":
-
     try:
-
-        asyncio.run(
-            main()
-        )
-
+        asyncio.run(main())
     except KeyboardInterrupt:
-
-        logger.info(
-            "Bot stopped"
-        )
+        logger.info("Bot stopped")
