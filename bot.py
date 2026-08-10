@@ -301,26 +301,30 @@ class States(StatesGroup):
 
 
 # ============================================================
-# TEXTS
+# TEXTS (обновлённое меню)
 # ============================================================
 
 TEXTS = {
-
     "ru": {
         "menu": (
-            "🏦 <b>FunPay OTC</b>\n\n"
-            "Добро пожаловать.\n"
-            "Все операции в этой версии являются демонстрационными."
+            "🛡️ <b>FUNPAY</b>\n\n"
+            "Безопасный гарант для сделок в Telegram.\n\n"
+            "📌 <b>Что внутри:</b>\n"
+            "• защита от мошенников\n"
+            "• удержание средств до завершения сделки\n"
+            "• история и статусы сделок\n"
+            "• поддержка через @GiftsforFunpay\n\n"
+            "⬇️ Выберите действие ниже."
         ),
 
         "deal": "📝 Создать сделку",
         "my_deals": "📂 Мои сделки",
         "req": "💳 Реквизиты",
-        "balance": "💰 Баланс",
+        "balance": "💰 Средства",
         "gifts": "🎁 Мои подарки",
         "profile": "👤 Профиль",
         "news": "📢 Новости",
-        "about": "ℹ️ Подробнее",
+        "about": "ℹ️ О сервисе",
         "support": "🆘 Поддержка",
         "language": "🌐 Язык",
 
@@ -392,15 +396,20 @@ TEXTS = {
 
     "en": {
         "menu": (
-            "🏦 <b>FunPay OTC</b>\n\n"
-            "Welcome.\n"
-            "This version uses demonstration balances only."
+            "🛡️ <b>FUNPAY</b>\n\n"
+            "Secure guarantor for Telegram deals.\n\n"
+            "📌 <b>What's inside:</b>\n"
+            "• protection from scammers\n"
+            "• funds holding until deal completion\n"
+            "• deal history and statuses\n"
+            "• support via @GiftsforFunpay\n\n"
+            "⬇️ Choose action below."
         ),
 
         "deal": "📝 Create deal",
         "my_deals": "📂 My deals",
         "req": "💳 Requisites",
-        "balance": "💰 Balance",
+        "balance": "💰 Funds",
         "gifts": "🎁 My gifts",
         "profile": "👤 Profile",
         "news": "📢 News",
@@ -492,69 +501,66 @@ def t(user_id, key, **kwargs):
 
 
 # ============================================================
-# KEYBOARDS
+# KEYBOARDS (НОВОЕ ГЛАВНОЕ МЕНЮ)
 # ============================================================
 
 def main_keyboard(user_id):
-
     kb = InlineKeyboardBuilder()
 
+    # Первая строка: Создать сделку | Средства
     kb.row(
         InlineKeyboardButton(
             text=t(user_id, "deal"),
             callback_data="create_deal",
+        ),
+        InlineKeyboardButton(
+            text=t(user_id, "balance"),
+            callback_data="balance",
         )
     )
 
+    # Вторая строка: Мои сделки | Реквизиты
     kb.row(
         InlineKeyboardButton(
             text=t(user_id, "my_deals"),
             callback_data="my_deals",
         ),
         InlineKeyboardButton(
-            text=t(user_id, "balance"),
-            callback_data="balance",
-        ),
-    )
-
-    kb.row(
-        InlineKeyboardButton(
             text=t(user_id, "req"),
             callback_data="requisites",
-        ),
-        InlineKeyboardButton(
-            text=t(user_id, "gifts"),
-            callback_data="gifts",
-        ),
-    )
-
-    kb.row(
-        InlineKeyboardButton(
-            text=t(user_id, "profile"),
-            callback_data="profile",
         )
     )
 
+    # Третья строка: Язык | Поддержка
     kb.row(
-        InlineKeyboardButton(
-            text=t(user_id, "news"),
-            callback_data="news",
-        ),
         InlineKeyboardButton(
             text=t(user_id, "language"),
             callback_data="language",
         ),
+        InlineKeyboardButton(
+            text=t(user_id, "support"),
+            callback_data="support",
+        )
     )
 
+    # Четвёртая строка: Верификация | Рефералы
+    kb.row(
+        InlineKeyboardButton(
+            text="✅ Верификация",
+            callback_data="verify",
+        ),
+        InlineKeyboardButton(
+            text="👥 Рефералы",
+            callback_data="referral",
+        )
+    )
+
+    # Пятая строка: О сервисе (на всю ширину)
     kb.row(
         InlineKeyboardButton(
             text=t(user_id, "about"),
             callback_data="about",
-        ),
-        InlineKeyboardButton(
-            text=t(user_id, "support"),
-            callback_data="support",
-        ),
+        )
     )
 
     return kb.as_markup()
@@ -798,6 +804,7 @@ async def start(message: Message, state: FSMContext):
         reply_markup=main_keyboard(
             message.from_user.id
         ),
+        parse_mode="HTML"
     )
 
 
@@ -835,13 +842,14 @@ async def main_menu(callback: CallbackQuery):
         reply_markup=main_keyboard(
             callback.from_user.id
         ),
+        parse_mode="HTML"
     )
 
     await callback.answer()
 
 
 # ============================================================
-# CREATE DEAL
+# CREATE DEAL (ОСТАЁТСЯ БЕЗ ИЗМЕНЕНИЙ)
 # ============================================================
 
 @dp.callback_query(F.data == "create_deal")
@@ -1991,7 +1999,7 @@ async def req_stars_save(
 
 
 # ============================================================
-# GIFTS
+# GIFTS (ОСТАВЛЯЕМ, ХОТЯ И НЕТ В МЕНЮ)
 # ============================================================
 
 @dp.callback_query(F.data == "gifts")
@@ -2200,7 +2208,7 @@ async def set_language(
 
 
 # ============================================================
-# ABOUT / SUPPORT
+# ABOUT
 # ============================================================
 
 @dp.callback_query(F.data == "about")
@@ -2209,14 +2217,18 @@ async def about(
 ):
 
     await callback.message.edit_text(
-        "ℹ️ <b>FunPay OTC</b>\n\n"
-        "Демонстрационный P2P-сервис.\n"
-        "Баланс и операции в этой версии виртуальные.",
+        "ℹ️ <b>О сервисе</b>\n\n"
+        "FunPay OTC — демонстрационный P2P-сервис для безопасных сделок в Telegram.\n\n"
+        "Все операции в этой версии являются виртуальными.",
         reply_markup=back_keyboard(),
     )
 
     await callback.answer()
 
+
+# ============================================================
+# SUPPORT
+# ============================================================
 
 @dp.callback_query(F.data == "support")
 async def support(
@@ -2225,10 +2237,59 @@ async def support(
 
     await callback.message.edit_text(
         "🆘 <b>Поддержка</b>\n\n"
-        "Обратитесь к администратору бота.",
+        "По всем вопросам обращайтесь к @GiftsforFunpay",
         reply_markup=back_keyboard(),
     )
 
+    await callback.answer()
+
+
+# ============================================================
+# VERIFICATION (НОВЫЙ ОБРАБОТЧИК)
+# ============================================================
+
+@dp.callback_query(F.data == "verify")
+async def verify_callback(callback: CallbackQuery):
+    text = (
+        "✅ <b>Верификация</b>\n\n"
+        "Верификация доступна пользователям с 30+ успешными сделками и оборотом от 1500 USDT.\n\n"
+        "Преимущества:\n"
+        "• автовывод средств\n"
+        "• приоритетная поддержка\n"
+        "• ускоренное решение спорных ситуаций\n\n"
+        "Подайте заявку, и администрация рассмотрит её."
+    )
+    await callback.message.edit_text(
+        text,
+        reply_markup=back_keyboard(),
+        parse_mode="HTML"
+    )
+    await callback.answer()
+
+
+# ============================================================
+# REFERRAL (НОВЫЙ ОБРАБОТЧИК)
+# ============================================================
+
+@dp.callback_query(F.data == "referral")
+async def referral_callback(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    ensure_user(callback.from_user)
+    row = fetchone("SELECT ref_count FROM users WHERE user_id=?", (user_id,))
+    ref_count = row["ref_count"] if row else 0
+
+    link = f"https://t.me/{BOT_USERNAME}?start=ref_{user_id}"
+    text = (
+        "👥 <b>Реферальная система</b>\n\n"
+        f"Приглашено: <b>{ref_count}</b> человек\n\n"
+        "Ваша реферальная ссылка:\n"
+        f"<code>{link}</code>"
+    )
+    await callback.message.edit_text(
+        text,
+        reply_markup=back_keyboard(),
+        parse_mode="HTML"
+    )
     await callback.answer()
 
 
@@ -2452,7 +2513,6 @@ async def admin_deals(
     buttons = []
 
     # Ограничиваем количество кнопок, чтобы не превысить лимит Telegram (макс 100 кнопок)
-    # Для каждой сделки 3 кнопки, поэтому ограничимся первыми 10 сделками
     max_buttons = 10
     display_rows = rows[:max_buttons]
 
