@@ -34,7 +34,7 @@ TEST_MODE = False
 TEST_CHAT_ID = ""
 DB_FILE = "funpay.db"
 
-# Ссылка на логотип. Если в Кыргызстане он заблокирован, бот просто отправит текст с кнопками.
+# Ссылка на логотип. Если заблокируется, бот отправит просто текст.
 PHOTO_URL = "https://ibb.co/dsfvdDB7"
 
 # Настройка логов
@@ -59,7 +59,7 @@ dp = Dispatcher(storage=MemoryStorage())
 
 
 # ============================================================
-# DATABASE (ПЕРЕПИСАНО ДЛЯ ПОТОКОБЕЗОПАСНОСТИ)
+# DATABASE (ПОТОКОБЕЗОПАСНАЯ)
 # ============================================================
 
 def get_db_connection():
@@ -264,13 +264,12 @@ init_db()
 
 
 # ============================================================
-# FSM
+# FSM (СОСТОЯНИЯ УПРОЩЕНЫ БЕЗ ЛИШНИХ ВЫБОРОВ)
 # ============================================================
 
 class States(StatesGroup):
-    # Deal creation
+    # Deal creation (убраны лишние выборы типа сделки)
     deal_role = State()
-    deal_type = State()
     deal_description = State()
     deal_amount = State()
     deal_currency = State()
@@ -296,7 +295,7 @@ class States(StatesGroup):
 
 
 # ============================================================
-# TEXTS (ДОБАВЛЕН КИТАЙСКИЙ, ИСПРАВЛЕНЫ ОТСУТСТВУЮЩИЕ КЛЮЧИ)
+# TEXTS (НОВОЕ, БЕЗ ДЕБИЛЬНЫХ ВЫБОРОВ ТОВАРОВ)
 # ============================================================
 
 TEXTS = {
@@ -329,21 +328,16 @@ TEXTS = {
         "seller": "🛒 Продавец",
         "buyer": "🛍 Покупатель",
 
-        "choose_type": "Выберите тип сделки:",
-        "goods": "📦 Товар",
-        "service": "🛠 Услуга",
-        "gift": "🎁 Подарок",
-
-        "description": "Введите описание сделки:",
-        "amount": "Введите сумму целым числом:",
-        "currency": "Выберите валюту:",
+        "description": "📝 Введите описание сделки:",
+        "amount": "💰 Введите сумму целым числом:",
+        "currency": "💳 Выберите валюту:",
 
         "username": (
-            "Введите username продавца.\n"
+            "👤 Введите username продавца.\n"
             "Например: @username"
         ),
 
-        "req_input": "Введите реквизиты продавца:",
+        "req_input": "💳 Введите реквизиты для оплаты:",
 
         "created": (
             "✅ Сделка создана.\n\n"
@@ -451,18 +445,12 @@ TEXTS = {
         "seller": "🛒 Seller",
         "buyer": "🛍 Buyer",
 
-        "choose_type": "Choose deal type:",
-        "goods": "📦 Goods",
-        "service": "🛠 Service",
-        "gift": "🎁 Gift",
+        "description": "📝 Enter deal description:",
+        "amount": "💰 Enter amount as a whole number:",
+        "currency": "💳 Choose currency:",
 
-        "description": "Enter deal description:",
-        "amount": "Enter amount as a whole number:",
-        "currency": "Choose currency:",
-
-        "username": "Enter seller username. Example: @username",
-
-        "req_input": "Enter seller requisites:",
+        "username": "👤 Enter seller username. Example: @username",
+        "req_input": "💳 Enter requisites for payment:",
 
         "created": (
             "✅ Deal created.\n\n"
@@ -566,18 +554,12 @@ TEXTS = {
         "seller": "🛒 卖家",
         "buyer": "🛍 买家",
 
-        "choose_type": "选择交易类型：",
-        "goods": "📦 商品",
-        "service": "🛠 服务",
-        "gift": "🎁 礼品",
+        "description": "📝 输入交易描述：",
+        "amount": "💰 输入整数金额：",
+        "currency": "💳 选择货币：",
 
-        "description": "输入交易描述：",
-        "amount": "输入整数金额：",
-        "currency": "选择货币：",
-
-        "username": "输入卖家用户名。例如：@username",
-
-        "req_input": "输入卖家收款信息：",
+        "username": "👤 输入卖家用户名。例如：@username",
+        "req_input": "💳 输入付款收款信息：",
 
         "created": (
             "✅ 交易已创建。\n\n"
@@ -677,7 +659,7 @@ def t(user_id, key, **kwargs):
 
 
 # ============================================================
-# KEYBOARDS (НОВОЕ ГЛАВНОЕ МЕНЮ - ПОЛНОСТЬЮ ПЕРЕВОДНОЕ)
+# KEYBOARDS (ГЛАВНОЕ МЕНЮ)
 # ============================================================
 
 def main_keyboard(user_id):
@@ -897,18 +879,29 @@ async def admin_error(text):
 
 
 # ============================================================
-# ФУНКЦИЯ ОТПРАВКИ ФОТО (ЗАЩИТА ОТ ПРОПАЖИ ТЕКСТА В РЕГИОНЕ)
+# ФУНКЦИЯ ОТПРАВКИ ФОТО (ТЕПЕРЬ ФОТО И ТЕКСТ В ОДНОМ!)
 # ============================================================
 async def send_safe_media(target, text, reply_markup=None, parse_mode="HTML"):
-    """
-    Сначала отправляет фото, потом гарантированно отправляет текст с кнопками.
-    """
     chat_id = target.chat.id if hasattr(target, 'chat') else target
+    
+    # Пытаемся отправить фото вместе с текстом (caption)
     try:
-        await bot.send_photo(chat_id=chat_id, photo=PHOTO_URL)
+        await bot.send_photo(
+            chat_id=chat_id, 
+            photo=PHOTO_URL, 
+            caption=text, 
+            reply_markup=reply_markup, 
+            parse_mode=parse_mode
+        )
     except Exception as e:
-        logger.warning(f"Ошибка отправки фото: {e}")
-    await bot.send_message(chat_id=chat_id, text=text, reply_markup=reply_markup, parse_mode=parse_mode)
+        logger.warning(f"Ошибка отправки фото (вероятно, блокировка хоста в регионе): {e}")
+        # Если фото не прошло - просто отправляем чистый текст с кнопками
+        await bot.send_message(
+            chat_id=chat_id, 
+            text=text, 
+            reply_markup=reply_markup, 
+            parse_mode=parse_mode
+        )
 
 
 # ============================================================
@@ -917,7 +910,6 @@ async def send_safe_media(target, text, reply_markup=None, parse_mode="HTML"):
 
 @dp.message(CommandStart())
 async def start(message: Message, state: FSMContext):
-
     ensure_user(message.from_user)
 
     # ЗАЩИТА ОТ СПАМА /start
@@ -932,9 +924,7 @@ async def start(message: Message, state: FSMContext):
     await state.clear()
 
     if is_banned(message.from_user.id):
-        await message.answer(
-            t(message.from_user.id, "banned")
-        )
+        await message.answer(t(message.from_user.id, "banned"))
         return
 
     args = message.text.split(maxsplit=1)
@@ -985,7 +975,7 @@ async def start(message: Message, state: FSMContext):
             except Exception:
                 pass
 
-    # ОТПРАВКА С ФОТО
+    # Отправляем фото + текст в одном сообщении
     await send_safe_media(
         message,
         t(message.from_user.id, "menu"),
@@ -1006,9 +996,7 @@ async def cancel_command(
     await state.clear()
     await message.answer(
         "❌ Текущее действие отменено.",
-        reply_markup=main_keyboard(
-            message.from_user.id
-        ),
+        reply_markup=main_keyboard(message.from_user.id),
     )
 
 
@@ -1020,7 +1008,6 @@ async def cancel_command(
 async def main_menu(callback: CallbackQuery):
     ensure_user(callback.from_user)
     
-    # ОТПРАВКА С ФОТО
     await send_safe_media(
         callback.message,
         t(callback.from_user.id, "menu"),
@@ -1031,7 +1018,7 @@ async def main_menu(callback: CallbackQuery):
 
 
 # ============================================================
-# CREATE DEAL (ОСТАЁТСЯ БЕЗ ИЗМЕНЕНИЙ)
+# CREATE DEAL (УПРОЩЕННЫЙ И КРАСИВЫЙ ПОТОК)
 # ============================================================
 
 @dp.callback_query(F.data == "create_deal")
@@ -1076,7 +1063,6 @@ async def create_deal(
         t(callback.from_user.id, "choose_role"),
         reply_markup=kb,
     )
-
     await state.set_state(States.deal_role)
     await callback.answer()
 
@@ -1092,56 +1078,9 @@ async def deal_role(
     role = "seller" if callback.data == "role_seller" else "buyer"
     await state.update_data(role=role)
 
-    kb = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text=t(callback.from_user.id, "goods"),
-                    callback_data="type_goods",
-                ),
-                InlineKeyboardButton(
-                    text=t(callback.from_user.id, "service"),
-                    callback_data="type_service",
-                ),
-            ],
-            [
-                InlineKeyboardButton(
-                    text=t(callback.from_user.id, "gift"),
-                    callback_data="type_gift",
-                )
-            ],
-        ]
+    await callback.message.answer(
+        t(callback.from_user.id, "description")
     )
-
-    await callback.message.edit_text(
-        t(callback.from_user.id, "choose_type"),
-        reply_markup=kb,
-    )
-
-    await state.set_state(States.deal_type)
-    await callback.answer()
-
-
-@dp.callback_query(
-    States.deal_type,
-    F.data.in_({
-        "type_goods",
-        "type_service",
-        "type_gift",
-    }),
-)
-async def deal_type(
-    callback: CallbackQuery,
-    state: FSMContext,
-):
-    mapping = {
-        "type_goods": "goods",
-        "type_service": "service",
-        "type_gift": "gift",
-    }
-
-    await state.update_data(deal_type=mapping[callback.data])
-    await callback.message.answer(t(callback.from_user.id, "description"))
     await state.set_state(States.deal_description)
     await callback.answer()
 
@@ -1177,31 +1116,31 @@ async def deal_amount(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="USDT",
+                    text="💎 USDT",
                     callback_data="currency_USDT",
                 ),
                 InlineKeyboardButton(
-                    text="TON",
+                    text="💎 TON",
                     callback_data="currency_TON",
                 ),
             ],
             [
                 InlineKeyboardButton(
-                    text="RUB",
+                    text="🇷🇺 RUB",
                     callback_data="currency_RUB",
                 ),
                 InlineKeyboardButton(
-                    text="UAH",
+                    text="🇺🇦 UAH",
                     callback_data="currency_UAH",
                 ),
             ],
             [
                 InlineKeyboardButton(
-                    text="BYN",
+                    text="🇧🇾 BYN",
                     callback_data="currency_BYN",
                 ),
                 InlineKeyboardButton(
-                    text="⭐Stars",
+                    text="⭐ Stars",
                     callback_data="currency_Stars",
                 ),
             ],
@@ -1301,6 +1240,7 @@ async def deal_requisites(
     seller_req = req if role == "seller" else ""
     buyer_req = req if role == "buyer" else ""
 
+    # Создаем сделку. Тип сделки ставим "standard", так как пользователь не хочет его выбирать.
     db_execute(
         """
         INSERT INTO deals(
@@ -1324,7 +1264,7 @@ async def deal_requisites(
             deal_id,
             seller_id,
             buyer_id,
-            data["deal_type"],
+            "standard",
             data["description"],
             data["amount"],
             data["currency"],
@@ -1355,7 +1295,7 @@ async def deal_requisites(
 
 
 # ============================================================
-# JOIN DEAL (ИСПРАВЛЕНО)
+# JOIN DEAL (БЕЗ БАГОВ)
 # ============================================================
 
 async def join_deal(
@@ -1418,7 +1358,6 @@ async def join_deal(
             ),
         )
 
-        # Отправляем покупателю уведомление, что продавец присоединился
         await notify(
             deal["buyer_id"],
             t(
@@ -1454,7 +1393,6 @@ async def join_deal(
             ),
         )
 
-    # Выдаем подтверждение с кнопками
     await message.answer(
         t(user_id, "joined", id=deal_id),
         reply_markup=InlineKeyboardMarkup(
@@ -1478,7 +1416,7 @@ async def join_deal(
 
 
 # ============================================================
-# CONFIRM (С ЗАЩИТОЙ ОТ ДУБЛЕЙ)
+# CONFIRM (С ЗАЩИТОЙ ОТ ПОВТОРНЫХ НАЖАТИЙ)
 # ============================================================
 
 @dp.callback_query(
@@ -1502,7 +1440,6 @@ async def confirm_deal(
         await callback.answer("Подтвердить может продавец.", show_alert=True)
         return
 
-    # ЗАЩИТА ОТ ПОВТОРНОГО НАЖАТИЯ
     if deal["seller_confirmed"] == 1:
         await callback.answer(
             t(callback.from_user.id, "confirm_already"),
@@ -2095,7 +2032,7 @@ async def set_language(
 
 
 # ============================================================
-# ABOUT (С ФОТО)
+# ABOUT (ФОТО + ТЕКСТ)
 # ============================================================
 
 @dp.callback_query(F.data == "about")
@@ -2128,7 +2065,7 @@ async def support(
 
 
 # ============================================================
-# VERIFICATION (С ФОТО)
+# VERIFICATION (ФОТО + ТЕКСТ)
 # ============================================================
 
 @dp.callback_query(F.data == "verify")
@@ -2143,7 +2080,7 @@ async def verify_callback(callback: CallbackQuery):
 
 
 # ============================================================
-# REFERRAL (С ФОТО)
+# REFERRAL (ТЕКСТ + ССЫЛКА)
 # ============================================================
 
 @dp.callback_query(F.data == "referral")
