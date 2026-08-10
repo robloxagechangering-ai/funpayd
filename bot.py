@@ -29,9 +29,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-BOT_TOKEN = os.getenv("")
+# ============================================================
+# НАСТРОЙКИ БОТА (ИЗМЕНЕНА ЛОГИКА ТОКЕНА)
+# ============================================================
+
+# Если Render не подставит токен, бот возьмёт этот запасной токен (впиши свой ниже):
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8497462129:AAEC2hO1pZVwXA2eATQp4uk3YdSX63K0hAs")
 if not BOT_TOKEN:
-    raise ValueError("BOT_TOKEN не задан")
+    raise ValueError("BOT_TOKEN не задан ни в переменных окружения, ни в коде!")
 
 BOT_USERNAME = os.getenv("BOT_USERNAME", "FunpayTrustly_robot")
 PHOTO_URL = os.getenv("PHOTO_URL", "https://ibb.co/ycJNGhRQ")
