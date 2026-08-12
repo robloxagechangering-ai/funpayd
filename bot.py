@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 
 # ============================================================
 # НАСТРОЙКИ
+# Telegram Premium / Custom Emoji используются в сообщениях через <tg-emoji emoji-id="...">fallback</tg-emoji>.
 # ============================================================
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 if not BOT_TOKEN:
@@ -612,26 +613,16 @@ def tr(key, lang="ru", **kwargs):
         return text
 
 
+def button_text(key, lang):
+    """
+    Telegram InlineKeyboardButton does not render <tg-emoji> HTML.
+    Premium/Custom Emoji remain enabled in regular bot messages.
+    Buttons use the same visible labels without raw <tg-emoji> markup.
+    """
+    text = tr(key, lang)
+    text = re.sub(r'<tg-emoji\s+emoji-id="\d+">\s*.*?</tg-emoji>\s*', '', text).strip()
+    return text
 
-def clean_button_text(key, lang):
-    """
-    <tg-emoji> inside InlineKeyboardButton is not rendered as a custom emoji.
-    Premium/custom emoji remain in normal messages; buttons use regular emoji
-    so raw tags never appear on the button itself.
-    """
-    value = tr(key, lang)
-    value = re.sub(r'<tg-emoji\s+emoji-id="\d+"></tg-emoji>\s*', "", value).strip()
-    icons = {
-        "create": "📝", "my_deals": "📋", "req": "💳", "referral": "👥",
-        "profile": "👤", "language": "🌐", "support": "🆘", "about": "ℹ️",
-        "back": "🔙", "seller": "👤", "buyer": "🛒", "account": "📦",
-        "gift": "🎁", "confirm": "✅", "cancel_deal": "❌",
-        "deposit": "➕", "withdraw": "➖", "clear_history": "🧹",
-    }
-    icon = icons.get(key)
-    if icon and not value.startswith(icon):
-        value = f"{icon} {value}"
-    return value
 def user_lang(user_id):
     row = fetchone("SELECT lang FROM users WHERE user_id=?", (user_id,))
     return row["lang"] if row and row["lang"] in T else "ru"
@@ -713,38 +704,35 @@ async def check_operation_allowed(message):
         return False
     return True
 
-def _strip_custom_emoji_tags(value):
-    return re.sub(r'<tg-emoji\s+emoji-id="\d+"></tg-emoji>\s*', "", value).strip()
-
 def kb_main(lang):
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=clean_button_text("create", lang), callback_data="create_deal")],
-        [InlineKeyboardButton(text=clean_button_text("my_deals", lang), callback_data="my_deals"),
-         InlineKeyboardButton(text=clean_button_text("req", lang), callback_data="requisites")],
-        [InlineKeyboardButton(text=clean_button_text("referral", lang), callback_data="referral"),
-         InlineKeyboardButton(text=clean_button_text("profile", lang), callback_data="profile")],
-        [InlineKeyboardButton(text=clean_button_text("language", lang), callback_data="lang"),
-         InlineKeyboardButton(text=clean_button_text("support", lang), url="https://t.me/FunPayHeIp")],
-        [InlineKeyboardButton(text=clean_button_text("about", lang), callback_data="about")],
+        [InlineKeyboardButton(text=button_text("create", lang), callback_data="create_deal")],
+        [InlineKeyboardButton(text=button_text("my_deals", lang), callback_data="my_deals"),
+         InlineKeyboardButton(text=button_text("req", lang), callback_data="requisites")],
+        [InlineKeyboardButton(text=button_text("referral", lang), callback_data="referral"),
+         InlineKeyboardButton(text=button_text("profile", lang), callback_data="profile")],
+        [InlineKeyboardButton(text=button_text("language", lang), callback_data="lang"),
+         InlineKeyboardButton(text=button_text("support", lang), url="https://t.me/FunPayHeIp")],
+        [InlineKeyboardButton(text=button_text("about", lang), callback_data="about")],
     ])
 
 def kb_back(lang):
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=clean_button_text("back", lang), callback_data="main_menu")]
+        [InlineKeyboardButton(text=button_text("back", lang), callback_data="main_menu")]
     ])
 
 def kb_roles(lang):
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=clean_button_text("seller", lang), callback_data="role_seller"),
-         InlineKeyboardButton(text=clean_button_text("buyer", lang), callback_data="role_buyer")],
-        [InlineKeyboardButton(text=clean_button_text("back", lang), callback_data="main_menu")]
+        [InlineKeyboardButton(text=button_text("seller", lang), callback_data="role_seller"),
+         InlineKeyboardButton(text=button_text("buyer", lang), callback_data="role_buyer")],
+        [InlineKeyboardButton(text=button_text("back", lang), callback_data="main_menu")]
     ])
 
 def kb_types(lang):
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=clean_button_text("account", lang), callback_data="type_account"),
-         InlineKeyboardButton(text=clean_button_text("gift", lang), callback_data="type_gift")],
-        [InlineKeyboardButton(text=clean_button_text("back", lang), callback_data="main_menu")]
+        [InlineKeyboardButton(text=button_text("account", lang), callback_data="type_account"),
+         InlineKeyboardButton(text=button_text("gift", lang), callback_data="type_gift")],
+        [InlineKeyboardButton(text=button_text("back", lang), callback_data="main_menu")]
     ])
 
 def kb_currencies(lang, prefix):
@@ -757,29 +745,53 @@ def kb_currencies(lang, prefix):
         ("STARS", tr("curr_stars", lang)),
         ("KZT", tr("curr_kzt", lang)),
     ]
-    clean = [(code, _strip_custom_emoji_tags(label)) for code, label in labels]
-    rows = [[InlineKeyboardButton(text=clean[0][1], callback_data=f"{prefix}{clean[0][0]}")]]
-    for i in range(1, len(clean), 2):
-        pair = clean[i:i+2]
-        row = [InlineKeyboardButton(text=pair[0][1], callback_data=f"{prefix}{pair[0][0]}")]
-        if len(pair) > 1:
-            row.append(InlineKeyboardButton(text=pair[1][1], callback_data=f"{prefix}{pair[1][0]}"))
+
+    rows = []
+    rows.append([
+        InlineKeyboardButton(
+            text=button_text("curr_usdt", lang),
+            callback_data=f"{prefix}USDT"
+        )
+    ])
+
+    for i in range(1, len(labels), 2):
+        row = []
+        for code, _ in labels[i:i+2]:
+            row.append(
+                InlineKeyboardButton(
+                    text=button_text(
+                        {
+                            "RUB": "curr_rub",
+                            "UAH": "curr_uah",
+                            "BYN": "curr_byn",
+                            "TON": "curr_ton",
+                            "STARS": "curr_stars",
+                            "KZT": "curr_kzt",
+                        }[code],
+                        lang
+                    ),
+                    callback_data=f"{prefix}{code}"
+                )
+            )
         rows.append(row)
-    rows.append([InlineKeyboardButton(text=clean_button_text("back", lang), callback_data="main_menu")])
+
+    rows.append([
+        InlineKeyboardButton(text=button_text("back", lang), callback_data="main_menu")
+    ])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 def kb_balance(lang):
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=clean_button_text("deposit", lang), callback_data="deposit")],
-        [InlineKeyboardButton(text=clean_button_text("withdraw", lang), callback_data="withdraw")],
-        [InlineKeyboardButton(text=clean_button_text("back", lang), callback_data="main_menu")]
+        [InlineKeyboardButton(text=button_text("deposit", lang), callback_data="deposit")],
+        [InlineKeyboardButton(text=button_text("withdraw", lang), callback_data="withdraw")],
+        [InlineKeyboardButton(text=button_text("back", lang), callback_data="main_menu")]
     ])
 
 def kb_my_deals(lang):
 
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=clean_button_text("clear_history", lang), callback_data="clear_history")],
-        [InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu")]
+        [InlineKeyboardButton(text=button_text("clear_history", lang), callback_data="clear_history")],
+        [InlineKeyboardButton(text=button_text("back", lang), callback_data="main_menu")]
     ])
 
 # ============================================================
@@ -1146,8 +1158,8 @@ async def my_deals(call: CallbackQuery):
     for d in rows:
         text += f"#{d['deal_id']} | {d['deal_type']} | {d['amount']} {d['currency']}  | {status_text(d['status'], lang)}\n"
         buttons.append([InlineKeyboardButton(text=f"🔎 #{d['deal_id']}", callback_data=f"dealview_{d['deal_id']}")])
-    buttons.append([InlineKeyboardButton(text=clean_button_text("clear_history", lang), callback_data="clear_history")])
-    buttons.append([InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu")])
+    buttons.append([InlineKeyboardButton(text=button_text("clear_history", lang), callback_data="clear_history")])
+    buttons.append([InlineKeyboardButton(text=button_text("back", lang), callback_data="main_menu")])
     await call.message.answer(text, reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons))
     await call.answer()
 
@@ -1254,7 +1266,7 @@ async def lang_menu(call: CallbackQuery):
         [InlineKeyboardButton(text="🇰🇿 Қазақша", callback_data="setlang_kk")],
         [InlineKeyboardButton(text="🇨🇳 中文", callback_data="setlang_zh")],
         [InlineKeyboardButton(text="🇮🇳 हिन्दी", callback_data="setlang_hi")],
-        [InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu")]
+        [InlineKeyboardButton(text=button_text("back", lang), callback_data="main_menu")]
     ]))
     await call.answer()
 
