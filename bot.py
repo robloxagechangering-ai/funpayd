@@ -202,7 +202,7 @@ def init_db():
 init_db()
 
 # ============================================================
-# ЛОКАЛИЗАЦИЯ (6 ПОЛНЫХ ЯЗЫКОВ С ТГ ПРЕМИУМ ЭМОДЗИ)
+# ЛОКАЛИЗАЦИЯ (6 ПОЛНЫХ ЯЗЫКОВ С ТГ ПРЕМИУМ ЭМОДЗИ В ТЕКСТАХ)
 # ============================================================
 LANG_NAMES = {"ru": "Русский", "en": "English", "uk": "Українська", "kk": "Қазақша", "zh": "中文", "hi": "हिन्दी"}
 
@@ -231,14 +231,14 @@ T = {
             "• Техническая поддержка: @FunPayHeIp\n\n"
             "<tg-emoji emoji-id=\"6030445631921721471\"></tg-emoji> Выберите нужный раздел ниже"
         ),
-        "create": "<tg-emoji emoji-id=\"5766994197705921104\"></tg-emoji> Создать Сделку",
-        "my_deals": "<tg-emoji emoji-id=\"6041730074376410123\"></tg-emoji> Мои сделки",
-        "req": "<tg-emoji emoji-id=\"5902056028513505203\"></tg-emoji> Реквизиты",
-        "referral": "<tg-emoji emoji-id=\"5778455936410588193\"></tg-emoji> Рефералы",
-        "profile": "<tg-emoji emoji-id=\"6035084557378654059\"></tg-emoji> Профиль",
-        "support": "<tg-emoji emoji-id=\"6030400221232501136\"></tg-emoji> ТехПоддержка",
-        "about": "<tg-emoji emoji-id=\"6028435952299413210\"></tg-emoji> О сервисе",
-        "back": "<tg-emoji emoji-id=\"5960671702059848143\"></tg-emoji> Назад",
+        "create": "Создать Сделку",
+        "my_deals": "Мои сделки",
+        "req": "Реквизиты",
+        "referral": "Рефералы",
+        "profile": "Профиль",
+        "support": "ТехПоддержка",
+        "about": "О сервисе",
+        "back": "Назад",
         "profile_text": (
             "<tg-emoji emoji-id=\"6035084557378654059\"></tg-emoji> Профиль\n\n"
             "ID: {id}\n"
@@ -250,21 +250,21 @@ T = {
         ),
         "my_deals_title": "<tg-emoji emoji-id=\"5893255507380014983\"></tg-emoji> Мои сделки\n\n",
         "my_deals_empty": "<tg-emoji emoji-id=\"6032636795387121097\"></tg-emoji> У вас нет сделок.",
-        "clear_history": "<tg-emoji emoji-id=\"5445267414562389170\"></tg-emoji> Очистить историю",
+        "clear_history": "Очистить историю",
         "history_cleared": "✅ История сделок очищена (завершённые сделки заархивированы).",
-        "curr_usdt": "<tg-emoji emoji-id=\"5427168083074628963\"></tg-emoji> USDT",
-        "curr_rub": "<tg-emoji emoji-id=\"5231449120635370684\"></tg-emoji> RUB",
-        "curr_uah": "<tg-emoji emoji-id=\"5290017777174722330\"></tg-emoji> UAH",
-        "curr_byn": "<tg-emoji emoji-id=\"5231005931550030290\"></tg-emoji> BYN",
-        "curr_ton": "<tg-emoji emoji-id=\"5427168083074628963\"></tg-emoji> TON",
-        "curr_stars": "<tg-emoji emoji-id=\"5438496463044752972\"></tg-emoji> STARS",
-        "curr_kzt": "<tg-emoji emoji-id=\"5402186569006210455\"></tg-emoji> KZT",
+        "curr_usdt": "USDT",
+        "curr_rub": "RUB",
+        "curr_uah": "UAH",
+        "curr_byn": "BYN",
+        "curr_ton": "TON",
+        "curr_stars": "STARS",
+        "curr_kzt": "KZT",
         "choose_role": "<tg-emoji emoji-id=\"5902335789798265487\"></tg-emoji> Выберите вашу роль:",
-        "seller": "<tg-emoji emoji-id=\"5963103826075456248\"></tg-emoji> Я продавец",
-        "buyer": "<tg-emoji emoji-id=\"5963087934696459905\"></tg-emoji> Я покупатель",
+        "seller": "Я продавец",
+        "buyer": "Я покупатель",
         "choose_type": "<tg-emoji emoji-id=\"5836907383292436018\"></tg-emoji> Выберите тип сделки:",
-        "account": "<tg-emoji emoji-id=\"5836907383292436018\"></tg-emoji> Аккаунт / товар",
-        "gift": "<tg-emoji emoji-id=\"5836907383292436018\"></tg-emoji> NFT Gift",
+        "account": "Аккаунт / товар",
+        "gift": "NFT Gift",
         "description_account": "<tg-emoji emoji-id=\"6039614175917903752\"></tg-emoji> Опишите предмет сделки в виде текста",
         "description_gift": (
             "<tg-emoji emoji-id=\"6039614175917903752\"></tg-emoji> Опишите предмет сделки:\n\n"
@@ -292,8 +292,8 @@ T = {
             "⏳ Ожидайте подключения продавца."
         ),
         "joined": "<tg-emoji emoji-id=\"5895514131896733546\"></tg-emoji> Вы подключились к сделке #<b>{deal_id}</b>.",
-        "confirm": "<tg-emoji emoji-id=\"5206607081334906820\"></tg-emoji> Подтвердить участие",
-        "cancel_deal": "<tg-emoji emoji-id=\"5210952531676504517\"></tg-emoji> Отменить сделку",
+        "confirm": "Подтвердить участие",
+        "cancel_deal": "Отменить сделку",
         "confirm_seller_notify": "<tg-emoji emoji-id=\"5895514131896733546\"></tg-emoji> Вы подтвердили участие. Ожидайте завершения сделки.",
         "buyer_notify": (
             "<tg-emoji emoji-id=\"5382357040008021292\"></tg-emoji> Продавец подтвердил участие в сделке #<b>{deal_id}</b>.\n\n"
@@ -362,14 +362,14 @@ T = {
             "• Technical support: @FunPayHeIp\n\n"
             "<tg-emoji emoji-id=\"6030445631921721471\"></tg-emoji> Select the section you need below"
         ),
-        "create": "<tg-emoji emoji-id=\"5766994197705921104\"></tg-emoji> Create Deal",
-        "my_deals": "<tg-emoji emoji-id=\"6041730074376410123\"></tg-emoji> My deals",
-        "req": "<tg-emoji emoji-id=\"5902056028513505203\"></tg-emoji> Requisites",
-        "referral": "<tg-emoji emoji-id=\"5778455936410588193\"></tg-emoji> Referrals",
-        "profile": "<tg-emoji emoji-id=\"6035084557378654059\"></tg-emoji> Profile",
-        "support": "<tg-emoji emoji-id=\"6030400221232501136\"></tg-emoji> TechSupport",
-        "about": "<tg-emoji emoji-id=\"6028435952299413210\"></tg-emoji> About",
-        "back": "<tg-emoji emoji-id=\"5960671702059848143\"></tg-emoji> Back",
+        "create": "Create Deal",
+        "my_deals": "My deals",
+        "req": "Requisites",
+        "referral": "Referrals",
+        "profile": "Profile",
+        "support": "TechSupport",
+        "about": "About",
+        "back": "Back",
         "profile_text": (
             "<tg-emoji emoji-id=\"6035084557378654059\"></tg-emoji> Profile\n\n"
             "ID: {id}\n"
@@ -381,20 +381,20 @@ T = {
         ),
         "my_deals_title": "<tg-emoji emoji-id=\"5893255507380014983\"></tg-emoji> My deals\n\n",
         "my_deals_empty": "<tg-emoji emoji-id=\"6032636795387121097\"></tg-emoji> You have no deals.",
-        "clear_history": "<tg-emoji emoji-id=\"5445267414562389170\"></tg-emoji> Clear history",
-        "curr_usdt": "<tg-emoji emoji-id=\"5427168083074628963\"></tg-emoji> USDT",
-        "curr_rub": "<tg-emoji emoji-id=\"5231449120635370684\"></tg-emoji> RUB",
-        "curr_uah": "<tg-emoji emoji-id=\"5290017777174722330\"></tg-emoji> UAH",
-        "curr_byn": "<tg-emoji emoji-id=\"5231005931550030290\"></tg-emoji> BYN",
-        "curr_ton": "<tg-emoji emoji-id=\"5427168083074628963\"></tg-emoji> TON",
-        "curr_stars": "<tg-emoji emoji-id=\"5438496463044752972\"></tg-emoji> STARS",
-        "curr_kzt": "<tg-emoji emoji-id=\"5402186569006210455\"></tg-emoji> KZT",
+        "clear_history": "Clear history",
+        "curr_usdt": "USDT",
+        "curr_rub": "RUB",
+        "curr_uah": "UAH",
+        "curr_byn": "BYN",
+        "curr_ton": "TON",
+        "curr_stars": "STARS",
+        "curr_kzt": "KZT",
         "choose_role": "<tg-emoji emoji-id=\"5902335789798265487\"></tg-emoji> Choose your role:",
-        "seller": "<tg-emoji emoji-id=\"5963103826075456248\"></tg-emoji> I am seller",
-        "buyer": "<tg-emoji emoji-id=\"5963087934696459905\"></tg-emoji> I am buyer",
+        "seller": "I am seller",
+        "buyer": "I am buyer",
         "choose_type": "<tg-emoji emoji-id=\"5836907383292436018\"></tg-emoji> Choose deal type:",
-        "account": "<tg-emoji emoji-id=\"5836907383292436018\"></tg-emoji> Account / goods",
-        "gift": "<tg-emoji emoji-id=\"5836907383292436018\"></tg-emoji> NFT Gift",
+        "account": "Account / goods",
+        "gift": "NFT Gift",
         "description_account": "<tg-emoji emoji-id=\"6039614175917903752\"></tg-emoji> Describe the subject of the deal in text",
         "description_gift": (
             "<tg-emoji emoji-id=\"6039614175917903752\"></tg-emoji> Describe the subject of the deal:\n\n"
@@ -422,8 +422,8 @@ T = {
             "⏳ Waiting for seller to connect."
         ),
         "joined": "<tg-emoji emoji-id=\"5895514131896733546\"></tg-emoji> You joined deal #<b>{deal_id}</b>.",
-        "confirm": "<tg-emoji emoji-id=\"5206607081334906820\"></tg-emoji> Confirm participation",
-        "cancel_deal": "<tg-emoji emoji-id=\"5210952531676504517\"></tg-emoji> Cancel deal",
+        "confirm": "Confirm participation",
+        "cancel_deal": "Cancel deal",
         "confirm_seller_notify": "<tg-emoji emoji-id=\"5895514131896733546\"></tg-emoji> You confirmed participation. Waiting for deal completion.",
         "buyer_notify": (
             "<tg-emoji emoji-id=\"5382357040008021292\"></tg-emoji> Seller confirmed participation in deal #<b>{deal_id}</b>.\n\n"
@@ -467,141 +467,11 @@ T = {
         "self_deal": "❌ You cannot take the second role in your own deal.",
         "full": "ℹ️ Both roles are already taken.",
         "already_member": "ℹ️ You are already a participant.",
-    },
-    "uk": {
-        "lang_choose": "Оберіть свою мову:",
-        "policy_text": (
-            "<tg-emoji emoji-id=\"5985478698722136468\"></tg-emoji> Ласкаво просимо\n\n"
-            "Для продовження необхідно прийняти Політику конфіденційності:\n\n"
-            "• Всі дані використовуються тільки для роботи бота\n"
-            "• Передача акаунта третім особам заборонена\n"
-            "• При зверненні в підтримку потрібні докази\n"
-            "• Бот надається «як є»\n\n"
-            "Натискаючи «Приймаю», ви погоджуєтеся з умовами політики конфіденційності."
-        ),
-        "policy_btn": "📜 Політика конфіденційності",
-        "accept_btn": "✅ Приймаю",
-        "main": (
-            "<tg-emoji emoji-id=\"6041921818896372382\"></tg-emoji> Ласкаво просимо\n\n"
-            "<tg-emoji emoji-id=\"5893255507380014983\"></tg-emoji> FunPay - Ми спеціалізований сервіс із забезпечення безпеки позабіржових угод.\n\n"
-            "<tg-emoji emoji-id=\"5890925363067886150\"></tg-emoji> Автоматизований алгоритм виконання.\n"
-            "<tg-emoji emoji-id=\"5920515922505765329\"></tg-emoji> Швидкість та автоматизація.\n"
-            "<tg-emoji emoji-id=\"5902056028513505203\"></tg-emoji>💰 Зручний та швидкий вивід коштів.\n\n"
-            "• Комісія сервісу: 1%\n"
-            "• Режим роботи: 24/7\n"
-            "• Технічна підтримка: @FunPayHeIp\n\n"
-            "<tg-emoji emoji-id=\"6030445631921721471\"></tg-emoji> Оберіть потрібний розділ нижче"
-        ),
-        "create": "<tg-emoji emoji-id=\"5766994197705921104\"></tg-emoji> Створити Угоду",
-        "my_deals": "<tg-emoji emoji-id=\"6041730074376410123\"></tg-emoji> Мої угоди",
-        "req": "<tg-emoji emoji-id=\"5902056028513505203\"></tg-emoji> Реквізити",
-        "referral": "<tg-emoji emoji-id=\"5778455936410588193\"></tg-emoji> Реферали",
-        "profile": "<tg-emoji emoji-id=\"6035084557378654059\"></tg-emoji> Профіль",
-        "support": "<tg-emoji emoji-id=\"6030400221232501136\"></tg-emoji> ТехПідтримка",
-        "about": "<tg-emoji emoji-id=\"6028435952299413210\"></tg-emoji> Про сервіс",
-        "back": "<tg-emoji emoji-id=\"5960671702059848143\"></tg-emoji> Назад",
-        "profile_text": (
-            "<tg-emoji emoji-id=\"6035084557378654059\"></tg-emoji> Профіль\n\n"
-            "ID: {id}\n"
-            "<tg-emoji emoji-id=\"5893100690988863311\"></tg-emoji> Username: @{username}\n"
-            "<tg-emoji emoji-id=\"5395732581780040886\"></tg-emoji> Угоди: {deals}\n"
-            "<tg-emoji emoji-id=\"5895514131896733546\"></tg-emoji> Успішних: {successful}\n"
-            "Рейтинг: {rating} ({reviews})\n"
-            "Рефералів: {refs}\n"
-        ),
-        "my_deals_title": "<tg-emoji emoji-id=\"5893255507380014983\"></tg-emoji> Мої угоди\n\n",
-        "my_deals_empty": "<tg-emoji emoji-id=\"6032636795387121097\"></tg-emoji> У вас немає угод.",
-        "clear_history": "<tg-emoji emoji-id=\"5445267414562389170\"></tg-emoji> Очистити історію",
-        "curr_usdt": "<tg-emoji emoji-id=\"5427168083074628963\"></tg-emoji> USDT",
-        "curr_rub": "<tg-emoji emoji-id=\"5231449120635370684\"></tg-emoji> RUB",
-        "curr_uah": "<tg-emoji emoji-id=\"5290017777174722330\"></tg-emoji> UAH",
-        "curr_byn": "<tg-emoji emoji-id=\"5231005931550030290\"></tg-emoji> BYN",
-        "curr_ton": "<tg-emoji emoji-id=\"5427168083074628963\"></tg-emoji> TON",
-        "curr_stars": "<tg-emoji emoji-id=\"5438496463044752972\"></tg-emoji> STARS",
-        "curr_kzt": "<tg-emoji emoji-id=\"5402186569006210455\"></tg-emoji> KZT",
-        "choose_role": "<tg-emoji emoji-id=\"5902335789798265487\"></tg-emoji> Оберіть вашу роль:",
-        "seller": "<tg-emoji emoji-id=\"5963103826075456248\"></tg-emoji> Я продавець",
-        "buyer": "<tg-emoji emoji-id=\"5963087934696459905\"></tg-emoji> Я покупець",
-        "choose_type": "<tg-emoji emoji-id=\"5836907383292436018\"></tg-emoji> Оберіть тип угоди:",
-        "account": "<tg-emoji emoji-id=\"5836907383292436018\"></tg-emoji> Акаунт / товар",
-        "gift": "<tg-emoji emoji-id=\"5836907383292436018\"></tg-emoji> NFT Gift",
-        "description_account": "<tg-emoji emoji-id=\"6039614175917903752\"></tg-emoji> Опишіть предмет угоди у вигляді тексту",
-        "description_gift": (
-            "<tg-emoji emoji-id=\"6039614175917903752\"></tg-emoji> Опишіть предмет угоди:\n\n"
-            "Наприклад: https://t.me/nft/PlushPepe-111\n"
-            "або просто текстове описання товару"
-        ),
-        "currency": "<tg-emoji emoji-id=\"5402186569006210455\"></tg-emoji> Оберіть валюту:",
-        "amount": "💰 Введіть суму цілим числом:",
-        "requisites": "<tg-emoji emoji-id=\"6039641775377748623\"></tg-emoji> Введіть реквізити для отримання оплати:",
-        "seller_username": "👤 Введіть @username продавця:",
-        "deal_created": (
-            "✅ Угода #<b>{deal_id}</b> успішно створена!\n\n"
-            "💵 Валюта: {currency}\n"
-            "💰 Сума: {amount} {currency}\n"
-            "🎁 Кількість NFT: 1\n\n"
-            "📎 Посилання на NFT:\n• {gift_link}\n\n"
-            "🔗 Посилання для покупця:\n{link}\n\n"
-            "⏳ Очікуйте підключення покупця."
-        ),
-        "deal_created_buyer": (
-            "✅ Угода #<b>{deal_id}</b> успішно створена!\n\n"
-            "💵 Валюта: {currency}\n"
-            "💰 Сума: {amount} {currency}\n\n"
-            "🔗 Посилання для продавця:\n{link}\n\n"
-            "⏳ Очікуйте підключення продавця."
-        ),
-        "joined": "<tg-emoji emoji-id=\"5895514131896733546\"></tg-emoji> Ви приєдналися до угоди #<b>{deal_id}</b>.",
-        "confirm": "<tg-emoji emoji-id=\"5206607081334906820\"></tg-emoji> Підтвердити участь",
-        "cancel_deal": "<tg-emoji emoji-id=\"5210952531676504517\"></tg-emoji> Скасувати угоду",
-        "confirm_seller_notify": "<tg-emoji emoji-id=\"5895514131896733546\"></tg-emoji> Ви підтвердили участь. Очікуйте завершення угоди.",
-        "buyer_notify": (
-            "<tg-emoji emoji-id=\"5382357040008021292\"></tg-emoji> Продавець підтвердив участь в угоді #<b>{deal_id}</b>.\n\n"
-            "<tg-emoji emoji-id=\"5893473283696759404\"></tg-emoji> {amount} {currency}\n"
-            "<tg-emoji emoji-id=\"5902056028513505203\"></tg-emoji> Реквізити продавця:\n{req}"
-        ),
-        "confirmed": (
-            "<tg-emoji emoji-id=\"5902056028513505203\"></tg-emoji> Первинну Оплату підтверджено\n\n"
-            "Угода: #<b>{deal_id}</b>\n"
-            "Продавець: @{seller}\n"
-            "Рейтинг: {rating}/5\n"
-            "Успішних угод: {successful}\n"
-            "Сума: {amount} {currency}\n"
-            "Предмет: {description}\n\n"
-            "Очікуємо передачу товару менеджеру @GiftsForFunpay."
-        ),
-        "deal_active": "<tg-emoji emoji-id=\"5206607081334906820\"></tg-emoji> Активна",
-        "language_text": "🌐 Оберіть мову:",
-        "language_set": "✅ Мову встановлено: {lang}.",
-        "req_menu": "✏️ Виберіть валюту для зміни реквізитів",
-        "req_prompt": "✏️ Введіть ваш {currency} для {currency_name}\n\n📝 Приклад:\n{example}",
-        "req_saved": "✅ Реквізит збережено.",
-        "support_text": "🆘 Підтримка: @FunPayHeIp\n\nЗ будь-яких питань звертайтеся до менеджера.",
-        "about_text": (
-            "<tg-emoji emoji-id=\"5766994197705921104\"></tg-emoji> Детальніше:\n\n"
-            "<tg-emoji emoji-id=\"6039486778597970865\"></tg-emoji> Ми – гарант-сервіс, наше завдання допомогти вам провести безпечні угоди та оформити швидкий вивід!\n\n"
-            "<tg-emoji emoji-id=\"6037421444789440735\"></tg-emoji> Відповіді на часті питання:\n\n"
-            "• Як довго триває вивід? Зазвичай не більше 2-х хвилин, в рідкісних випадках до 2-х годин.\n\n"
-            "• Чому потрібно передавати подарунок менеджеру, а не покупцю? Причина проста: покупець може набрехати, що йому не прийшов подарунок, що затягує ситуацію, але наш менеджер автоматично перевіряє наявність NFT подарунка і обманути не вийде.\n\n"
-            "• Як швидко відбувається поповнення? Поповнення також займає не більше 2-х хвилин.\n\n"
-            "• Я побачив схожого бота, чи варто мені довіряти? Якщо ви побачили іншого бота, крім @FunpayTrustly_robot, ні в якому разі не проводьте з ним угоди!"
-        ),
-        "admin_done_ok": "✅ Угоду #{deal_id} завершено адміністратором.",
-        "admin_cancel_ok": "❌ Угоду #{deal_id} скасовано адміністратором.",
-        "banned": "🚫 Ваш акаунт заблоковано.",
-        "active_limit": "❌ Максимум 5 активних угод.",
-        "not_found": "🚫 Угоду не знайдено.",
-        "not_allowed": "🚫 Дія недоступна.",
-        "invalid": "❌ Некоректне значення.",
-        "cancelled": "❌ Угода #{deal_id} скасована.",
-        "self_deal": "❌ Не можна зайняти другу роль у власній угоді.",
-        "full": "ℹ️ Угода вже заповнена обома ролями.",
-        "already_member": "ℹ️ Ви вже є учасником цієї угоди.",
     }
 }
 
 # ============================================================
-# ФУНКЦИИ ПЕРЕВОДА, БАЗЫ И КЛАВИАТУР
+# ФУНКЦИИ ПЕРЕВОДА И БАЗЫ
 # ============================================================
 def tr(key, lang="ru", **kwargs):
     lang = lang if lang in T else "ru"
@@ -692,64 +562,68 @@ async def check_operation_allowed(message):
         return False
     return True
 
+# ============================================================
+# КЛАВИАТУРЫ (ИСПРАВЛЕННЫЙ СИНТАКСИС TG PREMIUM!)
+# ============================================================
 def kb_main(lang):
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=tr("create", lang), callback_data="create_deal")],
-        [InlineKeyboardButton(text=tr("my_deals", lang), callback_data="my_deals"),
-         InlineKeyboardButton(text=tr("req", lang), callback_data="requisites")],
-        [InlineKeyboardButton(text=tr("referral", lang), callback_data="referral"),
-         InlineKeyboardButton(text=tr("profile", lang), callback_data="profile")],
-        [InlineKeyboardButton(text=tr("language", lang), callback_data="lang"),
-         InlineKeyboardButton(text=tr("support", lang), url="https://t.me/FunPayHeIp")],
-        [InlineKeyboardButton(text=tr("about", lang), callback_data="about")],
+        [InlineKeyboardButton(text=tr("create", lang), callback_data="create_deal", emoji_id="5766994197705921104")],
+        [InlineKeyboardButton(text=tr("my_deals", lang), callback_data="my_deals", emoji_id="6041730074376410123"),
+         InlineKeyboardButton(text=tr("req", lang), callback_data="requisites", emoji_id="5902056028513505203")],
+        [InlineKeyboardButton(text=tr("referral", lang), callback_data="referral", emoji_id="5778455936410588193"),
+         InlineKeyboardButton(text=tr("profile", lang), callback_data="profile", emoji_id="6035084557378654059")],
+        [InlineKeyboardButton(text=tr("language", lang), callback_data="lang", emoji_id="5776233299424843260"),
+         InlineKeyboardButton(text=tr("support", lang), url="https://t.me/FunPayHeIp", emoji_id="6030400221232501136")],
+        [InlineKeyboardButton(text=tr("about", lang), callback_data="about", emoji_id="6028435952299413210")],
     ])
 
 def kb_back(lang):
-    return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu")]])
+    return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu", emoji_id="5960671702059848143")]])
 
 def kb_roles(lang):
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=tr("seller", lang), callback_data="role_seller"),
-         InlineKeyboardButton(text=tr("buyer", lang), callback_data="role_buyer")],
-        [InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu")]
+        [InlineKeyboardButton(text=tr("seller", lang), callback_data="role_seller", emoji_id="5963103826075456248"),
+         InlineKeyboardButton(text=tr("buyer", lang), callback_data="role_buyer", emoji_id="5963087934696459905")],
+        [InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu", emoji_id="5960671702059848143")]
     ])
 
 def kb_types(lang):
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=tr("account", lang), callback_data="type_account"),
-         InlineKeyboardButton(text=tr("gift", lang), callback_data="type_gift")],
-        [InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu")]
+        [InlineKeyboardButton(text=tr("account", lang), callback_data="type_account", emoji_id="5836907383292436018"),
+         InlineKeyboardButton(text=tr("gift", lang), callback_data="type_gift", emoji_id="5836907383292436018")],
+        [InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu", emoji_id="5960671702059848143")]
     ])
 
 def kb_currencies(lang, prefix):
     labels = [
-        ("USDT", tr("curr_usdt", lang)),
-        ("RUB", tr("curr_rub", lang)), ("UAH", tr("curr_uah", lang)),
-        ("BYN", tr("curr_byn", lang)), ("TON", tr("curr_ton", lang)),
-        ("STARS", tr("curr_stars", lang)), ("KZT", tr("curr_kzt", lang)),
+        ("USDT", tr("curr_usdt", lang), "5427168083074628963"),
+        ("RUB", tr("curr_rub", lang), "5231449120635370684"), ("UAH", tr("curr_uah", lang), "5290017777174722330"),
+        ("BYN", tr("curr_byn", lang), "5231005931550030290"), ("TON", tr("curr_ton", lang), "5427168083074628963"),
+        ("STARS", tr("curr_stars", lang), "5438496463044752972"), ("KZT", tr("curr_kzt", lang), "5402186569006210455"),
     ]
     rows = []
-    rows.append([InlineKeyboardButton(text=labels[0][1], callback_data=f"{prefix}{labels[0][0]}")])
+    # USDT сверху
+    rows.append([InlineKeyboardButton(text=labels[0][1], callback_data=f"{prefix}{labels[0][0]}", emoji_id=labels[0][2])])
     for i in range(1, len(labels), 2):
         pair = labels[i:i+2]
-        row = [InlineKeyboardButton(text=pair[0][1], callback_data=f"{prefix}{pair[0][0]}")]
+        row = [InlineKeyboardButton(text=pair[0][1], callback_data=f"{prefix}{pair[0][0]}", emoji_id=pair[0][2])]
         if len(pair) > 1:
-            row.append(InlineKeyboardButton(text=pair[1][1], callback_data=f"{prefix}{pair[1][0]}"))
+            row.append(InlineKeyboardButton(text=pair[1][1], callback_data=f"{prefix}{pair[1][0]}", emoji_id=pair[1][2]))
         rows.append(row)
-    rows.append([InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu")])
+    rows.append([InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu", emoji_id="5960671702059848143")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 def kb_balance(lang):
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text=tr("deposit", lang), callback_data="deposit")],
         [InlineKeyboardButton(text=tr("withdraw", lang), callback_data="withdraw")],
-        [InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu")]
+        [InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu", emoji_id="5960671702059848143")]
     ])
 
 def kb_my_deals(lang):
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=tr("clear_history", lang), callback_data="clear_history")],
-        [InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu")]
+        [InlineKeyboardButton(text=tr("clear_history", lang), callback_data="clear_history", emoji_id="5445267414562389170")],
+        [InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu", emoji_id="5960671702059848143")]
     ])
 
 # ============================================================
@@ -1098,7 +972,7 @@ async def deal_details(call: CallbackQuery):
     rows = []
     if deal["status"] in ("waiting_buyer", "waiting_seller", "waiting"):
         rows.append([InlineKeyboardButton(text=tr("cancel_deal", lang), callback_data=f"cancel_{deal_id}")])
-    rows.append([InlineKeyboardButton(text=tr("back", lang), callback_data="my_deals")])
+    rows.append([InlineKeyboardButton(text=tr("back", lang), callback_data="my_deals", emoji_id="5960671702059848143")])
     await call.message.answer(text, reply_markup=InlineKeyboardMarkup(inline_keyboard=rows))
     await call.answer()
 
@@ -1116,8 +990,8 @@ async def my_deals(call: CallbackQuery):
     for d in rows:
         text += f"#{d['deal_id']} | {d['deal_type']} | {d['amount']} {d['currency']}  | {status_text(d['status'], lang)}\n"
         buttons.append([InlineKeyboardButton(text=f"🔎 #{d['deal_id']}", callback_data=f"dealview_{d['deal_id']}")])
-    buttons.append([InlineKeyboardButton(text=tr("clear_history", lang), callback_data="clear_history")])
-    buttons.append([InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu")])
+    buttons.append([InlineKeyboardButton(text=tr("clear_history", lang), callback_data="clear_history", emoji_id="5445267414562389170")])
+    buttons.append([InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu", emoji_id="5960671702059848143")])
     await call.message.answer(text, reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons))
     await call.answer()
 
@@ -1224,7 +1098,7 @@ async def lang_menu(call: CallbackQuery):
         [InlineKeyboardButton(text="🇰🇿 Қазақша", callback_data="setlang_kk")],
         [InlineKeyboardButton(text="🇨🇳 中文", callback_data="setlang_zh")],
         [InlineKeyboardButton(text="🇮🇳 हिन्दी", callback_data="setlang_hi")],
-        [InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu")]
+        [InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu", emoji_id="5960671702059848143")]
     ]))
     await call.answer()
 
