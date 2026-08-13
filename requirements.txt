@@ -1,4 +1,7 @@
-aiogram==2.25.1
+aiogram==3.4.1
 aiohttp==3.9.5
 flask[async]==3.0.3
-pydantic==1.10.13
+pydantic==2.5.0
+typing-extensions==4.9.0
+setuptools>=65.5.0
+wheel>=0.40.0
