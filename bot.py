@@ -287,7 +287,7 @@ async def check_operation_allowed(message):
     return True
 
 # ============================================================
-# KEYBOARDS (ТОЛЬКО 1 ЭМОДЗИ НА КНОПКУ)
+# KEYBOARDS (ПО 1 ЭМОДЗИ НА КНОПКУ)
 # ============================================================
 def kb_main(lang):
     return InlineKeyboardMarkup(inline_keyboard=[
@@ -375,7 +375,7 @@ class States(StatesGroup):
     admin_req = State()
 
 # ============================================================
-# HANDLERS (без изменений – работают с новыми текстами)
+# HANDLERS
 # ============================================================
 @dp.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext):
