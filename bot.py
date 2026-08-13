@@ -43,30 +43,12 @@ else:
 
 # Ссылки на картинки для каждого языка (главное меню и "О сервисе")
 PHOTO_URLS = {
-    "ru": {
-        "main": "https://ibb.co/rG08CGyz",
-        "about": "https://ibb.co/ZpWsBSbx"
-    },
-    "en": {
-        "main": "https://ibb.co/qYw6fVPt",
-        "about": "https://ibb.co/TDrvMWX3"
-    },
-    "uk": {
-        "main": "https://ibb.co/zVrbJ9Cj",
-        "about": "https://ibb.co/93dcDwgx"
-    },
-    "kk": {
-        "main": "https://ibb.co/Z1kD9vdL",
-        "about": "https://ibb.co/9HRX2991"
-    },
-    "zh": {
-        "main": "https://ibb.co/nMM9FhHj",
-        "about": "https://ibb.co/MD9gNrcj"
-    },
-    "hi": {
-        "main": "https://ibb.co/Xrg1yvFh",
-        "about": "https://ibb.co/3mjhGpQh"
-    }
+    "ru": {"main": "https://ibb.co/rG08CGyz", "about": "https://ibb.co/ZpWsBSbx"},
+    "en": {"main": "https://ibb.co/qYw6fVPt", "about": "https://ibb.co/TDrvMWX3"},
+    "uk": {"main": "https://ibb.co/zVrbJ9Cj", "about": "https://ibb.co/93dcDwgx"},
+    "kk": {"main": "https://ibb.co/Z1kD9vdL", "about": "https://ibb.co/9HRX2991"},
+    "zh": {"main": "https://ibb.co/nMM9FhHj", "about": "https://ibb.co/MD9gNrcj"},
+    "hi": {"main": "https://ibb.co/Xrg1yvFh", "about": "https://ibb.co/3mjhGpQh"},
 }
 
 ADMIN_IDS = {int(x.strip()) for x in os.getenv("ADMIN_IDS", "8822297551").split(",") if x.strip().isdigit()}
@@ -306,35 +288,35 @@ async def check_operation_allowed(message):
     return True
 
 # ============================================================
-# KEYBOARDS (СИНИЕ КНОПКИ – 🟦, ПО 1 ЭМОДЗИ)
+# KEYBOARDS (ВСЕ PRIMARY КНОПКИ, КРАСИВЫЕ ЭМОДЗИ)
 # ============================================================
 def kb_main(lang):
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🟦 " + tr("create", lang), callback_data="create_deal")],
-        [InlineKeyboardButton(text="🟦 " + tr("my_deals", lang), callback_data="my_deals"),
-         InlineKeyboardButton(text="🟦 " + tr("req", lang), callback_data="requisites")],
-        [InlineKeyboardButton(text="🟦 " + tr("referral", lang), callback_data="referral"),
-         InlineKeyboardButton(text="🟦 " + tr("profile", lang), callback_data="profile")],
-        [InlineKeyboardButton(text="🟦 " + tr("language", lang), callback_data="lang"),
-         InlineKeyboardButton(text="🟦 " + tr("support", lang), url="https://t.me/FunPayHeIp")],
-        [InlineKeyboardButton(text="🟦 " + tr("about", lang), callback_data="about")],
+        [InlineKeyboardButton(text="📝 " + tr("create", lang), callback_data="create_deal", style="primary")],
+        [InlineKeyboardButton(text="📂 " + tr("my_deals", lang), callback_data="my_deals", style="primary"),
+         InlineKeyboardButton(text="💳 " + tr("req", lang), callback_data="requisites", style="primary")],
+        [InlineKeyboardButton(text="👥 " + tr("referral", lang), callback_data="referral", style="primary"),
+         InlineKeyboardButton(text="👤 " + tr("profile", lang), callback_data="profile", style="primary")],
+        [InlineKeyboardButton(text="🌐 " + tr("language", lang), callback_data="lang", style="primary"),
+         InlineKeyboardButton(text="🆘 " + tr("support", lang), url="https://t.me/FunPayHeIp", style="primary")],
+        [InlineKeyboardButton(text="ℹ️ " + tr("about", lang), callback_data="about", style="primary")],
     ])
 
 def kb_back(lang):
-    return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙 " + tr("back", lang), callback_data="main_menu")]])
+    return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙 " + tr("back", lang), callback_data="main_menu", style="primary")]])
 
 def kb_roles(lang):
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🟦 " + tr("seller", lang), callback_data="role_seller"),
-         InlineKeyboardButton(text="🟦 " + tr("buyer", lang), callback_data="role_buyer")],
-        [InlineKeyboardButton(text="🔙 " + tr("back", lang), callback_data="main_menu")]
+        [InlineKeyboardButton(text="🛒 " + tr("seller", lang), callback_data="role_seller", style="primary"),
+         InlineKeyboardButton(text="🛍️ " + tr("buyer", lang), callback_data="role_buyer", style="primary")],
+        [InlineKeyboardButton(text="🔙 " + tr("back", lang), callback_data="main_menu", style="primary")]
     ])
 
 def kb_types(lang):
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🟦 " + tr("account", lang), callback_data="type_account"),
-         InlineKeyboardButton(text="🟦 " + tr("gift", lang), callback_data="type_gift")],
-        [InlineKeyboardButton(text="🔙 " + tr("back", lang), callback_data="main_menu")]
+        [InlineKeyboardButton(text="📦 " + tr("account", lang), callback_data="type_account", style="primary"),
+         InlineKeyboardButton(text="🎁 " + tr("gift", lang), callback_data="type_gift", style="primary")],
+        [InlineKeyboardButton(text="🔙 " + tr("back", lang), callback_data="main_menu", style="primary")]
     ])
 
 def kb_currencies(lang, prefix):
@@ -348,27 +330,27 @@ def kb_currencies(lang, prefix):
         ("KZT", "₸ " + tr("curr_kzt", lang))
     ]
     rows = []
-    rows.append([InlineKeyboardButton(text="🟦 " + labels[0][1], callback_data=f"{prefix}{labels[0][0]}")])
+    rows.append([InlineKeyboardButton(text=labels[0][1], callback_data=f"{prefix}{labels[0][0]}", style="primary")])
     for i in range(1, len(labels), 2):
         pair = labels[i:i+2]
-        row = [InlineKeyboardButton(text="🟦 " + pair[0][1], callback_data=f"{prefix}{pair[0][0]}")]
+        row = [InlineKeyboardButton(text=pair[0][1], callback_data=f"{prefix}{pair[0][0]}", style="primary")]
         if len(pair) > 1:
-            row.append(InlineKeyboardButton(text="🟦 " + pair[1][1], callback_data=f"{prefix}{pair[1][0]}"))
+            row.append(InlineKeyboardButton(text=pair[1][1], callback_data=f"{prefix}{pair[1][0]}", style="primary"))
         rows.append(row)
-    rows.append([InlineKeyboardButton(text="🔙 " + tr("back", lang), callback_data="main_menu")])
+    rows.append([InlineKeyboardButton(text="🔙 " + tr("back", lang), callback_data="main_menu", style="primary")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 def kb_balance(lang):
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🟦 " + tr("deposit", lang), callback_data="deposit")],
-        [InlineKeyboardButton(text="🟦 " + tr("withdraw", lang), callback_data="withdraw")],
-        [InlineKeyboardButton(text="🔙 " + tr("back", lang), callback_data="main_menu")]
+        [InlineKeyboardButton(text="➕ " + tr("deposit", lang), callback_data="deposit", style="primary")],
+        [InlineKeyboardButton(text="➖ " + tr("withdraw", lang), callback_data="withdraw", style="primary")],
+        [InlineKeyboardButton(text="🔙 " + tr("back", lang), callback_data="main_menu", style="primary")]
     ])
 
 def kb_my_deals(lang):
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🟦 " + tr("clear_history", lang), callback_data="clear_history")],
-        [InlineKeyboardButton(text="🔙 " + tr("back", lang), callback_data="main_menu")]
+        [InlineKeyboardButton(text="🗑️ " + tr("clear_history", lang), callback_data="clear_history", style="primary")],
+        [InlineKeyboardButton(text="🔙 " + tr("back", lang), callback_data="main_menu", style="primary")]
     ])
 
 # ============================================================
@@ -404,14 +386,14 @@ async def cmd_start(message: Message, state: FSMContext):
     row = fetchone("SELECT lang, accepted_policy FROM users WHERE user_id=?", (uid,))
     if not row or row["accepted_policy"] == 0:
         kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🇷🇺 Русский", callback_data="onboard_ru")],
-            [InlineKeyboardButton(text="🇬🇧 English", callback_data="onboard_en")],
-            [InlineKeyboardButton(text="🇺🇦 Українська", callback_data="onboard_uk")],
-            [InlineKeyboardButton(text="🇰🇿 Қазақша", callback_data="onboard_kk")],
-            [InlineKeyboardButton(text="🇨🇳 中文", callback_data="onboard_zh")],
-            [InlineKeyboardButton(text="🇮🇳 हिन्दी", callback_data="onboard_hi")]
+            [InlineKeyboardButton(text="🇷🇺 Русский", callback_data="onboard_ru", style="primary")],
+            [InlineKeyboardButton(text="🇬🇧 English", callback_data="onboard_en", style="primary")],
+            [InlineKeyboardButton(text="🇺🇦 Українська", callback_data="onboard_uk", style="primary")],
+            [InlineKeyboardButton(text="🇰🇿 Қазақша", callback_data="onboard_kk", style="primary")],
+            [InlineKeyboardButton(text="🇨🇳 中文", callback_data="onboard_zh", style="primary")],
+            [InlineKeyboardButton(text="🇮🇳 हिन्दी", callback_data="onboard_hi", style="primary")]
         ])
-        await message.answer(tr("lang_choose", row["lang"] if row else "ru"), reply_markup=kb)
+        await message.answer(tr("lang_choose", row["lang"] if row else "ru"), reply_markup=kb, parse_mode="HTML")
         return
     lang = row["lang"] if row else "ru"
     args = message.text.split(maxsplit=1)
@@ -437,8 +419,8 @@ async def onboard_set_lang(call: CallbackQuery):
     await call.message.answer(
         tr("policy_text", lang),
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="📜 " + tr("policy_btn", lang), url="https://t.me/PrivacyPoliceFunpay")],
-            [InlineKeyboardButton(text="✅ " + tr("accept_btn", lang), callback_data="accept_policy")]
+            [InlineKeyboardButton(text="📜 " + tr("policy_btn", lang), url="https://t.me/PrivacyPoliceFunpay", style="primary")],
+            [InlineKeyboardButton(text="✅ " + tr("accept_btn", lang), callback_data="accept_policy", style="primary")]
         ]),
         parse_mode="HTML"
     )
@@ -471,14 +453,14 @@ async def cb_create(call: CallbackQuery):
         await call.answer(tr("active_limit", user_lang(call.from_user.id)), show_alert=True)
         return
     lang = user_lang(call.from_user.id)
-    await call.message.answer(tr("choose_role", lang), reply_markup=kb_roles(lang))
+    await call.message.answer(tr("choose_role", lang), reply_markup=kb_roles(lang), parse_mode="HTML")
     await call.answer()
 
 @dp.callback_query(F.data == "role_seller")
 async def seller_role(call: CallbackQuery, state: FSMContext):
     await state.set_state(States.seller_type)
     lang = user_lang(call.from_user.id)
-    await call.message.answer(tr("choose_type", lang), reply_markup=kb_types(lang))
+    await call.message.answer(tr("choose_type", lang), reply_markup=kb_types(lang), parse_mode="HTML")
     await call.answer()
 
 @dp.callback_query(F.data.startswith("type_"), States.seller_type)
@@ -488,9 +470,9 @@ async def seller_type(call: CallbackQuery, state: FSMContext):
     await state.set_state(States.seller_description)
     lang = user_lang(call.from_user.id)
     if deal_type == "account":
-        await call.message.answer(tr("description_account", lang))
+        await call.message.answer(tr("description_account", lang), parse_mode="HTML")
     else:
-        await call.message.answer(tr("description_gift", lang))
+        await call.message.answer(tr("description_gift", lang), parse_mode="HTML")
     await call.answer()
 
 @dp.message(States.seller_description)
@@ -499,35 +481,35 @@ async def seller_description(message: Message, state: FSMContext):
         return
     text = (message.text or "").strip()
     if len(text) < 5:
-        await message.answer("❌ Description too short.")
+        await message.answer("❌ Description too short.", parse_mode="HTML")
         return
     await state.update_data(description=text)
     await state.set_state(States.seller_currency)
-    await message.answer(tr("currency", user_lang(message.from_user.id)), reply_markup=kb_currencies(user_lang(message.from_user.id), "sellcurr_"))
+    await message.answer(tr("currency", user_lang(message.from_user.id)), reply_markup=kb_currencies(user_lang(message.from_user.id), "sellcurr_"), parse_mode="HTML")
 
 @dp.callback_query(F.data.startswith("sellcurr_"), States.seller_currency)
 async def seller_currency(call: CallbackQuery, state: FSMContext):
     currency = call.data.replace("sellcurr_", "")
     await state.update_data(currency=currency)
     await state.set_state(States.seller_amount)
-    await call.message.answer(tr("amount", user_lang(call.from_user.id)))
+    await call.message.answer(tr("amount", user_lang(call.from_user.id)), parse_mode="HTML")
     await call.answer()
 
 @dp.message(States.seller_amount)
 async def seller_amount(message: Message, state: FSMContext):
     amount = parse_amount(message.text)
     if amount is None:
-        await message.answer(tr("amount", user_lang(message.from_user.id)))
+        await message.answer(tr("amount", user_lang(message.from_user.id)), parse_mode="HTML")
         return
     await state.update_data(amount=amount)
     await state.set_state(States.seller_req)
-    await message.answer(tr("requisites", user_lang(message.from_user.id)))
+    await message.answer(tr("requisites", user_lang(message.from_user.id)), parse_mode="HTML")
 
 @dp.message(States.seller_req)
 async def seller_req(message: Message, state: FSMContext):
     req = (message.text or "").strip()
     if len(req) < 3:
-        await message.answer("❌ Requisites too short.")
+        await message.answer("❌ Requisites too short.", parse_mode="HTML")
         return
     uid = message.from_user.id
     data = await state.get_data()
@@ -539,7 +521,7 @@ async def seller_req(message: Message, state: FSMContext):
         execute("UPDATE users SET deals_count=deals_count+1 WHERE user_id=?", (uid,))
     except Exception as e:
         logger.exception(f"Deal creation error: {e}")
-        await message.answer("⚠️ Error creating deal. Try later.")
+        await message.answer("⚠️ Error creating deal. Try later.", parse_mode="HTML")
         await state.clear()
         return
     await state.clear()
@@ -560,7 +542,7 @@ async def seller_req(message: Message, state: FSMContext):
 async def buyer_role(call: CallbackQuery, state: FSMContext):
     await state.set_state(States.buyer_type)
     lang = user_lang(call.from_user.id)
-    await call.message.answer(tr("choose_type", lang), reply_markup=kb_types(lang))
+    await call.message.answer(tr("choose_type", lang), reply_markup=kb_types(lang), parse_mode="HTML")
     await call.answer()
 
 @dp.callback_query(F.data.startswith("type_"), States.buyer_type)
@@ -570,55 +552,55 @@ async def buyer_type(call: CallbackQuery, state: FSMContext):
     await state.set_state(States.buyer_description)
     lang = user_lang(call.from_user.id)
     if deal_type == "account":
-        await call.message.answer(tr("description_account", lang))
+        await call.message.answer(tr("description_account", lang), parse_mode="HTML")
     else:
-        await call.message.answer(tr("description_gift", lang))
+        await call.message.answer(tr("description_gift", lang), parse_mode="HTML")
     await call.answer()
 
 @dp.message(States.buyer_description)
 async def buyer_description(message: Message, state: FSMContext):
     text = (message.text or "").strip()
     if len(text) < 5:
-        await message.answer("❌ Description too short.")
+        await message.answer("❌ Description too short.", parse_mode="HTML")
         return
     await state.update_data(description=text)
     await state.set_state(States.buyer_currency)
-    await message.answer(tr("currency", user_lang(message.from_user.id)), reply_markup=kb_currencies(user_lang(message.from_user.id), "buycurr_"))
+    await message.answer(tr("currency", user_lang(message.from_user.id)), reply_markup=kb_currencies(user_lang(message.from_user.id), "buycurr_"), parse_mode="HTML")
 
 @dp.callback_query(F.data.startswith("buycurr_"), States.buyer_currency)
 async def buyer_currency(call: CallbackQuery, state: FSMContext):
     currency = call.data.replace("buycurr_", "")
     await state.update_data(currency=currency)
     await state.set_state(States.buyer_amount)
-    await call.message.answer(tr("amount", user_lang(call.from_user.id)))
+    await call.message.answer(tr("amount", user_lang(call.from_user.id)), parse_mode="HTML")
     await call.answer()
 
 @dp.message(States.buyer_amount)
 async def buyer_amount(message: Message, state: FSMContext):
     amount = parse_amount(message.text)
     if amount is None:
-        await message.answer(tr("amount", user_lang(message.from_user.id)))
+        await message.answer(tr("amount", user_lang(message.from_user.id)), parse_mode="HTML")
         return
     await state.update_data(amount=amount)
     await state.set_state(States.buyer_username)
-    await message.answer(tr("seller_username", user_lang(message.from_user.id)))
+    await message.answer(tr("seller_username", user_lang(message.from_user.id)), parse_mode="HTML")
 
 @dp.message(States.buyer_username)
 async def buyer_username(message: Message, state: FSMContext):
     raw = (message.text or "").strip()
     username = raw.lstrip("@")
     if not re.fullmatch(r"[A-Za-z0-9_]{3,32}", username):
-        await message.answer(tr("invalid", user_lang(message.from_user.id)))
+        await message.answer(tr("invalid", user_lang(message.from_user.id)), parse_mode="HTML")
         return
     seller = fetchone("SELECT user_id, username FROM users WHERE lower(username)=lower(?)", (username,))
     seller_id = seller["user_id"] if seller else None
     seller_username = username if not seller else seller["username"]
     uid = message.from_user.id
     if seller_id == uid:
-        await message.answer(tr("self_deal", user_lang(uid)))
+        await message.answer(tr("self_deal", user_lang(uid)), parse_mode="HTML")
         return
     if active_count(uid) >= MAX_ACTIVE_DEALS:
-        await message.answer(tr("active_limit", user_lang(uid)))
+        await message.answer(tr("active_limit", user_lang(uid)), parse_mode="HTML")
         return
     data = await state.get_data()
     deal_id = uuid.uuid4().hex[:10]
@@ -628,7 +610,7 @@ async def buyer_username(message: Message, state: FSMContext):
         execute("UPDATE users SET deals_count=deals_count+1 WHERE user_id=?", (uid,))
     except Exception as e:
         logger.exception(f"Buyer deal creation error: {e}")
-        await message.answer("⚠️ Error creating deal. Try later.")
+        await message.answer("⚠️ Error creating deal. Try later.", parse_mode="HTML")
         await state.clear()
         return
     await state.clear()
@@ -684,7 +666,7 @@ async def cancel_deal(call: CallbackQuery):
         return
     execute("UPDATE deals SET status='cancelled' WHERE deal_id=?", (deal_id,))
     lang = user_lang(uid)
-    await call.message.answer(tr("cancelled", lang).format(deal_id=deal_id), reply_markup=kb_back(lang))
+    await call.message.answer(tr("cancelled", lang).format(deal_id=deal_id), reply_markup=kb_back(lang), parse_mode="HTML")
     other = deal["buyer_id"] if uid == deal["seller_id"] else deal["seller_id"]
     if other:
         await notify(other, tr("cancelled", user_lang(other)).format(deal_id=deal_id))
@@ -699,14 +681,14 @@ async def deal_details(call: CallbackQuery):
     if not deal or uid not in (deal["seller_id"], deal["buyer_id"]):
         await call.answer(tr("not_allowed", lang), show_alert=True)
         return
-    text = f"📄 <b>Deal #{deal_id}</b>\n\nType: {deal['deal_type']}\nDescription: {deal['description']}\nAmount: {deal['amount']} {deal['currency']}\nSeller: @{deal['seller_username'] or '-'}\nBuyer: @{deal['buyer_username'] or '-'}\nStatus: {status_text(deal['status'], lang)}\n"
+    text = f"📄 Deal #{deal_id}\n\nType: {deal['deal_type']}\nDescription: {deal['description']}\nAmount: {deal['amount']} {deal['currency']}\nSeller: @{deal['seller_username'] or '-'}\nBuyer: @{deal['buyer_username'] or '-'}\nStatus: {status_text(deal['status'], lang)}\n"
     if deal["seller_req"] and uid == deal["seller_id"]:
         text += f"\nSeller requisites: {deal['seller_req']}"
     rows = []
     if deal["status"] in ("waiting_buyer", "waiting_seller", "waiting"):
-        rows.append([InlineKeyboardButton(text="❌ " + tr("cancel_deal", lang), callback_data=f"cancel_{deal_id}")])
-    rows.append([InlineKeyboardButton(text="🔙 " + tr("back", lang), callback_data="my_deals")])
-    await call.message.answer(text, reply_markup=InlineKeyboardMarkup(inline_keyboard=rows))
+        rows.append([InlineKeyboardButton(text="❌ " + tr("cancel_deal", lang), callback_data=f"cancel_{deal_id}", style="primary")])
+    rows.append([InlineKeyboardButton(text="🔙 " + tr("back", lang), callback_data="my_deals", style="primary")])
+    await call.message.answer(text, reply_markup=InlineKeyboardMarkup(inline_keyboard=rows), parse_mode="HTML")
     await call.answer()
 
 @dp.callback_query(F.data == "my_deals")
@@ -715,17 +697,17 @@ async def my_deals(call: CallbackQuery):
     lang = user_lang(uid)
     rows = fetchall("SELECT deal_id,deal_type,amount,currency,status FROM deals WHERE seller_id=? OR buyer_id=? ORDER BY created_at DESC LIMIT 30", (uid, uid))
     if not rows:
-        await call.message.answer(tr("my_deals_empty", lang), reply_markup=kb_back(lang))
+        await call.message.answer(tr("my_deals_empty", lang), reply_markup=kb_back(lang), parse_mode="HTML")
         await call.answer()
         return
     text = tr("my_deals_title", lang)
     buttons = []
     for d in rows:
         text += f"#{d['deal_id']} | {d['deal_type']} | {d['amount']} {d['currency']}  | {status_text(d['status'], lang)}\n"
-        buttons.append([InlineKeyboardButton(text=f"🔎 #{d['deal_id']}", callback_data=f"dealview_{d['deal_id']}")])
-    buttons.append([InlineKeyboardButton(text="🟦 " + tr("clear_history", lang), callback_data="clear_history")])
-    buttons.append([InlineKeyboardButton(text="🔙 " + tr("back", lang), callback_data="main_menu")])
-    await call.message.answer(text, reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons))
+        buttons.append([InlineKeyboardButton(text=f"🔎 #{d['deal_id']}", callback_data=f"dealview_{d['deal_id']}", style="primary")])
+    buttons.append([InlineKeyboardButton(text="🗑️ " + tr("clear_history", lang), callback_data="clear_history", style="primary")])
+    buttons.append([InlineKeyboardButton(text="🔙 " + tr("back", lang), callback_data="main_menu", style="primary")])
+    await call.message.answer(text, reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons), parse_mode="HTML")
     await call.answer()
 
 @dp.callback_query(F.data == "clear_history")
@@ -736,7 +718,7 @@ async def clear_history(call: CallbackQuery):
         execute("INSERT OR REPLACE INTO archived_deals (deal_id, seller_id, buyer_id, deal_type, description, amount, currency, seller_req, buyer_req, gift_link, status, seller_username, buyer_username, created_at, completed_at, confirmed_at, commission, archived_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (row["deal_id"], row["seller_id"], row["buyer_id"], row["deal_type"], row["description"], row["amount"], row["currency"], row["seller_req"], row["buyer_req"], row["gift_link"], row["status"], row["seller_username"], row["buyer_username"], row["created_at"], row["completed_at"], row["confirmed_at"], row["commission"], datetime.now(timezone.utc).isoformat()))
         execute("DELETE FROM deals WHERE deal_id=?", (row["deal_id"],))
     lang = user_lang(uid)
-    await call.message.answer(tr("history_cleared", lang), reply_markup=kb_back(lang))
+    await call.message.answer(tr("history_cleared", lang), reply_markup=kb_back(lang), parse_mode="HTML")
     await call.answer()
 
 # ============================================================
@@ -808,7 +790,7 @@ async def profile(call: CallbackQuery):
     lang = user_lang(uid)
     row = fetchone("SELECT * FROM users WHERE user_id=?", (uid,))
     rating = row["rating"] if row else 0
-    await call.message.answer(tr("profile_text", lang).format(id=uid, username=row["username"] if row else "", deals=row["deals_count"] if row else 0, successful=row["successful_deals"] if row else 0, rating=f"{rating:.2f}", reviews=row["reviews_count"] if row else 0, refs=row["ref_count"] if row else 0), reply_markup=kb_back(lang))
+    await call.message.answer(tr("profile_text", lang).format(id=uid, username=row["username"] if row else "", deals=row["deals_count"] if row else 0, successful=row["successful_deals"] if row else 0, rating=f"{rating:.2f}", reviews=row["reviews_count"] if row else 0, refs=row["ref_count"] if row else 0), reply_markup=kb_back(lang), parse_mode="HTML")
     await call.answer()
 
 @dp.callback_query(F.data == "referral")
@@ -831,13 +813,13 @@ async def lang_menu(call: CallbackQuery):
     await call.message.answer(
         tr("lang_choose", lang),
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🇷🇺 Русский", callback_data="setlang_ru")],
-            [InlineKeyboardButton(text="🇬🇧 English", callback_data="setlang_en")],
-            [InlineKeyboardButton(text="🇺🇦 Українська", callback_data="setlang_uk")],
-            [InlineKeyboardButton(text="🇰🇿 Қазақша", callback_data="setlang_kk")],
-            [InlineKeyboardButton(text="🇨🇳 中文", callback_data="setlang_zh")],
-            [InlineKeyboardButton(text="🇮🇳 हिन्दी", callback_data="setlang_hi")],
-            [InlineKeyboardButton(text="🔙 " + tr("back", lang), callback_data="main_menu")]
+            [InlineKeyboardButton(text="🇷🇺 Русский", callback_data="setlang_ru", style="primary")],
+            [InlineKeyboardButton(text="🇬🇧 English", callback_data="setlang_en", style="primary")],
+            [InlineKeyboardButton(text="🇺🇦 Українська", callback_data="setlang_uk", style="primary")],
+            [InlineKeyboardButton(text="🇰🇿 Қазақша", callback_data="setlang_kk", style="primary")],
+            [InlineKeyboardButton(text="🇨🇳 中文", callback_data="setlang_zh", style="primary")],
+            [InlineKeyboardButton(text="🇮🇳 हिन्दी", callback_data="setlang_hi", style="primary")],
+            [InlineKeyboardButton(text="🔙 " + tr("back", lang), callback_data="main_menu", style="primary")]
         ])
     )
     await call.answer()
@@ -849,7 +831,7 @@ async def set_lang(call: CallbackQuery):
         await call.answer(tr("invalid", user_lang(call.from_user.id)), show_alert=True)
         return
     execute("UPDATE users SET lang=? WHERE user_id=?", (lang, call.from_user.id))
-    await call.message.answer(tr("language_set", lang).format(lang=LANG_NAMES[lang]))
+    await call.message.answer(tr("language_set", lang).format(lang=LANG_NAMES[lang]), parse_mode="HTML")
     await call.answer()
 
 @dp.callback_query(F.data == "about")
@@ -863,7 +845,7 @@ async def about(call: CallbackQuery):
 @dp.callback_query(F.data == "requisites")
 async def requisites_menu(call: CallbackQuery):
     lang = user_lang(call.from_user.id)
-    await call.message.answer(tr("req_menu", lang), reply_markup=kb_currencies(lang, "req_"))
+    await call.message.answer(tr("req_menu", lang), reply_markup=kb_currencies(lang, "req_"), parse_mode="HTML")
     await call.answer()
 
 @dp.callback_query(F.data.startswith("req_"))
@@ -891,14 +873,14 @@ async def req_choose(call: CallbackQuery, state: FSMContext):
         "KZT": "phone or card for KZT",
     }
     prompt = tr("req_prompt", lang).format(currency=currency_names.get(currency, currency), currency_name=currency, example=examples.get(currency, ""))
-    await call.message.answer(prompt)
+    await call.message.answer(prompt, parse_mode="HTML")
     await call.answer()
 
 @dp.message(States.req_input)
 async def req_input(message: Message, state: FSMContext):
     value = (message.text or "").strip()
     if len(value) < 3:
-        await message.answer(tr("invalid", user_lang(message.from_user.id)))
+        await message.answer(tr("invalid", user_lang(message.from_user.id)), parse_mode="HTML")
         return
     data = await state.get_data()
     currency = data.get("req_currency")
@@ -916,20 +898,20 @@ async def req_input(message: Message, state: FSMContext):
         return
     execute(f"UPDATE users SET {col}=? WHERE user_id=?", (value, message.from_user.id))
     await state.clear()
-    await message.answer(tr("req_saved", user_lang(message.from_user.id)), reply_markup=kb_back(user_lang(message.from_user.id)))
+    await message.answer(tr("req_saved", user_lang(message.from_user.id)), reply_markup=kb_back(user_lang(message.from_user.id)), parse_mode="HTML")
 
 # ============================================================
-# TRANSLATION DICTIONARY – ALL 6 LANGUAGES (ПОЛНЫЕ ПЕРЕВОДЫ)
+# TRANSLATION DICTIONARY – ALL 6 LANGUAGES (БЕЗ <b>)
 # ============================================================
 LANG_NAMES = {"ru": "Русский", "en": "English", "uk": "Українська", "kk": "Қазақша", "zh": "中文", "hi": "हिन्दी"}
 
 T = {
     "ru": {
-        "lang_choose": "🌐 <b>Выберите язык / Choose Language / Виберіть мову / Тіліңізді таңдаңыз / 选择语言 / भाषा चुनें</b>",
-        "policy_text": "🛡️ <b>Добро пожаловать</b>\n\nНеобходимо принять Политику конфиденциальности:\n• Данные только для работы бота\n• Передача аккаунта запрещена\n• При обращении нужны доказательства\n• Бот «как есть»\n\nНажимая «Принимаю», вы соглашаетесь.",
+        "lang_choose": "🌐 Выберите язык / Choose Language / Виберіть мову / Тіліңізді таңдаңыз / 选择语言 / भाषा चुनें",
+        "policy_text": "🛡️ Добро пожаловать\n\nНеобходимо принять Политику конфиденциальности:\n• Данные только для работы бота\n• Передача аккаунта запрещена\n• При обращении нужны доказательства\n• Бот «как есть»\n\nНажимая «Принимаю», вы соглашаетесь.",
         "policy_btn": "📜 Политика конфиденциальности",
         "accept_btn": "✅ Принимаю",
-        "main": "🛡️ <b>FUNPAY</b>\n\n<b>Добро пожаловать</b>\n\n<b>Мы специализированный сервис по обеспечению безопасности вне биржевых сделок.</b>\n\n<b>Автоматизированный алгоритм исполнения.</b>\n<b>Скорость и автоматизация.</b>\n<b>Удобный и быстрый вывод средств.</b>\n\n• Комиссия сервиса: 1%\n• Режим работы: 24/7\n• Техническая поддержка: @GiftsForFunpay\n\n<b>Выберите нужный раздел ниже</b>",
+        "main": "🛡️ FUNPAY\n\nДобро пожаловать\n\nМы специализированный сервис по обеспечению безопасности вне биржевых сделок.\n\nАвтоматизированный алгоритм исполнения.\nСкорость и автоматизация.\nУдобный и быстрый вывод средств.\n\n• Комиссия сервиса: 1%\n• Режим работы: 24/7\n• Техническая поддержка: @GiftsForFunpay\n\nВыберите нужный раздел ниже",
         "create": "Создать Сделку",
         "my_deals": "Мои сделки",
         "req": "Реквизиты",
@@ -939,8 +921,8 @@ T = {
         "about": "О сервисе",
         "language": "Язык",
         "back": "Назад",
-        "profile_text": "👤 <b>Профиль</b>\n\n🆔 ID: {id}\n👤 Username: @{username}\n📊 Сделок: {deals}\n✅ Успешных: {successful}\n⭐ Рейтинг: {rating} ({reviews})\n👥 Рефералов: {refs}",
-        "my_deals_title": "📂 <b>Мои сделки</b>\n\n",
+        "profile_text": "👤 Профиль\n\n🆔 ID: {id}\n👤 Username: @{username}\n📊 Сделок: {deals}\n✅ Успешных: {successful}\n⭐ Рейтинг: {rating} ({reviews})\n👥 Рефералов: {refs}",
+        "my_deals_title": "📂 Мои сделки\n\n",
         "my_deals_empty": "📭 У вас нет сделок.",
         "clear_history": "Очистить историю",
         "history_cleared": "✅ История очищена.",
@@ -951,34 +933,34 @@ T = {
         "curr_ton": "TON",
         "curr_stars": "STARS",
         "curr_kzt": "KZT",
-        "choose_role": "🎯 <b>Выберите роль</b>:",
+        "choose_role": "🎯 Выберите роль",
         "seller": "Продавец",
         "buyer": "Покупатель",
-        "choose_type": "📋 <b>Выберите тип</b>:",
+        "choose_type": "📋 Выберите тип",
         "account": "Аккаунт/товар",
         "gift": "NFT Gift",
         "description_account": "📝 Опишите предмет сделки",
         "description_gift": "🎁 Опишите предмет сделки\nПример: https://t.me/nft/...",
-        "currency": "💱 <b>Выберите валюту</b>:",
-        "amount": "💰 <b>Введите сумму</b>:",
-        "requisites": "💳 <b>Введите реквизиты</b>:",
-        "seller_username": "👤 <b>Введите @username продавца</b>:",
-        "deal_created": "✅ <b>Сделка #{deal_id} создана!</b>\n\n💵 Валюта: {currency}\n💰 Сумма: {amount} {currency}\n🔗 Ссылка для покупателя: {link}",
-        "deal_created_buyer": "✅ <b>Сделка #{deal_id} создана!</b>\n\n💵 Валюта: {currency}\n💰 Сумма: {amount} {currency}\n🔗 Ссылка для продавца: {link}",
+        "currency": "💱 Выберите валюту",
+        "amount": "💰 Введите сумму",
+        "requisites": "💳 Введите реквизиты",
+        "seller_username": "👤 Введите @username продавца",
+        "deal_created": "✅ Сделка #{deal_id} создана!\n\n💵 Валюта: {currency}\n💰 Сумма: {amount} {currency}\n🔗 Ссылка для покупателя: {link}",
+        "deal_created_buyer": "✅ Сделка #{deal_id} создана!\n\n💵 Валюта: {currency}\n💰 Сумма: {amount} {currency}\n🔗 Ссылка для продавца: {link}",
         "joined": "✅ Вы подключились к сделке #{deal_id}.",
         "confirm": "Подтвердить участие",
         "cancel_deal": "Отменить сделку",
         "confirm_seller_notify": "✅ Участие подтверждено.",
-        "buyer_notify": "✅ <b>Продавец подтвердил сделку #{deal_id}.</b>\n\n💰 {amount} {currency}\n💳 Реквизиты:\n{req}",
-        "confirmed": "✅ <b>Оплата подтверждена</b>\n\n📌 Сделка: #{deal_id}\n👤 Продавец: @{seller}\n⭐ Рейтинг: {rating}/5\n✅ Успешно: {successful}\n💰 Сумма: {amount} {currency}\n📦 Предмет: {description}\n\n⏳ Ожидайте передачу.",
+        "buyer_notify": "✅ Продавец подтвердил сделку #{deal_id}.\n\n💰 {amount} {currency}\n💳 Реквизиты:\n{req}",
+        "confirmed": "✅ Оплата подтверждена\n\n📌 Сделка: #{deal_id}\n👤 Продавец: @{seller}\n⭐ Рейтинг: {rating}/5\n✅ Успешно: {successful}\n💰 Сумма: {amount} {currency}\n📦 Предмет: {description}\n\n⏳ Ожидайте передачу.",
         "deal_active": "Активна",
-        "language_text": "🌐 <b>Выберите язык</b>:",
+        "language_text": "🌐 Выберите язык",
         "language_set": "✅ Язык установлен: {lang}.",
-        "req_menu": "💳 <b>Выберите валюту</b>:",
+        "req_menu": "💳 Выберите валюту",
         "req_prompt": "✏️ Введите {currency} для {currency_name}\n\n📝 Пример:\n{example}",
         "req_saved": "✅ Реквизит сохранён.",
         "support_text": "🆘 Поддержка: @FunPayHeIp",
-        "about_text": "📖 <b>Подробнее:</b>\n\n💡 <b>Мы – гарант сервис, наша задача помочь вам провести безопасные сделки, и оформить быстрый вывод!</b>\n\n❓ <b>Ответы на частые вопросы:</b>\n\n• <b>Как долго происходит вывод?</b> Обычно не более 2-х минут, в редких случаях до 2-х часов.\n\n• <b>Почему нужно передавать подарок менеджеру, но не покупателю?</b> Причина проста: покупатель может наврать что ему не пришёл подарок, что затягивает ситуацию, но наш менеджер автоматически проверяет наличие NFT подарка и уже обмануть не получится.\n\n• <b>Как быстро происходит пополнение?</b> Пополнение также занимает не более 2-х минут.\n\n• <b>Я увидел похожего бота, стоит ли мне доверять?</b> Если вы увидели другого бота кроме @FunPayTrust_robot, ни в коем случае не проводите с ним сделки!",
+        "about_text": "📖 Подробнее:\n\n💡 Мы – гарант сервис, наша задача помочь вам провести безопасные сделки, и оформить быстрый вывод!\n\n❓ Ответы на частые вопросы:\n\n• Как долго происходит вывод? Обычно не более 2-х минут, в редких случаях до 2-х часов.\n\n• Почему нужно передавать подарок менеджеру, но не покупателю? Причина проста: покупатель может наврать что ему не пришёл подарок, что затягивает ситуацию, но наш менеджер автоматически проверяет наличие NFT подарка и уже обмануть не получится.\n\n• Как быстро происходит пополнение? Пополнение также занимает не более 2-х минут.\n\n• Я увидел похожего бота, стоит ли мне доверять? Если вы увидели другого бота кроме @FunPayTrust_robot, ни в коем случае не проводите с ним сделки!",
         "admin_done_ok": "✅ Сделка #{deal_id} завершена.",
         "admin_cancel_ok": "❌ Сделка #{deal_id} отменена.",
         "banned": "🚫 Аккаунт заблокирован.",
@@ -990,14 +972,14 @@ T = {
         "self_deal": "❌ Нельзя занять вторую роль.",
         "full": "ℹ️ Обе роли заняты.",
         "already_member": "ℹ️ Вы уже участник.",
-        "referral_text": "💠 <b>РЕФЕРАЛЬНАЯ ПРОГРАММА</b>\n━━━━━━━━━━━━━━━━━━━\n\n🔗 <b>Ваша ссылка:</b>\n{link}\n\n━━━━━━━━━━━━━━━━━━━\n📊 <b>СТАТИСТИКА:</b>\n\n• Всего приглашено: {total}\n• Активных рефералов: 0\n• Общий объем сделок: 0.00 ₽\n\n━━━━━━━━━━━━━━━━━━━\n💰 <b>ВАШИ БОНУСЫ:</b>\n\n• За каждого активного реферала: +5% к балансу\n• При первой сделке реферала: +100 ₽",
+        "referral_text": "💠 РЕФЕРАЛЬНАЯ ПРОГРАММА\n━━━━━━━━━━━━━━━━━━━\n\n🔗 Ваша ссылка:\n{link}\n\n━━━━━━━━━━━━━━━━━━━\n📊 СТАТИСТИКА:\n\n• Всего приглашено: {total}\n• Активных рефералов: 0\n• Общий объем сделок: 0.00 ₽\n\n━━━━━━━━━━━━━━━━━━━\n💰 ВАШИ БОНУСЫ:\n\n• За каждого активного реферала: +5% к балансу\n• При первой сделке реферала: +100 ₽",
     },
     "en": {
-        "lang_choose": "🌐 <b>Choose Language / Выберите язык / Виберіть мову / Тіліңізді таңдаңыз / 选择语言 / भाषा चुनें</b>",
-        "policy_text": "🛡️ <b>Welcome</b>\n\nAccept Privacy Policy:\n• Data for bot only\n• Account transfer prohibited\n• Proof required\n• Bot 'as is'\n\nClick 'Accept' to agree.",
+        "lang_choose": "🌐 Choose Language / Выберите язык / Виберіть мову / Тіліңізді таңдаңыз / 选择语言 / भाषा चुनें",
+        "policy_text": "🛡️ Welcome\n\nAccept Privacy Policy:\n• Data for bot only\n• Account transfer prohibited\n• Proof required\n• Bot 'as is'\n\nClick 'Accept' to agree.",
         "policy_btn": "📜 Privacy Policy",
         "accept_btn": "✅ Accept",
-        "main": "🛡️ <b>FUNPAY</b>\n\n<b>Welcome</b>\n\n<b>We are a specialized service for ensuring security in off-exchange transactions.</b>\n\n<b>Automated execution algorithm.</b>\n<b>Speed and automation.</b>\n<b>Convenient and fast withdrawal of funds.</b>\n\n• Service commission: 1%\n• Operating mode: 24/7\n• Technical support: @GiftsForFunpay\n\n<b>Select the section you need below</b>",
+        "main": "🛡️ FUNPAY\n\nWelcome\n\nWe are a specialized service for ensuring security in off-exchange transactions.\n\nAutomated execution algorithm.\nSpeed and automation.\nConvenient and fast withdrawal of funds.\n\n• Service commission: 1%\n• Operating mode: 24/7\n• Technical support: @GiftsForFunpay\n\nSelect the section you need below",
         "create": "Create Deal",
         "my_deals": "My deals",
         "req": "Requisites",
@@ -1007,8 +989,8 @@ T = {
         "about": "About",
         "language": "Language",
         "back": "Back",
-        "profile_text": "👤 <b>Profile</b>\n\n🆔 ID: {id}\n👤 Username: @{username}\n📊 Deals: {deals}\n✅ Successful: {successful}\n⭐ Rating: {rating} ({reviews})\n👥 Referrals: {refs}",
-        "my_deals_title": "📂 <b>My deals</b>\n\n",
+        "profile_text": "👤 Profile\n\n🆔 ID: {id}\n👤 Username: @{username}\n📊 Deals: {deals}\n✅ Successful: {successful}\n⭐ Rating: {rating} ({reviews})\n👥 Referrals: {refs}",
+        "my_deals_title": "📂 My deals\n\n",
         "my_deals_empty": "📭 No deals.",
         "clear_history": "Clear history",
         "history_cleared": "✅ History cleared.",
@@ -1019,34 +1001,34 @@ T = {
         "curr_ton": "TON",
         "curr_stars": "STARS",
         "curr_kzt": "KZT",
-        "choose_role": "🎯 <b>Choose role</b>:",
+        "choose_role": "🎯 Choose role",
         "seller": "Seller",
         "buyer": "Buyer",
-        "choose_type": "📋 <b>Choose type</b>:",
+        "choose_type": "📋 Choose type",
         "account": "Account/goods",
         "gift": "NFT Gift",
         "description_account": "📝 Describe deal item",
         "description_gift": "🎁 Describe deal item\nExample: https://t.me/nft/...",
-        "currency": "💱 <b>Choose currency</b>:",
-        "amount": "💰 <b>Enter amount</b>:",
-        "requisites": "💳 <b>Enter requisites</b>:",
-        "seller_username": "👤 <b>Enter seller @username</b>:",
-        "deal_created": "✅ <b>Deal #{deal_id} created!</b>\n\n💵 Currency: {currency}\n💰 Amount: {amount} {currency}\n🔗 Buyer link: {link}",
-        "deal_created_buyer": "✅ <b>Deal #{deal_id} created!</b>\n\n💵 Currency: {currency}\n💰 Amount: {amount} {currency}\n🔗 Seller link: {link}",
+        "currency": "💱 Choose currency",
+        "amount": "💰 Enter amount",
+        "requisites": "💳 Enter requisites",
+        "seller_username": "👤 Enter seller @username",
+        "deal_created": "✅ Deal #{deal_id} created!\n\n💵 Currency: {currency}\n💰 Amount: {amount} {currency}\n🔗 Buyer link: {link}",
+        "deal_created_buyer": "✅ Deal #{deal_id} created!\n\n💵 Currency: {currency}\n💰 Amount: {amount} {currency}\n🔗 Seller link: {link}",
         "joined": "✅ You joined deal #{deal_id}.",
         "confirm": "Confirm",
         "cancel_deal": "Cancel",
         "confirm_seller_notify": "✅ Confirmed.",
-        "buyer_notify": "✅ <b>Seller confirmed deal #{deal_id}.</b>\n\n💰 {amount} {currency}\n💳 Requisites:\n{req}",
-        "confirmed": "✅ <b>Payment confirmed</b>\n\n📌 Deal: #{deal_id}\n👤 Seller: @{seller}\n⭐ Rating: {rating}/5\n✅ Successful: {successful}\n💰 Amount: {amount} {currency}\n📦 Item: {description}\n\n⏳ Wait for transfer.",
+        "buyer_notify": "✅ Seller confirmed deal #{deal_id}.\n\n💰 {amount} {currency}\n💳 Requisites:\n{req}",
+        "confirmed": "✅ Payment confirmed\n\n📌 Deal: #{deal_id}\n👤 Seller: @{seller}\n⭐ Rating: {rating}/5\n✅ Successful: {successful}\n💰 Amount: {amount} {currency}\n📦 Item: {description}\n\n⏳ Wait for transfer.",
         "deal_active": "Active",
-        "language_text": "🌐 <b>Choose language</b>:",
+        "language_text": "🌐 Choose language",
         "language_set": "✅ Language set: {lang}.",
-        "req_menu": "💳 <b>Choose currency</b>:",
+        "req_menu": "💳 Choose currency",
         "req_prompt": "✏️ Enter {currency} for {currency_name}\n\n📝 Example:\n{example}",
         "req_saved": "✅ Requisite saved.",
         "support_text": "🆘 Support: @FunPayHeIp",
-        "about_text": "📖 <b>Details:</b>\n\n💡 <b>We are a guarantor service, our task is to help you conduct safe deals and process fast withdrawals!</b>\n\n❓ <b>Frequently asked questions:</b>\n\n• <b>How long does a withdrawal take?</b> Usually no more than 2 minutes, in rare cases up to 2 hours.\n\n• <b>Why should the gift be transferred to the manager and not the buyer?</b> The reason is simple: the buyer could lie that they didn't receive the gift, which delays the situation, but our manager automatically checks the presence of the NFT gift and it will not be possible to deceive.\n\n• <b>How fast is the deposit?</b> Deposit also takes no more than 2 minutes.\n\n• <b>I saw a similar bot, should I trust it?</b> If you see another bot besides @FunPayTrust_robot, do not conduct deals with it under any circumstances!",
+        "about_text": "📖 Details:\n\n💡 We are a guarantor service, our task is to help you conduct safe deals and process fast withdrawals!\n\n❓ Frequently asked questions:\n\n• How long does a withdrawal take? Usually no more than 2 minutes, in rare cases up to 2 hours.\n\n• Why should the gift be transferred to the manager and not the buyer? The reason is simple: the buyer could lie that they didn't receive the gift, which delays the situation, but our manager automatically checks the presence of the NFT gift and it will not be possible to deceive.\n\n• How fast is the deposit? Deposit also takes no more than 2 minutes.\n\n• I saw a similar bot, should I trust it? If you see another bot besides @FunPayTrust_robot, do not conduct deals with it under any circumstances!",
         "admin_done_ok": "✅ Deal #{deal_id} completed.",
         "admin_cancel_ok": "❌ Deal #{deal_id} cancelled.",
         "banned": "🚫 Account blocked.",
@@ -1058,14 +1040,14 @@ T = {
         "self_deal": "❌ Cannot take second role.",
         "full": "ℹ️ Both roles taken.",
         "already_member": "ℹ️ Already a member.",
-        "referral_text": "💠 <b>REFERRAL PROGRAM</b>\n━━━━━━━━━━━━━━━━━━━\n\n🔗 <b>Your link:</b>\n{link}\n\n━━━━━━━━━━━━━━━━━━━\n📊 <b>STATISTICS:</b>\n\n• Total invited: {total}\n• Active referrals: 0\n• Total deal volume: 0.00 ₽\n\n━━━━━━━━━━━━━━━━━━━\n💰 <b>YOUR BONUSES:</b>\n\n• For each active referral: +5% to balance\n• On referral's first deal: +100 ₽",
+        "referral_text": "💠 REFERRAL PROGRAM\n━━━━━━━━━━━━━━━━━━━\n\n🔗 Your link:\n{link}\n\n━━━━━━━━━━━━━━━━━━━\n📊 STATISTICS:\n\n• Total invited: {total}\n• Active referrals: 0\n• Total deal volume: 0.00 ₽\n\n━━━━━━━━━━━━━━━━━━━\n💰 YOUR BONUSES:\n\n• For each active referral: +5% to balance\n• On referral's first deal: +100 ₽",
     },
     "uk": {
-        "lang_choose": "🌐 <b>Виберіть мову / Выберите язык / Choose Language / Тіліңізді таңдаңыз / 选择语言 / भाषा चुनें</b>",
-        "policy_text": "🛡️ <b>Ласкаво просимо</b>\n\nПрийміть Політику конфіденційності:\n• Дані тільки для роботи бота\n• Передача аккаунта заборонена\n• При зверненні потрібні докази\n• Бот «як є»\n\nНатискаючи «Приймаю», ви погоджуєтесь.",
+        "lang_choose": "🌐 Виберіть мову / Выберите язык / Choose Language / Тіліңізді таңдаңыз / 选择语言 / भाषा चुनें",
+        "policy_text": "🛡️ Ласкаво просимо\n\nПрийміть Політику конфіденційності:\n• Дані тільки для роботи бота\n• Передача аккаунта заборонена\n• При зверненні потрібні докази\n• Бот «як є»\n\nНатискаючи «Приймаю», ви погоджуєтесь.",
         "policy_btn": "📜 Політика конфіденційності",
         "accept_btn": "✅ Приймаю",
-        "main": "🛡️ <b>FUNPAY</b>\n\n<b>Ласкаво просимо</b>\n\n<b>Ми спеціалізований сервіс з забезпечення безпеки позабіржових угод.</b>\n\n<b>Автоматизований алгоритм виконання.</b>\n<b>Швидкість та автоматизація.</b>\n<b>Зручний та швидкий вивід коштів.</b>\n\n• Комісія сервісу: 1%\n• Режим роботи: 24/7\n• Технічна підтримка: @GiftsForFunpay\n\n<b>Виберіть потрібний розділ нижче</b>",
+        "main": "🛡️ FUNPAY\n\nЛаскаво просимо\n\nМи спеціалізований сервіс з забезпечення безпеки позабіржових угод.\n\nАвтоматизований алгоритм виконання.\nШвидкість та автоматизація.\nЗручний та швидкий вивід коштів.\n\n• Комісія сервісу: 1%\n• Режим роботи: 24/7\n• Технічна підтримка: @GiftsForFunpay\n\nВиберіть потрібний розділ нижче",
         "create": "Створити Угоду",
         "my_deals": "Мої угоди",
         "req": "Реквізити",
@@ -1075,8 +1057,8 @@ T = {
         "about": "Про сервіс",
         "language": "Мова",
         "back": "Назад",
-        "profile_text": "👤 <b>Профіль</b>\n\n🆔 ID: {id}\n👤 Username: @{username}\n📊 Угод: {deals}\n✅ Успішних: {successful}\n⭐ Рейтинг: {rating} ({reviews})\n👥 Рефералів: {refs}",
-        "my_deals_title": "📂 <b>Мої угоди</b>\n\n",
+        "profile_text": "👤 Профіль\n\n🆔 ID: {id}\n👤 Username: @{username}\n📊 Угод: {deals}\n✅ Успішних: {successful}\n⭐ Рейтинг: {rating} ({reviews})\n👥 Рефералів: {refs}",
+        "my_deals_title": "📂 Мої угоди\n\n",
         "my_deals_empty": "📭 У вас немає угод.",
         "clear_history": "Очистити історію",
         "history_cleared": "✅ Історію очищено.",
@@ -1087,34 +1069,34 @@ T = {
         "curr_ton": "TON",
         "curr_stars": "STARS",
         "curr_kzt": "KZT",
-        "choose_role": "🎯 <b>Виберіть роль</b>:",
+        "choose_role": "🎯 Виберіть роль",
         "seller": "Продавець",
         "buyer": "Покупець",
-        "choose_type": "📋 <b>Виберіть тип</b>:",
+        "choose_type": "📋 Виберіть тип",
         "account": "Аккаунт/товар",
         "gift": "NFT Gift",
         "description_account": "📝 Опишіть предмет угоди",
         "description_gift": "🎁 Опишіть предмет угоди\nПриклад: https://t.me/nft/...",
-        "currency": "💱 <b>Виберіть валюту</b>:",
-        "amount": "💰 <b>Введіть суму</b>:",
-        "requisites": "💳 <b>Введіть реквізити</b>:",
-        "seller_username": "👤 <b>Введіть @username продавця</b>:",
-        "deal_created": "✅ <b>Угода #{deal_id} створена!</b>\n\n💵 Валюта: {currency}\n💰 Сума: {amount} {currency}\n🔗 Посилання для покупця: {link}",
-        "deal_created_buyer": "✅ <b>Угода #{deal_id} створена!</b>\n\n💵 Валюта: {currency}\n💰 Сума: {amount} {currency}\n🔗 Посилання для продавця: {link}",
+        "currency": "💱 Виберіть валюту",
+        "amount": "💰 Введіть суму",
+        "requisites": "💳 Введіть реквізити",
+        "seller_username": "👤 Введіть @username продавця",
+        "deal_created": "✅ Угода #{deal_id} створена!\n\n💵 Валюта: {currency}\n💰 Сума: {amount} {currency}\n🔗 Посилання для покупця: {link}",
+        "deal_created_buyer": "✅ Угода #{deal_id} створена!\n\n💵 Валюта: {currency}\n💰 Сума: {amount} {currency}\n🔗 Посилання для продавця: {link}",
         "joined": "✅ Ви підключились до угоди #{deal_id}.",
         "confirm": "Підтвердити участь",
         "cancel_deal": "Скасувати угоду",
         "confirm_seller_notify": "✅ Участь підтверджено.",
-        "buyer_notify": "✅ <b>Продавець підтвердив угоду #{deal_id}.</b>\n\n💰 {amount} {currency}\n💳 Реквізити:\n{req}",
-        "confirmed": "✅ <b>Оплата підтверджена</b>\n\n📌 Угода: #{deal_id}\n👤 Продавець: @{seller}\n⭐ Рейтинг: {rating}/5\n✅ Успішно: {successful}\n💰 Сума: {amount} {currency}\n📦 Предмет: {description}\n\n⏳ Очікуйте передачу.",
+        "buyer_notify": "✅ Продавець підтвердив угоду #{deal_id}.\n\n💰 {amount} {currency}\n💳 Реквізити:\n{req}",
+        "confirmed": "✅ Оплата підтверджена\n\n📌 Угода: #{deal_id}\n👤 Продавець: @{seller}\n⭐ Рейтинг: {rating}/5\n✅ Успішно: {successful}\n💰 Сума: {amount} {currency}\n📦 Предмет: {description}\n\n⏳ Очікуйте передачу.",
         "deal_active": "Активна",
-        "language_text": "🌐 <b>Виберіть мову</b>:",
+        "language_text": "🌐 Виберіть мову",
         "language_set": "✅ Мову встановлено: {lang}.",
-        "req_menu": "💳 <b>Виберіть валюту</b>:",
+        "req_menu": "💳 Виберіть валюту",
         "req_prompt": "✏️ Введіть {currency} для {currency_name}\n\n📝 Приклад:\n{example}",
         "req_saved": "✅ Реквізит збережено.",
         "support_text": "🆘 Підтримка: @FunPayHeIp",
-        "about_text": "📖 <b>Детальніше:</b>\n\n💡 <b>Ми – гарант сервіс, наше завдання допомогти вам провести безпечні угоди та оформити швидкий вивід!</b>\n\n❓ <b>Відповіді на часті питання:</b>\n\n• <b>Як довго триває вивід?</b> Зазвичай не більше 2-х хвилин, в рідкісних випадках до 2-х годин.\n\n• <b>Чому потрібно передавати подарунок менеджеру, а не покупцю?</b> Причина проста: покупець може збрехати, що йому не прийшов подарунок, що затягує ситуацію, але наш менеджер автоматично перевіряє наявність NFT подарунка і вже обманути не вийде.\n\n• <b>Як швидко відбувається поповнення?</b> Поповнення також займає не більше 2-х хвилин.\n\n• <b>Я побачив схожого бота, чи варто мені довіряти?</b> Якщо ви побачили іншого бота, крім @FunPayTrust_robot, в жодному разі не проводьте з ним угоди!",
+        "about_text": "📖 Детальніше:\n\n💡 Ми – гарант сервіс, наше завдання допомогти вам провести безпечні угоди та оформити швидкий вивід!\n\n❓ Відповіді на часті питання:\n\n• Як довго триває вивід? Зазвичай не більше 2-х хвилин, в рідкісних випадках до 2-х годин.\n\n• Чому потрібно передавати подарунок менеджеру, а не покупцю? Причина проста: покупець може збрехати, що йому не прийшов подарунок, що затягує ситуацію, але наш менеджер автоматично перевіряє наявність NFT подарунка і вже обманути не вийде.\n\n• Як швидко відбувається поповнення? Поповнення також займає не більше 2-х хвилин.\n\n• Я побачив схожого бота, чи варто мені довіряти? Якщо ви побачили іншого бота, крім @FunPayTrust_robot, в жодному разі не проводьте з ним угоди!",
         "admin_done_ok": "✅ Угода #{deal_id} завершена.",
         "admin_cancel_ok": "❌ Угода #{deal_id} скасована.",
         "banned": "🚫 Аккаунт заблоковано.",
@@ -1126,14 +1108,14 @@ T = {
         "self_deal": "❌ Не можна зайняти другу роль.",
         "full": "ℹ️ Обидві ролі зайняті.",
         "already_member": "ℹ️ Ви вже учасник.",
-        "referral_text": "💠 <b>РЕФЕРАЛЬНА ПРОГРАМА</b>\n━━━━━━━━━━━━━━━━━━━\n\n🔗 <b>Ваше посилання:</b>\n{link}\n\n━━━━━━━━━━━━━━━━━━━\n📊 <b>СТАТИСТИКА:</b>\n\n• Всього запрошено: {total}\n• Активних рефералів: 0\n• Загальний обсяг угод: 0.00 ₽\n\n━━━━━━━━━━━━━━━━━━━\n💰 <b>ВАШІ БОНУСИ:</b>\n\n• За кожного активного реферала: +5% до балансу\n• При першій угоді реферала: +100 ₽",
+        "referral_text": "💠 РЕФЕРАЛЬНА ПРОГРАМА\n━━━━━━━━━━━━━━━━━━━\n\n🔗 Ваше посилання:\n{link}\n\n━━━━━━━━━━━━━━━━━━━\n📊 СТАТИСТИКА:\n\n• Всього запрошено: {total}\n• Активних рефералів: 0\n• Загальний обсяг угод: 0.00 ₽\n\n━━━━━━━━━━━━━━━━━━━\n💰 ВАШІ БОНУСИ:\n\n• За кожного активного реферала: +5% до балансу\n• При першій угоді реферала: +100 ₽",
     },
     "kk": {
-        "lang_choose": "🌐 <b>Тіліңізді таңдаңыз / Выберите язык / Choose Language / Виберіть мову / 选择语言 / भाषा चुनें</b>",
-        "policy_text": "🛡️ <b>Қош келдіңіз</b>\n\nҚұпиялылық саясатын қабылдаңыз:\n• Деректер тек бот үшін\n• Аккаунтты беруге тыйым салынады\n• Дәлелдер қажет\n• Бот «қалпында»\n\n«Қабылдаймын» басыңыз.",
+        "lang_choose": "🌐 Тіліңізді таңдаңыз / Выберите язык / Choose Language / Виберіть мову / 选择语言 / भाषा चुनें",
+        "policy_text": "🛡️ Қош келдіңіз\n\nҚұпиялылық саясатын қабылдаңыз:\n• Деректер тек бот үшін\n• Аккаунтты беруге тыйым салынады\n• Дәлелдер қажет\n• Бот «қалпында»\n\n«Қабылдаймын» басыңыз.",
         "policy_btn": "📜 Құпиялылық саясаты",
         "accept_btn": "✅ Қабылдаймын",
-        "main": "🛡️ <b>FUNPAY</b>\n\n<b>Қош келдіңіз</b>\n\n<b>Біз биржадан тыс мәмілелерде қауіпсіздікті қамтамасыз ететін мамандандырылған қызмет.</b>\n\n<b>Автоматтандырылған орындау алгоритмі.</b>\n<b>Жылдамдық және автоматтандыру.</b>\n<b>Қолайлы және жылдам ақша шығару.</b>\n\n• Қызмет комиссиясы: 1%\n• Жұмыс режимі: 24/7\n• Техникалық қолдау: @GiftsForFunpay\n\n<b>Төменде қажетті бөлімді таңдаңыз</b>",
+        "main": "🛡️ FUNPAY\n\nҚош келдіңіз\n\nБіз биржадан тыс мәмілелерде қауіпсіздікті қамтамасыз ететін мамандандырылған қызмет.\n\nАвтоматтандырылған орындау алгоритмі.\nЖылдамдық және автоматтандыру.\nҚолайлы және жылдам ақша шығару.\n\n• Қызмет комиссиясы: 1%\n• Жұмыс режимі: 24/7\n• Техникалық қолдау: @GiftsForFunpay\n\nТөменде қажетті бөлімді таңдаңыз",
         "create": "Мәміле жасау",
         "my_deals": "Менің мәмілелерім",
         "req": "Реквизиттер",
@@ -1143,8 +1125,8 @@ T = {
         "about": "Қызмет туралы",
         "language": "Тіл",
         "back": "Артқа",
-        "profile_text": "👤 <b>Профиль</b>\n\n🆔 ID: {id}\n👤 Username: @{username}\n📊 Мәмілелер: {deals}\n✅ Сәтті: {successful}\n⭐ Рейтинг: {rating} ({reviews})\n👥 Рефералдар: {refs}",
-        "my_deals_title": "📂 <b>Менің мәмілелерім</b>\n\n",
+        "profile_text": "👤 Профиль\n\n🆔 ID: {id}\n👤 Username: @{username}\n📊 Мәмілелер: {deals}\n✅ Сәтті: {successful}\n⭐ Рейтинг: {rating} ({reviews})\n👥 Рефералдар: {refs}",
+        "my_deals_title": "📂 Менің мәмілелерім\n\n",
         "my_deals_empty": "📭 Мәмілелер жоқ.",
         "clear_history": "Тарихты тазалау",
         "history_cleared": "✅ Тарих тазартылды.",
@@ -1155,34 +1137,34 @@ T = {
         "curr_ton": "TON",
         "curr_stars": "STARS",
         "curr_kzt": "KZT",
-        "choose_role": "🎯 <b>Рөліңізді таңдаңыз</b>:",
+        "choose_role": "🎯 Рөліңізді таңдаңыз",
         "seller": "Сатушы",
         "buyer": "Сатып алушы",
-        "choose_type": "📋 <b>Мәміле түрін таңдаңыз</b>:",
+        "choose_type": "📋 Мәміле түрін таңдаңыз",
         "account": "Аккаунт/тауар",
         "gift": "NFT Сыйлық",
         "description_account": "📝 Мәміле пәнін сипаттаңыз",
         "description_gift": "🎁 Мәміле пәнін сипаттаңыз\nМысал: https://t.me/nft/...",
-        "currency": "💱 <b>Валютаны таңдаңыз</b>:",
-        "amount": "💰 <b>Соманы енгізіңіз</b>:",
-        "requisites": "💳 <b>Реквизиттерді енгізіңіз</b>:",
-        "seller_username": "👤 <b>Сатушының @username енгізіңіз</b>:",
-        "deal_created": "✅ <b>#{deal_id} мәмілесі құрылды!</b>\n\n💵 Валюта: {currency}\n💰 Сома: {amount} {currency}\n🔗 Сатып алушыға сілтеме: {link}",
-        "deal_created_buyer": "✅ <b>#{deal_id} мәмілесі құрылды!</b>\n\n💵 Валюта: {currency}\n💰 Сома: {amount} {currency}\n🔗 Сатушыға сілтеме: {link}",
+        "currency": "💱 Валютаны таңдаңыз",
+        "amount": "💰 Соманы енгізіңіз",
+        "requisites": "💳 Реквизиттерді енгізіңіз",
+        "seller_username": "👤 Сатушының @username енгізіңіз",
+        "deal_created": "✅ #{deal_id} мәмілесі құрылды!\n\n💵 Валюта: {currency}\n💰 Сома: {amount} {currency}\n🔗 Сатып алушыға сілтеме: {link}",
+        "deal_created_buyer": "✅ #{deal_id} мәмілесі құрылды!\n\n💵 Валюта: {currency}\n💰 Сома: {amount} {currency}\n🔗 Сатушыға сілтеме: {link}",
         "joined": "✅ Сіз #{deal_id} мәмілесіне қосылдыңыз.",
         "confirm": "Қатысуды растау",
         "cancel_deal": "Мәмілені болдырмау",
         "confirm_seller_notify": "✅ Расталды.",
-        "buyer_notify": "✅ <b>Сатушы #{deal_id} мәмілесін растады.</b>\n\n💰 {amount} {currency}\n💳 Реквизиттер:\n{req}",
-        "confirmed": "✅ <b>Төлем расталды</b>\n\n📌 Мәміле: #{deal_id}\n👤 Сатушы: @{seller}\n⭐ Рейтинг: {rating}/5\n✅ Сәтті: {successful}\n💰 Сома: {amount} {currency}\n📦 Тауар: {description}\n\n⏳ Беруді күтіңіз.",
+        "buyer_notify": "✅ Сатушы #{deal_id} мәмілесін растады.\n\n💰 {amount} {currency}\n💳 Реквизиттер:\n{req}",
+        "confirmed": "✅ Төлем расталды\n\n📌 Мәміле: #{deal_id}\n👤 Сатушы: @{seller}\n⭐ Рейтинг: {rating}/5\n✅ Сәтті: {successful}\n💰 Сома: {amount} {currency}\n📦 Тауар: {description}\n\n⏳ Беруді күтіңіз.",
         "deal_active": "Белсенді",
-        "language_text": "🌐 <b>Тілді таңдаңыз</b>:",
+        "language_text": "🌐 Тілді таңдаңыз",
         "language_set": "✅ Тіл орнатылды: {lang}.",
-        "req_menu": "💳 <b>Валютаны таңдаңыз</b>:",
+        "req_menu": "💳 Валютаны таңдаңыз",
         "req_prompt": "✏️ {currency} үшін {currency_name} енгізіңіз\n\n📝 Мысал:\n{example}",
         "req_saved": "✅ Реквизит сақталды.",
         "support_text": "🆘 Қолдау: @FunPayHeIp",
-        "about_text": "📖 <b>Толығырақ:</b>\n\n💡 <b>Біз – кепілдік қызметі, біздің міндетіміз сізге қауіпсіз мәмілелер жүргізуге және жылдам шығаруға көмектесу!</b>\n\n❓ <b>Жиі қойылатын сұрақтарға жауаптар:</b>\n\n• <b>Шығару қанша уақытқа созылады?</b> Әдетте 2 минуттан аспайды, сирек жағдайларда 2 сағатқа дейін.\n\n• <b>Неліктен сыйлықты сатып алушыға емес, менеджерге беру керек?</b> Себебі қарапайым: сатып алушы сыйлық келмеді деп өтірік айтуы мүмкін, бұл жағдайды созады, бірақ біздің менеджер NFT сыйлығының бар-жоғын автоматты түрде тексереді және алдау мүмкін емес.\n\n• <b>Толтыру қаншалықты жылдам жүреді?</b> Толтыру да 2 минуттан аспайды.\n\n• <b>Мен ұқсас ботты көрдім, оған сену керек пе?</b> Егер сіз @FunPayTrust_robot-тан басқа ботты көрсеңіз, онымен ешбір жағдайда мәміле жасамаңыз!",
+        "about_text": "📖 Толығырақ:\n\n💡 Біз – кепілдік қызметі, біздің міндетіміз сізге қауіпсіз мәмілелер жүргізуге және жылдам шығаруға көмектесу!\n\n❓ Жиі қойылатын сұрақтарға жауаптар:\n\n• Шығару қанша уақытқа созылады? Әдетте 2 минуттан аспайды, сирек жағдайларда 2 сағатқа дейін.\n\n• Неліктен сыйлықты сатып алушыға емес, менеджерге беру керек? Себебі қарапайым: сатып алушы сыйлық келмеді деп өтірік айтуы мүмкін, бұл жағдайды созады, бірақ біздің менеджер NFT сыйлығының бар-жоғын автоматты түрде тексереді және алдау мүмкін емес.\n\n• Толтыру қаншалықты жылдам жүреді? Толтыру да 2 минуттан аспайды.\n\n• Мен ұқсас ботты көрдім, оған сену керек пе? Егер сіз @FunPayTrust_robot-тан басқа ботты көрсеңіз, онымен ешбір жағдайда мәміле жасамаңыз!",
         "admin_done_ok": "✅ #{deal_id} мәмілесі аяқталды.",
         "admin_cancel_ok": "❌ #{deal_id} мәмілесі болдырмалды.",
         "banned": "🚫 Аккаунт бұғатталды.",
@@ -1194,14 +1176,14 @@ T = {
         "self_deal": "❌ Екінші рөлді ала алмайсыз.",
         "full": "ℹ️ Екі рөл де бос емес.",
         "already_member": "ℹ️ Сіз қатысушысыз.",
-        "referral_text": "💠 <b>РЕФЕРАЛДЫҚ БАҒДАРЛАМА</b>\n━━━━━━━━━━━━━━━━━━━\n\n🔗 <b>Сіздің сілтемеңіз:</b>\n{link}\n\n━━━━━━━━━━━━━━━━━━━\n📊 <b>СТАТИСТИКА:</b>\n\n• Барлығы шақырылған: {total}\n• Белсенді рефералдар: 0\n• Мәмілелердің жалпы көлемі: 0.00 ₽\n\n━━━━━━━━━━━━━━━━━━━\n💰 <b>СІЗДІҢ БОНУСТАРЫҢЫЗ:</b>\n\n• Әрбір белсенді реферал үшін: балансқа +5%\n• Рефералдың алғашқы мәмілесінде: +100 ₽",
+        "referral_text": "💠 РЕФЕРАЛДЫҚ БАҒДАРЛАМА\n━━━━━━━━━━━━━━━━━━━\n\n🔗 Сіздің сілтемеңіз:\n{link}\n\n━━━━━━━━━━━━━━━━━━━\n📊 СТАТИСТИКА:\n\n• Барлығы шақырылған: {total}\n• Белсенді рефералдар: 0\n• Мәмілелердің жалпы көлемі: 0.00 ₽\n\n━━━━━━━━━━━━━━━━━━━\n💰 СІЗДІҢ БОНУСТАРЫҢЫЗ:\n\n• Әрбір белсенді реферал үшін: балансқа +5%\n• Рефералдың алғашқы мәмілесінде: +100 ₽",
     },
     "zh": {
-        "lang_choose": "🌐 <b>选择语言 / Выберите язык / Choose Language / Виберіть мову / Тіліңізді таңдаңыз / भाषा चुनें</b>",
-        "policy_text": "🛡️ <b>欢迎</b>\n\n接受隐私政策：\n• 数据仅用于机器人\n• 禁止转让账户\n• 需要证据\n• 机器人「按原样」提供\n\n点击「接受」即表示同意。",
+        "lang_choose": "🌐 选择语言 / Выберите язык / Choose Language / Виберіть мову / Тіліңізді таңдаңыз / भाषा चुनें",
+        "policy_text": "🛡️ 欢迎\n\n接受隐私政策：\n• 数据仅用于机器人\n• 禁止转让账户\n• 需要证据\n• 机器人「按原样」提供\n\n点击「接受」即表示同意。",
         "policy_btn": "📜 隐私政策",
         "accept_btn": "✅ 接受",
-        "main": "🛡️ <b>FUNPAY</b>\n\n<b>欢迎</b>\n\n<b>我们是为场外交易提供安全保障的专业服务。</b>\n\n<b>自动化执行算法。</b>\n<b>速度和自动化。</b>\n<b>方便快捷的资金提取。</b>\n\n• 服务佣金：1%\n• 工作时间：24/7\n• 技术支持：@GiftsForFunpay\n\n<b>请在下方选择您需要的部分</b>",
+        "main": "🛡️ FUNPAY\n\n欢迎\n\n我们是为场外交易提供安全保障的专业服务。\n\n自动化执行算法。\n速度和自动化。\n方便快捷的资金提取。\n\n• 服务佣金：1%\n• 工作时间：24/7\n• 技术支持：@GiftsForFunpay\n\n请在下方选择您需要的部分",
         "create": "创建交易",
         "my_deals": "我的交易",
         "req": "详情",
@@ -1211,8 +1193,8 @@ T = {
         "about": "关于",
         "language": "语言",
         "back": "返回",
-        "profile_text": "👤 <b>个人资料</b>\n\n🆔 ID: {id}\n👤 用户名: @{username}\n📊 交易数: {deals}\n✅ 成功: {successful}\n⭐ 评分: {rating} ({reviews})\n👥 推荐: {refs}",
-        "my_deals_title": "📂 <b>我的交易</b>\n\n",
+        "profile_text": "👤 个人资料\n\n🆔 ID: {id}\n👤 用户名: @{username}\n📊 交易数: {deals}\n✅ 成功: {successful}\n⭐ 评分: {rating} ({reviews})\n👥 推荐: {refs}",
+        "my_deals_title": "📂 我的交易\n\n",
         "my_deals_empty": "📭 没有交易。",
         "clear_history": "清除历史",
         "history_cleared": "✅ 历史已清除。",
@@ -1223,34 +1205,34 @@ T = {
         "curr_ton": "TON",
         "curr_stars": "STARS",
         "curr_kzt": "KZT",
-        "choose_role": "🎯 <b>选择角色</b>:",
+        "choose_role": "🎯 选择角色",
         "seller": "卖家",
         "buyer": "买家",
-        "choose_type": "📋 <b>选择类型</b>:",
+        "choose_type": "📋 选择类型",
         "account": "账户/商品",
         "gift": "NFT礼物",
         "description_account": "📝 描述交易标的",
         "description_gift": "🎁 描述交易标的\n示例: https://t.me/nft/...",
-        "currency": "💱 <b>选择货币</b>:",
-        "amount": "💰 <b>输入金额</b>:",
-        "requisites": "💳 <b>输入详情</b>:",
-        "seller_username": "👤 <b>输入卖家 @username</b>:",
-        "deal_created": "✅ <b>交易 #{deal_id} 已创建！</b>\n\n💵 货币: {currency}\n💰 金额: {amount} {currency}\n🔗 买家链接: {link}",
-        "deal_created_buyer": "✅ <b>交易 #{deal_id} 已创建！</b>\n\n💵 货币: {currency}\n💰 金额: {amount} {currency}\n🔗 卖家链接: {link}",
+        "currency": "💱 选择货币",
+        "amount": "💰 输入金额",
+        "requisites": "💳 输入详情",
+        "seller_username": "👤 输入卖家 @username",
+        "deal_created": "✅ 交易 #{deal_id} 已创建！\n\n💵 货币: {currency}\n💰 金额: {amount} {currency}\n🔗 买家链接: {link}",
+        "deal_created_buyer": "✅ 交易 #{deal_id} 已创建！\n\n💵 货币: {currency}\n💰 金额: {amount} {currency}\n🔗 卖家链接: {link}",
         "joined": "✅ 您已加入交易 #{deal_id}。",
         "confirm": "确认",
         "cancel_deal": "取消",
         "confirm_seller_notify": "✅ 已确认。",
-        "buyer_notify": "✅ <b>卖家已确认交易 #{deal_id}。</b>\n\n💰 {amount} {currency}\n💳 详情:\n{req}",
-        "confirmed": "✅ <b>付款已确认</b>\n\n📌 交易: #{deal_id}\n👤 卖家: @{seller}\n⭐ 评分: {rating}/5\n✅ 成功: {successful}\n💰 金额: {amount} {currency}\n📦 商品: {description}\n\n⏳ 等待交付。",
+        "buyer_notify": "✅ 卖家已确认交易 #{deal_id}。\n\n💰 {amount} {currency}\n💳 详情:\n{req}",
+        "confirmed": "✅ 付款已确认\n\n📌 交易: #{deal_id}\n👤 卖家: @{seller}\n⭐ 评分: {rating}/5\n✅ 成功: {successful}\n💰 金额: {amount} {currency}\n📦 商品: {description}\n\n⏳ 等待交付。",
         "deal_active": "活跃",
-        "language_text": "🌐 <b>选择语言</b>:",
+        "language_text": "🌐 选择语言",
         "language_set": "✅ 语言已设置: {lang}。",
-        "req_menu": "💳 <b>选择货币</b>:",
+        "req_menu": "💳 选择货币",
         "req_prompt": "✏️ 输入 {currency} 以用于 {currency_name}\n\n📝 示例:\n{example}",
         "req_saved": "✅ 详情已保存。",
         "support_text": "🆘 支持: @FunPayHeIp",
-        "about_text": "📖 <b>详细信息：</b>\n\n💡 <b>我们是担保服务，我们的任务是帮助您进行安全交易并快速取款！</b>\n\n❓ <b>常见问题解答：</b>\n\n• <b>取款需要多长时间？</b>通常不超过2分钟，极少数情况下可达2小时。\n\n• <b>为什么要把礼物转给经理而不是买家？</b>原因很简单：买家可能撒谎说没收到礼物，这会使情况拖长，但我们的经理会自动检查NFT礼物是否存在，这样就不可能欺骗了。\n\n• <b>充值速度如何？</b>充值同样不超过2分钟。\n\n• <b>我看到一个类似的机器人，我应该相信它吗？</b>如果您看到除 @FunPayTrust_robot 之外的任何机器人，千万不要与它进行交易！",
+        "about_text": "📖 详细信息：\n\n💡 我们是担保服务，我们的任务是帮助您进行安全交易并快速取款！\n\n❓ 常见问题解答：\n\n• 取款需要多长时间？通常不超过2分钟，极少数情况下可达2小时。\n\n• 为什么要把礼物转给经理而不是买家？原因很简单：买家可能撒谎说没收到礼物，这会使情况拖长，但我们的经理会自动检查NFT礼物是否存在，这样就不可能欺骗了。\n\n• 充值速度如何？充值同样不超过2分钟。\n\n• 我看到一个类似的机器人，我应该相信它吗？如果您看到除 @FunPayTrust_robot 之外的任何机器人，千万不要与它进行交易！",
         "admin_done_ok": "✅ 交易 #{deal_id} 已完成。",
         "admin_cancel_ok": "❌ 交易 #{deal_id} 已取消。",
         "banned": "🚫 账户已封禁。",
@@ -1262,14 +1244,14 @@ T = {
         "self_deal": "❌ 不能担任第二角色。",
         "full": "ℹ️ 两个角色都已占用。",
         "already_member": "ℹ️ 您已是参与者。",
-        "referral_text": "💠 <b>推荐计划</b>\n━━━━━━━━━━━━━━━━━━━\n\n🔗 <b>您的链接：</b>\n{link}\n\n━━━━━━━━━━━━━━━━━━━\n📊 <b>统计：</b>\n\n• 总邀请：{total}\n• 活跃推荐：0\n• 总交易额：0.00 ₽\n\n━━━━━━━━━━━━━━━━━━━\n💰 <b>您的奖金：</b>\n\n• 每个活跃推荐：+5% 余额\n• 推荐的首次交易：+100 ₽",
+        "referral_text": "💠 推荐计划\n━━━━━━━━━━━━━━━━━━━\n\n🔗 您的链接：\n{link}\n\n━━━━━━━━━━━━━━━━━━━\n📊 统计：\n\n• 总邀请：{total}\n• 活跃推荐：0\n• 总交易额：0.00 ₽\n\n━━━━━━━━━━━━━━━━━━━\n💰 您的奖金：\n\n• 每个活跃推荐：+5% 余额\n• 推荐的首次交易：+100 ₽",
     },
     "hi": {
-        "lang_choose": "🌐 <b>भाषा चुनें / Выберите язык / Choose Language / Виберіть мову / Тіліңізді таңдаңыз / 选择语言</b>",
-        "policy_text": "🛡️ <b>स्वागत है</b>\n\nगोपनीयता नीति स्वीकार करें:\n• डेटा केवल बॉट के लिए\n• खाता हस्तांतरण निषिद्ध\n• साक्ष्य आवश्यक\n• बॉट 'जैसा है'\n\n'स्वीकार करें' क्लिक करें।",
+        "lang_choose": "🌐 भाषा चुनें / Выберите язык / Choose Language / Виберіть мову / Тіліңізді таңдаңыз / 选择语言",
+        "policy_text": "🛡️ स्वागत है\n\nगोपनीयता नीति स्वीकार करें:\n• डेटा केवल बॉट के लिए\n• खाता हस्तांतरण निषिद्ध\n• साक्ष्य आवश्यक\n• बॉट 'जैसा है'\n\n'स्वीकार करें' क्लिक करें।",
         "policy_btn": "📜 गोपनीयता नीति",
         "accept_btn": "✅ स्वीकार करें",
-        "main": "🛡️ <b>FUNPAY</b>\n\n<b>स्वागत है</b>\n\n<b>हम ऑफ-एक्सचेंज लेनदेन में सुरक्षा सुनिश्चित करने के लिए एक विशेष सेवा हैं।</b>\n\n<b>स्वचालित निष्पादन एल्गोरिदम।</b>\n<b>गति और स्वचालन।</b>\n<b>सुविधाजनक और त्वरित धन निकासी।</b>\n\n• सेवा कमीशन: 1%\n• कार्य मोड: 24/7\n• तकनीकी सहायता: @GiftsForFunpay\n\n<b>नीचे आवश्यक अनुभाग चुनें</b>",
+        "main": "🛡️ FUNPAY\n\nस्वागत है\n\nहम ऑफ-एक्सचेंज लेनदेन में सुरक्षा सुनिश्चित करने के लिए एक विशेष सेवा हैं।\n\nस्वचालित निष्पादन एल्गोरिदम।\nगति और स्वचालन।\nसुविधाजनक और त्वरित धन निकासी।\n\n• सेवा कमीशन: 1%\n• कार्य मोड: 24/7\n• तकनीकी सहायता: @GiftsForFunpay\n\nनीचे आवश्यक अनुभाग चुनें",
         "create": "सौदा बनाएं",
         "my_deals": "मेरे सौदे",
         "req": "विवरण",
@@ -1279,8 +1261,8 @@ T = {
         "about": "के बारे में",
         "language": "भाषा",
         "back": "वापस",
-        "profile_text": "👤 <b>प्रोफ़ाइल</b>\n\n🆔 ID: {id}\n👤 उपयोगकर्ता नाम: @{username}\n📊 सौदे: {deals}\n✅ सफल: {successful}\n⭐ रेटिंग: {rating} ({reviews})\n👥 रेफरल: {refs}",
-        "my_deals_title": "📂 <b>मेरे सौदे</b>\n\n",
+        "profile_text": "👤 प्रोफ़ाइल\n\n🆔 ID: {id}\n👤 उपयोगकर्ता नाम: @{username}\n📊 सौदे: {deals}\n✅ सफल: {successful}\n⭐ रेटिंग: {rating} ({reviews})\n👥 रेफरल: {refs}",
+        "my_deals_title": "📂 मेरे सौदे\n\n",
         "my_deals_empty": "📭 कोई सौदा नहीं।",
         "clear_history": "इतिहास साफ़ करें",
         "history_cleared": "✅ इतिहास साफ़ कर दिया गया।",
@@ -1291,34 +1273,34 @@ T = {
         "curr_ton": "TON",
         "curr_stars": "STARS",
         "curr_kzt": "KZT",
-        "choose_role": "🎯 <b>भूमिका चुनें</b>:",
+        "choose_role": "🎯 भूमिका चुनें",
         "seller": "विक्रेता",
         "buyer": "खरीदार",
-        "choose_type": "📋 <b>प्रकार चुनें</b>:",
+        "choose_type": "📋 प्रकार चुनें",
         "account": "खाता/माल",
         "gift": "NFT उपहार",
         "description_account": "📝 सौदे के विषय का वर्णन करें",
         "description_gift": "🎁 सौदे के विषय का वर्णन करें\nउदाहरण: https://t.me/nft/...",
-        "currency": "💱 <b>मुद्रा चुनें</b>:",
-        "amount": "💰 <b>राशि दर्ज करें</b>:",
-        "requisites": "💳 <b>विवरण दर्ज करें</b>:",
-        "seller_username": "👤 <b>विक्रेता का @username दर्ज करें</b>:",
-        "deal_created": "✅ <b>सौदा #{deal_id} बनाया गया!</b>\n\n💵 मुद्रा: {currency}\n💰 राशि: {amount} {currency}\n🔗 खरीदार लिंक: {link}",
-        "deal_created_buyer": "✅ <b>सौदा #{deal_id} बनाया गया!</b>\n\n💵 मुद्रा: {currency}\n💰 राशि: {amount} {currency}\n🔗 विक्रेता लिंक: {link}",
+        "currency": "💱 मुद्रा चुनें",
+        "amount": "💰 राशि दर्ज करें",
+        "requisites": "💳 विवरण दर्ज करें",
+        "seller_username": "👤 विक्रेता का @username दर्ज करें",
+        "deal_created": "✅ सौदा #{deal_id} बनाया गया!\n\n💵 मुद्रा: {currency}\n💰 राशि: {amount} {currency}\n🔗 खरीदार लिंक: {link}",
+        "deal_created_buyer": "✅ सौदा #{deal_id} बनाया गया!\n\n💵 मुद्रा: {currency}\n💰 राशि: {amount} {currency}\n🔗 विक्रेता लिंक: {link}",
         "joined": "✅ आप सौदा #{deal_id} में शामिल हो गए।",
         "confirm": "पुष्टि करें",
         "cancel_deal": "रद्द करें",
         "confirm_seller_notify": "✅ पुष्टि की गई।",
-        "buyer_notify": "✅ <b>विक्रेता ने सौदा #{deal_id} की पुष्टि की।</b>\n\n💰 {amount} {currency}\n💳 विवरण:\n{req}",
-        "confirmed": "✅ <b>भुगतान की पुष्टि की गई</b>\n\n📌 सौदा: #{deal_id}\n👤 विक्रेता: @{seller}\n⭐ रेटिंग: {rating}/5\n✅ सफल: {successful}\n💰 राशि: {amount} {currency}\n📦 वस्तु: {description}\n\n⏳ हस्तांतरण की प्रतीक्षा करें।",
+        "buyer_notify": "✅ विक्रेता ने सौदा #{deal_id} की पुष्टि की।\n\n💰 {amount} {currency}\n💳 विवरण:\n{req}",
+        "confirmed": "✅ भुगतान की पुष्टि की गई\n\n📌 सौदा: #{deal_id}\n👤 विक्रेता: @{seller}\n⭐ रेटिंग: {rating}/5\n✅ सफल: {successful}\n💰 राशि: {amount} {currency}\n📦 वस्तु: {description}\n\n⏳ हस्तांतरण की प्रतीक्षा करें।",
         "deal_active": "सक्रिय",
-        "language_text": "🌐 <b>भाषा चुनें</b>:",
+        "language_text": "🌐 भाषा चुनें",
         "language_set": "✅ भाषा सेट की गई: {lang}।",
-        "req_menu": "💳 <b>मुद्रा चुनें</b>:",
+        "req_menu": "💳 मुद्रा चुनें",
         "req_prompt": "✏️ {currency} के लिए {currency_name} दर्ज करें\n\n📝 उदाहरण:\n{example}",
         "req_saved": "✅ विवरण सहेजा गया।",
         "support_text": "🆘 सहायता: @FunPayHeIp",
-        "about_text": "📖 <b>विवरण:</b>\n\n💡 <b>हम एक गारंटर सेवा हैं, हमारा कार्य आपको सुरक्षित सौदे करने और त्वरित निकासी प्रक्रिया में मदद करना है!</b>\n\n❓ <b>अक्सर पूछे जाने वाले प्रश्न:</b>\n\n• <b>निकासी में कितना समय लगता है?</b> आमतौर पर 2 मिनट से अधिक नहीं, दुर्लभ मामलों में 2 घंटे तक।\n\n• <b>उपहार प्रबंधक को क्यों हस्तांतरित किया जाना चाहिए, खरीदार को नहीं?</b> कारण सरल है: खरीदार झूठ बोल सकता है कि उसे उपहार नहीं मिला, जो स्थिति को लंबा खींचता है, लेकिन हमारा प्रबंधक स्वचालित रूप से NFT उपहार की उपस्थिति की जाँच करता है और धोखा देना संभव नहीं होगा।\n\n• <b>जमा कितनी तेजी से होता है?</b> जमा में भी 2 मिनट से अधिक नहीं लगता है।\n\n• <b>मैंने एक समान बॉट देखा, क्या मुझे उस पर भरोसा करना चाहिए?</b> यदि आप @FunPayTrust_robot के अलावा कोई अन्य बॉट देखते हैं, तो किसी भी स्थिति में उसके साथ सौदे न करें!",
+        "about_text": "📖 विवरण:\n\n💡 हम एक गारंटर सेवा हैं, हमारा कार्य आपको सुरक्षित सौदे करने और त्वरित निकासी प्रक्रिया में मदद करना है!\n\n❓ अक्सर पूछे जाने वाले प्रश्न:\n\n• निकासी में कितना समय लगता है? आमतौर पर 2 मिनट से अधिक नहीं, दुर्लभ मामलों में 2 घंटे तक।\n\n• उपहार प्रबंधक को क्यों हस्तांतरित किया जाना चाहिए, खरीदार को नहीं? कारण सरल है: खरीदार झूठ बोल सकता है कि उसे उपहार नहीं मिला, जो स्थिति को लंबा खींचता है, लेकिन हमारा प्रबंधक स्वचालित रूप से NFT उपहार की उपस्थिति की जाँच करता है और धोखा देना संभव नहीं होगा।\n\n• जमा कितनी तेजी से होता है? जमा में भी 2 मिनट से अधिक नहीं लगता है।\n\n• मैंने एक समान बॉट देखा, क्या मुझे उस पर भरोसा करना चाहिए? यदि आप @FunPayTrust_robot के अलावा कोई अन्य बॉट देखते हैं, तो किसी भी स्थिति में उसके साथ सौदे न करें!",
         "admin_done_ok": "✅ सौदा #{deal_id} पूरा किया गया।",
         "admin_cancel_ok": "❌ सौदा #{deal_id} रद्द कर दिया गया।",
         "banned": "🚫 खाता ब्लॉक कर दिया गया।",
@@ -1330,7 +1312,7 @@ T = {
         "self_deal": "❌ दूसरी भूमिका नहीं ले सकते।",
         "full": "ℹ️ दोनों भूमिकाएँ ली गई हैं।",
         "already_member": "ℹ️ आप पहले से ही सदस्य हैं।",
-        "referral_text": "💠 <b>रेफरल कार्यक्रम</b>\n━━━━━━━━━━━━━━━━━━━\n\n🔗 <b>आपका लिंक:</b>\n{link}\n\n━━━━━━━━━━━━━━━━━━━\n📊 <b>आंकड़े:</b>\n\n• कुल आमंत्रित: {total}\n• सक्रिय रेफरल: 0\n• कुल सौदा राशि: 0.00 ₽\n\n━━━━━━━━━━━━━━━━━━━\n💰 <b>आपके बोनस:</b>\n\n• प्रत्येक सक्रिय रेफरल के लिए: शेष में +5%\n• रेफरल के पहले सौदे पर: +100 ₽",
+        "referral_text": "💠 रेफरल कार्यक्रम\n━━━━━━━━━━━━━━━━━━━\n\n🔗 आपका लिंक:\n{link}\n\n━━━━━━━━━━━━━━━━━━━\n📊 आंकड़े:\n\n• कुल आमंत्रित: {total}\n• सक्रिय रेफरल: 0\n• कुल सौदा राशि: 0.00 ₽\n\n━━━━━━━━━━━━━━━━━━━\n💰 आपके बोनस:\n\n• प्रत्येक सक्रिय रेफरल के लिए: शेष में +5%\n• रेफरल के पहले सौदे पर: +100 ₽",
     }
 }
 
