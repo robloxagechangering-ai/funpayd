@@ -347,7 +347,18 @@ async def join_deal(message: Message, state: FSMContext, deal_id: str):
         if not updated or updated["buyer_id"] != uid:
             await message.answer(tr("deal_unavailable", lang), parse_mode="HTML")
             return
-        await message.answer(tr("joined", lang).format(deal_id=deal_id), parse_mode="HTML")
+        await message.answer(
+            tr("joined", lang).format(
+                deal_id=deal_id,
+                description=updated["description"],
+                amount=updated["amount"],
+                currency=updated["currency"],
+                req=updated["seller_req"] or updated["buyer_req"] or tr("not_specified", lang),
+                deal_type=tr("account" if updated["deal_type"] == "account" else "gift", lang),
+            ),
+            reply_markup=kb_back(lang),
+            parse_mode="HTML"
+        )
         seller_id = updated["seller_id"]
         if seller_id:
             seller_lang = user_lang(seller_id)
@@ -379,7 +390,18 @@ async def join_deal(message: Message, state: FSMContext, deal_id: str):
         if not updated or updated["seller_id"] != uid:
             await message.answer(tr("deal_unavailable", lang), parse_mode="HTML")
             return
-        await message.answer(tr("joined", lang).format(deal_id=deal_id), parse_mode="HTML")
+        await message.answer(
+            tr("joined", lang).format(
+                deal_id=deal_id,
+                description=updated["description"],
+                amount=updated["amount"],
+                currency=updated["currency"],
+                req=updated["seller_req"] or updated["buyer_req"] or tr("not_specified", lang),
+                deal_type=tr("account" if updated["deal_type"] == "account" else "gift", lang),
+            ),
+            reply_markup=kb_back(lang),
+            parse_mode="HTML"
+        )
         buyer_id = updated["buyer_id"]
         if buyer_id:
             buyer_lang = user_lang(buyer_id)
@@ -1113,7 +1135,7 @@ T = {
         "seller_username": "👤 Введите @username продавца",
         "deal_created": "✅ Сделка #{deal_id} создана!\n\n💵 Валюта: {currency}\n💰 Сумма: {amount} {currency}\n🔗 Ссылка для покупателя: {link}",
         "deal_created_buyer": "✅ Сделка #{deal_id} создана!\n\n💵 Валюта: {currency}\n💰 Сумма: {amount} {currency}\n🔗 Ссылка для продавца: {link}",
-        "joined": "✅ Вы подключились к сделке #{deal_id}.",
+        "joined": "✅ Вы подключились к сделке #{deal_id}.\n\n📦 Товар: {description}\n💰 Сумма: {amount} {currency}\n💳 Реквизиты: {req}\n📋 Тип: {deal_type}",
         "confirm": "Подтвердить участие",
         "cancel_deal": "Отменить сделку",
         "confirm_seller_notify": "✅ Участие подтверждено.",
@@ -1197,7 +1219,7 @@ T = {
         "seller_username": "👤 Enter seller @username",
         "deal_created": "✅ Deal #{deal_id} created!\n\n💵 Currency: {currency}\n💰 Amount: {amount} {currency}\n🔗 Buyer link: {link}",
         "deal_created_buyer": "✅ Deal #{deal_id} created!\n\n💵 Currency: {currency}\n💰 Amount: {amount} {currency}\n🔗 Seller link: {link}",
-        "joined": "✅ You joined deal #{deal_id}.",
+        "joined": "✅ You joined deal #{deal_id}.\n\n📦 Item: {description}\n💰 Amount: {amount} {currency}\n💳 Requisites: {req}\n📋 Type: {deal_type}",
         "confirm": "Confirm",
         "cancel_deal": "Cancel",
         "confirm_seller_notify": "✅ Confirmed.",
@@ -1281,7 +1303,7 @@ T = {
         "seller_username": "👤 Введіть @username продавця",
         "deal_created": "✅ Угода #{deal_id} створена!\n\n💵 Валюта: {currency}\n💰 Сума: {amount} {currency}\n🔗 Посилання для покупця: {link}",
         "deal_created_buyer": "✅ Угода #{deal_id} створена!\n\n💵 Валюта: {currency}\n💰 Сума: {amount} {currency}\n🔗 Посилання для продавця: {link}",
-        "joined": "✅ Ви підключились до угоди #{deal_id}.",
+        "joined": "✅ Ви підключилися до угоди #{deal_id}.\n\n📦 Товар: {description}\n💰 Сума: {amount} {currency}\n💳 Реквізити: {req}\n📋 Тип: {deal_type}",
         "confirm": "Підтвердити участь",
         "cancel_deal": "Скасувати угоду",
         "confirm_seller_notify": "✅ Участь підтверджено.",
@@ -1365,7 +1387,7 @@ T = {
         "seller_username": "👤 Сатушының @username енгізіңіз",
         "deal_created": "✅ #{deal_id} мәмілесі құрылды!\n\n💵 Валюта: {currency}\n💰 Сома: {amount} {currency}\n🔗 Сатып алушыға сілтеме: {link}",
         "deal_created_buyer": "✅ #{deal_id} мәмілесі құрылды!\n\n💵 Валюта: {currency}\n💰 Сома: {amount} {currency}\n🔗 Сатушыға сілтеме: {link}",
-        "joined": "✅ Сіз #{deal_id} мәмілесіне қосылдыңыз.",
+        "joined": "✅ Сіз #{deal_id} мәмілесіне қосылдыңыз.\n\n📦 Тауар: {description}\n💰 Сома: {amount} {currency}\n💳 Реквизиттер: {req}\n📋 Түрі: {deal_type}",
         "confirm": "Қатысуды растау",
         "cancel_deal": "Мәмілені болдырмау",
         "confirm_seller_notify": "✅ Расталды.",
@@ -1449,7 +1471,7 @@ T = {
         "seller_username": "👤 输入卖家 @username",
         "deal_created": "✅ 交易 #{deal_id} 已创建！\n\n💵 货币: {currency}\n💰 金额: {amount} {currency}\n🔗 买家链接: {link}",
         "deal_created_buyer": "✅ 交易 #{deal_id} 已创建！\n\n💵 货币: {currency}\n💰 金额: {amount} {currency}\n🔗 卖家链接: {link}",
-        "joined": "✅ 您已加入交易 #{deal_id}。",
+        "joined": "✅ 您已加入交易 #{deal_id}。\n\n📦 商品：{description}\n💰 金额：{amount} {currency}\n💳 收款信息：{req}\n📋 类型：{deal_type}",
         "confirm": "确认",
         "cancel_deal": "取消",
         "confirm_seller_notify": "✅ 已确认。",
@@ -1533,7 +1555,7 @@ T = {
         "seller_username": "👤 विक्रेता का @username दर्ज करें",
         "deal_created": "✅ सौदा #{deal_id} बनाया गया!\n\n💵 मुद्रा: {currency}\n💰 राशि: {amount} {currency}\n🔗 खरीदार लिंक: {link}",
         "deal_created_buyer": "✅ सौदा #{deal_id} बनाया गया!\n\n💵 मुद्रा: {currency}\n💰 राशि: {amount} {currency}\n🔗 विक्रेता लिंक: {link}",
-        "joined": "✅ आप सौदा #{deal_id} में शामिल हो गए।",
+        "joined": "✅ आप सौदा #{deal_id} में शामिल हो गए।\n\n📦 आइटम: {description}\n💰 राशि: {amount} {currency}\n💳 भुगतान विवरण: {req}\n📋 प्रकार: {deal_type}",
         "confirm": "पुष्टि करें",
         "cancel_deal": "रद्द करें",
         "confirm_seller_notify": "✅ पुष्टि की गई।",
