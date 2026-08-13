@@ -378,7 +378,7 @@ class States(StatesGroup):
     admin_req = State()
 
 # ============================================================
-# ОБРАБОТЧИКИ БОТА
+# ОБРАБОТЧИКИ БОТА (ВСЕ КАК БЫЛИ, БЕЗ ИЗМЕНЕНИЙ)
 # ============================================================
 @dp.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext):
@@ -1692,7 +1692,7 @@ T = {
 }
 
 # ============================================================
-# ЗАПУСК FLASK (синхронный обработчик вебхука)
+# ЗАПУСК FLASK (АСИНХРОННЫЙ ОБРАБОТЧИК С ПОДДЕРЖКОЙ flask[async])
 # ============================================================
 app = Flask(__name__)
 
@@ -1701,12 +1701,12 @@ def health():
     return "FUNPAY is running"
 
 @app.route('/webhook', methods=['POST'])
-def handle_webhook():
+async def handle_webhook():
     if request.method == 'POST':
         try:
             data = request.get_json()
             update = types.Update.model_validate(data)
-            asyncio.run(dp.feed_update(bot, update))
+            await dp.feed_update(bot, update)
             return 'OK', 200
         except Exception as e:
             logger.exception("Webhook error")
