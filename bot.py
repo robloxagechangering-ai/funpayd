@@ -287,7 +287,7 @@ async def check_operation_allowed(message):
     return True
 
 # ============================================================
-# KEYBOARDS (S BEAUTIFUL UNICODE EMOJI, BOLD TEXT)
+# KEYBOARDS (ТОЛЬКО 1 ЭМОДЗИ НА КНОПКУ)
 # ============================================================
 def kb_main(lang):
     return InlineKeyboardMarkup(inline_keyboard=[
@@ -320,12 +320,12 @@ def kb_types(lang):
 
 def kb_currencies(lang, prefix):
     labels = [
-        ("USDT", "💵 " + tr("curr_usdt", lang)),
+        ("TON", "💎 " + tr("curr_ton", lang)),
+        ("USDT", "$ " + tr("curr_usdt", lang)),
         ("RUB", "₽ " + tr("curr_rub", lang)),
         ("UAH", "₴ " + tr("curr_uah", lang)),
         ("BYN", "฿ " + tr("curr_byn", lang)),
-        ("TON", "💎 " + tr("curr_ton", lang)),
-        ("STARS", "⭐ " + tr("curr_stars", lang)),
+        ("STARS", "★ " + tr("curr_stars", lang)),
         ("KZT", "₸ " + tr("curr_kzt", lang))
     ]
     rows = []
@@ -375,7 +375,7 @@ class States(StatesGroup):
     admin_req = State()
 
 # ============================================================
-# HANDLERS
+# HANDLERS (без изменений – работают с новыми текстами)
 # ============================================================
 @dp.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext):
@@ -900,7 +900,7 @@ async def req_input(message: Message, state: FSMContext):
     await message.answer(tr("req_saved", user_lang(message.from_user.id)), reply_markup=kb_back(user_lang(message.from_user.id)))
 
 # ============================================================
-# TRANSLATION DICTIONARY – ALL 6 LANGUAGES (FULL)
+# TRANSLATION DICTIONARY – ALL 6 LANGUAGES
 # ============================================================
 LANG_NAMES = {"ru": "Русский", "en": "English", "uk": "Українська", "kk": "Қазақша", "zh": "中文", "hi": "हिन्दी"}
 
@@ -925,13 +925,13 @@ T = {
         "my_deals_empty": "📭 У вас нет сделок.",
         "clear_history": "🗑️ Очистить историю",
         "history_cleared": "✅ История очищена.",
-        "curr_usdt": "💵 USDT",
-        "curr_rub": "₽ RUB",
-        "curr_uah": "₴ UAH",
-        "curr_byn": "฿ BYN",
-        "curr_ton": "💎 TON",
-        "curr_stars": "⭐ STARS",
-        "curr_kzt": "₸ KZT",
+        "curr_usdt": "USDT",
+        "curr_rub": "RUB",
+        "curr_uah": "UAH",
+        "curr_byn": "BYN",
+        "curr_ton": "TON",
+        "curr_stars": "STARS",
+        "curr_kzt": "KZT",
         "choose_role": "🎯 <b>Выберите роль</b>:",
         "seller": "🛒 Продавец",
         "buyer": "🛍️ Покупатель",
@@ -993,13 +993,13 @@ T = {
         "my_deals_empty": "📭 No deals.",
         "clear_history": "🗑️ Clear history",
         "history_cleared": "✅ History cleared.",
-        "curr_usdt": "💵 USDT",
-        "curr_rub": "₽ RUB",
-        "curr_uah": "₴ UAH",
-        "curr_byn": "฿ BYN",
-        "curr_ton": "💎 TON",
-        "curr_stars": "⭐ STARS",
-        "curr_kzt": "₸ KZT",
+        "curr_usdt": "USDT",
+        "curr_rub": "RUB",
+        "curr_uah": "UAH",
+        "curr_byn": "BYN",
+        "curr_ton": "TON",
+        "curr_stars": "STARS",
+        "curr_kzt": "KZT",
         "choose_role": "🎯 <b>Choose role</b>:",
         "seller": "🛒 Seller",
         "buyer": "🛍️ Buyer",
@@ -1061,13 +1061,13 @@ T = {
         "my_deals_empty": "📭 У вас немає угод.",
         "clear_history": "🗑️ Очистити історію",
         "history_cleared": "✅ Історію очищено.",
-        "curr_usdt": "💵 USDT",
-        "curr_rub": "₽ RUB",
-        "curr_uah": "₴ UAH",
-        "curr_byn": "฿ BYN",
-        "curr_ton": "💎 TON",
-        "curr_stars": "⭐ STARS",
-        "curr_kzt": "₸ KZT",
+        "curr_usdt": "USDT",
+        "curr_rub": "RUB",
+        "curr_uah": "UAH",
+        "curr_byn": "BYN",
+        "curr_ton": "TON",
+        "curr_stars": "STARS",
+        "curr_kzt": "KZT",
         "choose_role": "🎯 <b>Виберіть роль</b>:",
         "seller": "🛒 Продавець",
         "buyer": "🛍️ Покупець",
@@ -1129,13 +1129,13 @@ T = {
         "my_deals_empty": "📭 Мәмілелер жоқ.",
         "clear_history": "🗑️ Тарихты тазалау",
         "history_cleared": "✅ Тарих тазартылды.",
-        "curr_usdt": "💵 USDT",
-        "curr_rub": "₽ RUB",
-        "curr_uah": "₴ UAH",
-        "curr_byn": "฿ BYN",
-        "curr_ton": "💎 TON",
-        "curr_stars": "⭐ STARS",
-        "curr_kzt": "₸ KZT",
+        "curr_usdt": "USDT",
+        "curr_rub": "RUB",
+        "curr_uah": "UAH",
+        "curr_byn": "BYN",
+        "curr_ton": "TON",
+        "curr_stars": "STARS",
+        "curr_kzt": "KZT",
         "choose_role": "🎯 <b>Рөліңізді таңдаңыз</b>:",
         "seller": "🛒 Сатушы",
         "buyer": "🛍️ Сатып алушы",
@@ -1197,13 +1197,13 @@ T = {
         "my_deals_empty": "📭 没有交易。",
         "clear_history": "🗑️ 清除历史",
         "history_cleared": "✅ 历史已清除。",
-        "curr_usdt": "💵 USDT",
-        "curr_rub": "₽ RUB",
-        "curr_uah": "₴ UAH",
-        "curr_byn": "฿ BYN",
-        "curr_ton": "💎 TON",
-        "curr_stars": "⭐ STARS",
-        "curr_kzt": "₸ KZT",
+        "curr_usdt": "USDT",
+        "curr_rub": "RUB",
+        "curr_uah": "UAH",
+        "curr_byn": "BYN",
+        "curr_ton": "TON",
+        "curr_stars": "STARS",
+        "curr_kzt": "KZT",
         "choose_role": "🎯 <b>选择角色</b>:",
         "seller": "🛒 卖家",
         "buyer": "🛍️ 买家",
@@ -1265,13 +1265,13 @@ T = {
         "my_deals_empty": "📭 कोई सौदा नहीं।",
         "clear_history": "🗑️ इतिहास साफ़ करें",
         "history_cleared": "✅ इतिहास साफ़ कर दिया गया।",
-        "curr_usdt": "💵 USDT",
-        "curr_rub": "₽ RUB",
-        "curr_uah": "₴ UAH",
-        "curr_byn": "฿ BYN",
-        "curr_ton": "💎 TON",
-        "curr_stars": "⭐ STARS",
-        "curr_kzt": "₸ KZT",
+        "curr_usdt": "USDT",
+        "curr_rub": "RUB",
+        "curr_uah": "UAH",
+        "curr_byn": "BYN",
+        "curr_ton": "TON",
+        "curr_stars": "STARS",
+        "curr_kzt": "KZT",
         "choose_role": "🎯 <b>भूमिका चुनें</b>:",
         "seller": "🛒 विक्रेता",
         "buyer": "🛍️ खरीदार",
