@@ -41,14 +41,14 @@ if PA_USERNAME:
 else:
     WEBHOOK_URL = os.getenv("WEBHOOK_URL", "")
 
-# Ссылки на картинки для каждого языка (главное меню и "О сервисе")
+# Ссылки на картинки для каждого языка (только для главного меню)
 PHOTO_URLS = {
-    "ru": {"main": "https://ibb.co/rG08CGyz", "about": "https://ibb.co/ZpWsBSbx"},
-    "en": {"main": "https://ibb.co/qYw6fVPt", "about": "https://ibb.co/TDrvMWX3"},
-    "uk": {"main": "https://ibb.co/zVrbJ9Cj", "about": "https://ibb.co/93dcDwgx"},
-    "kk": {"main": "https://ibb.co/Z1kD9vdL", "about": "https://ibb.co/9HRX2991"},
-    "zh": {"main": "https://ibb.co/nMM9FhHj", "about": "https://ibb.co/MD9gNrcj"},
-    "hi": {"main": "https://ibb.co/Xrg1yvFh", "about": "https://ibb.co/3mjhGpQh"},
+    "ru": {"main": "https://ibb.co/rG08CGyz"},
+    "en": {"main": "https://ibb.co/qYw6fVPt"},
+    "uk": {"main": "https://ibb.co/zVrbJ9Cj"},
+    "kk": {"main": "https://ibb.co/Z1kD9vdL"},
+    "zh": {"main": "https://ibb.co/nMM9FhHj"},
+    "hi": {"main": "https://ibb.co/Xrg1yvFh"},
 }
 
 ADMIN_IDS = {int(x.strip()) for x in os.getenv("ADMIN_IDS", "8822297551").split(",") if x.strip().isdigit()}
@@ -288,7 +288,7 @@ async def check_operation_allowed(message):
     return True
 
 # ============================================================
-# KEYBOARDS (ВСЕ PRIMARY КНОПКИ, КРАСИВЫЕ ЭМОДЗИ)
+# KEYBOARDS (PRIMARY КНОПКИ, ПО 1 ЭМОДЗИ)
 # ============================================================
 def kb_main(lang):
     return InlineKeyboardMarkup(inline_keyboard=[
@@ -838,8 +838,7 @@ async def set_lang(call: CallbackQuery):
 async def about(call: CallbackQuery):
     uid = call.from_user.id
     lang = user_lang(uid)
-    photo = PHOTO_URLS.get(lang, PHOTO_URLS["ru"])["about"]
-    await safe_send(call.message.chat.id, tr("about_text", lang), reply_markup=kb_back(lang), photo_url=photo)
+    await safe_send(call.message.chat.id, tr("about_text", lang), reply_markup=kb_back(lang))  # Без фото
     await call.answer()
 
 @dp.callback_query(F.data == "requisites")
