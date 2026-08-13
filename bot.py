@@ -7,7 +7,7 @@ import sqlite3
 import sys
 from datetime import datetime, timezone, timedelta
 
-from flask import Flask, request
+from aiohttp import web
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
@@ -359,34 +359,26 @@ class States(StatesGroup):
     seller_currency = State()
     seller_amount = State()
     seller_req = State()
-
     buyer_type = State()
     buyer_description = State()
     buyer_currency = State()
     buyer_amount = State()
     buyer_username = State()
-
     deposit = State()
     withdraw = State()
-
     req_input = State()
-
     review_rating = State()
     review_comment = State()
-
     admin_news = State()
     admin_req = State()
-
-# ============================================================
-# ОБРАБОТЧИКИ БОТА (ВСЕ КАК БЫЛИ, БЕЗ ИЗМЕНЕНИЙ)
+    # ============================================================
+# ОБРАБОТЧИКИ БОТА
 # ============================================================
 @dp.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext):
     await state.clear()
     ensure_user(message.from_user)
     uid = message.from_user.id
-    username = message.from_user.username or ""
-    
     row = fetchone("SELECT lang, accepted_policy FROM users WHERE user_id=?", (uid,))
     if not row or row["accepted_policy"] == 0:
         kb = InlineKeyboardMarkup(inline_keyboard=[
@@ -399,7 +391,6 @@ async def cmd_start(message: Message, state: FSMContext):
         ])
         await message.answer(tr("lang_choose", row["lang"] if row else "ru"), reply_markup=kb)
         return
-    
     lang = row["lang"] if row else "ru"
     args = message.text.split(maxsplit=1)
     if len(args) > 1:
@@ -787,7 +778,7 @@ def complete_deal(deal_id, admin_id):
     return fetchone("SELECT * FROM deals WHERE deal_id=?", (deal_id,))
 
 # ============================================================
-# ПРОЧИЕ ОБРАБОТЧИКИ (профиль, рефералы, язык, реквизиты)
+# ПРОЧИЕ ОБРАБОТЧИКИ
 # ============================================================
 @dp.callback_query(F.data == "profile")
 async def profile(call: CallbackQuery):
@@ -1034,6 +1025,7 @@ T = {
         "self_deal": "❌ Нельзя занять вторую роль в собственной сделке.",
         "full": "ℹ️ У сделки уже заняты обе роли.",
         "already_member": "ℹ️ Вы уже являетесь участником этой сделки.",
+        "referral_text": "👥 Реферальная ссылка: {link}\nВсего рефералов: {total}",
     },
     "en": {
         "lang_choose": "Choose your language:",
@@ -1079,6 +1071,7 @@ T = {
         "my_deals_title": "<tg-emoji emoji-id=\"5893255507380014983\"></tg-emoji> My deals\n\n",
         "my_deals_empty": "<tg-emoji emoji-id=\"6032636795387121097\"></tg-emoji> You have no deals.",
         "clear_history": "Clear history",
+        "history_cleared": "✅ History cleared (completed deals archived).",
         "curr_usdt": "USDT",
         "curr_rub": "RUB",
         "curr_uah": "UAH",
@@ -1164,6 +1157,7 @@ T = {
         "self_deal": "❌ You cannot take the second role in your own deal.",
         "full": "ℹ️ Both roles are already taken.",
         "already_member": "ℹ️ You are already a participant.",
+        "referral_text": "👥 Referral link: {link}\nTotal referrals: {total}",
     },
     "uk": {
         "lang_choose": "Виберіть мову:",
@@ -1295,6 +1289,7 @@ T = {
         "self_deal": "❌ Не можна зайняти другу роль у власній угоді.",
         "full": "ℹ️ В угоді вже зайняті обидві ролі.",
         "already_member": "ℹ️ Ви вже є учасником цієї угоди.",
+        "referral_text": "👥 Реферальне посилання: {link}\nВсього рефералів: {total}",
     },
     "kk": {
         "lang_choose": "Тіліңізді таңдаңыз:",
@@ -1426,6 +1421,7 @@ T = {
         "self_deal": "❌ Өз мәмілеңізде екінші рөлді ала алмайсыз.",
         "full": "ℹ️ Екі рөл де бос емес.",
         "already_member": "ℹ️ Сіз бұл мәміленің қатысушысысыз.",
+        "referral_text": "👥 Рефералдық сілтеме: {link}\nБарлығы: {total}",
     },
     "zh": {
         "lang_choose": "选择您的语言：",
@@ -1557,6 +1553,7 @@ T = {
         "self_deal": "❌ 您不能在自己的交易中担任第二角色。",
         "full": "ℹ️ 两个角色都已占用。",
         "already_member": "ℹ️ 您已是此交易的参与者。",
+        "referral_text": "👥 推荐链接：{link}\n推荐总数：{total}",
     },
     "hi": {
         "lang_choose": "अपनी भाषा चुनें:",
@@ -1688,38 +1685,44 @@ T = {
         "self_deal": "❌ आप अपने स्वयं के सौदे में दूसरी भूमिका नहीं ले सकते।",
         "full": "ℹ️ दोनों भूमिकाएँ पहले ही ली जा चुकी हैं।",
         "already_member": "ℹ️ आप पहले से ही इस सौदे के सदस्य हैं।",
+        "referral_text": "👥 रेफरल लिंक: {link}\nकुल रेफरल: {total}",
     }
 }
 
 # ============================================================
-# ЗАПУСК FLASK (АСИНХРОННЫЙ ОБРАБОТЧИК С ПОДДЕРЖКОЙ flask[async])
+# ЗАПУСК aiohttp
 # ============================================================
-app = Flask(__name__)
+async def handle_webhook(request):
+    try:
+        data = await request.json()
+        update = types.Update.model_validate(data)
+        await dp.feed_update(bot, update)
+        return web.Response(text="OK", status=200)
+    except Exception as e:
+        logger.exception("Webhook error")
+        return web.Response(text="Error", status=500)
 
-@app.route('/')
-def health():
-    return "FUNPAY is running"
-
-@app.route('/webhook', methods=['POST'])
-async def handle_webhook():
-    if request.method == 'POST':
-        try:
-            data = request.get_json()
-            update = types.Update.model_validate(data)
-            await dp.feed_update(bot, update)
-            return 'OK', 200
-        except Exception as e:
-            logger.exception("Webhook error")
-            return 'Error', 500
-    return 'OK'
+async def health(request):
+    return web.Response(text="FUNPAY is running")
 
 async def set_webhook():
     if WEBHOOK_URL:
         await bot.set_webhook(url=f"{WEBHOOK_URL}/webhook", drop_pending_updates=True)
         logger.info(f"Webhook set to {WEBHOOK_URL}/webhook")
     else:
-        logger.warning("WEBHOOK_URL is empty. Set PA_USERNAME or WEBHOOK_URL env.")
+        logger.warning("WEBHOOK_URL is empty")
+
+async def main():
+    app = web.Application()
+    app.router.add_get('/', health)
+    app.router.add_post('/webhook', handle_webhook)
+    await set_webhook()
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, host='0.0.0.0', port=int(os.getenv('PORT', 5000)))
+    await site.start()
+    logger.info("Server started on port %s", os.getenv('PORT', 5000))
+    await asyncio.Event().wait()
 
 if __name__ == "__main__":
-    asyncio.run(set_webhook())
-    app.run(host='0.0.0.0', port=5000)
+    asyncio.run(main())
