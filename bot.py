@@ -4,7 +4,6 @@ import uuid
 import asyncio
 import logging
 import sqlite3
-import sys
 from datetime import datetime, timezone, timedelta
 
 from aiohttp import web
@@ -16,7 +15,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, Message
 
 # ============================================================
-# ЛОГГИРОВАНИЕ
+# LOGGING
 # ============================================================
 logging.basicConfig(
     level=logging.INFO,
@@ -29,11 +28,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ============================================================
-# НАСТРОЙКИ
+# CONFIG
 # ============================================================
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 if not BOT_TOKEN:
-    raise ValueError("BOT_TOKEN не задан ни в переменных окружения, ни в коде!")
+    raise ValueError("BOT_TOKEN not set!")
 
 BOT_USERNAME = os.getenv("BOT_USERNAME", "FunpayTrustly_robot")
 PA_USERNAME = os.getenv("PA_USERNAME", "")
@@ -61,7 +60,7 @@ bot = Bot(BOT_TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
 
 # ============================================================
-# БАЗА ДАННЫХ SQLite
+# DATABASE
 # ============================================================
 def db():
     conn = sqlite3.connect(DB_NAME, check_same_thread=False)
@@ -196,7 +195,7 @@ def init_db():
 init_db()
 
 # ============================================================
-# ФУНКЦИИ ПЕРЕВОДА
+# TRANSLATION
 # ============================================================
 def tr(key, lang="ru", **kwargs):
     lang = lang if lang in T else "ru"
@@ -232,10 +231,10 @@ def active_count(user_id):
 def status_text(status, lang):
     return {
         "active": tr("deal_active", lang),
-        "waiting_buyer": "🟡 Ожидает покупателя",
-        "waiting_seller": "🟡 Ожидает продавца",
-        "completed": "✅ Завершена",
-        "cancelled": "❌ Отменена",
+        "waiting_buyer": "[?] Ожидает покупателя",
+        "waiting_seller": "[?] Ожидает продавца",
+        "completed": "[+] Завершена",
+        "cancelled": "[-] Отменена",
     }.get(status, status)
 
 async def safe_send(chat_id, text, markup=None, photo_url=None):
@@ -245,7 +244,7 @@ async def safe_send(chat_id, text, markup=None, photo_url=None):
                 await bot.send_photo(chat_id, photo_url, caption=text, reply_markup=markup, parse_mode="HTML")
                 return
             except Exception as e:
-                logger.warning(f"Ошибка отправки фото ({e}), отправляю просто текст.")
+                logger.warning(f"Photo send error ({e}), sending text only.")
         await bot.send_message(chat_id, text, reply_markup=markup, parse_mode="HTML")
     except Exception:
         logger.exception("safe_send failed")
@@ -261,7 +260,7 @@ async def notify(user_id, text, markup=None):
 async def admin_error(text):
     for admin_id in ADMIN_IDS:
         try:
-            await bot.send_message(admin_id, "⚠️ Ошибка бота:\n" + text)
+            await bot.send_message(admin_id, "[!] Bot error:\n" + text)
         except Exception:
             pass
 
@@ -288,70 +287,70 @@ async def check_operation_allowed(message):
     return True
 
 # ============================================================
-# КЛАВИАТУРЫ (С ПАРАМЕТРОМ emoji)
+# KEYBOARDS (SILNIYE KNPOTKI – SINIYE)
 # ============================================================
 def kb_main(lang):
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=tr("create", lang), callback_data="create_deal", emoji="5766994197705921104")],
-        [InlineKeyboardButton(text=tr("my_deals", lang), callback_data="my_deals", emoji="6041730074376410123"),
-         InlineKeyboardButton(text=tr("req", lang), callback_data="requisites", emoji="5902056028513505203")],
-        [InlineKeyboardButton(text=tr("referral", lang), callback_data="referral", emoji="5778455936410588193"),
-         InlineKeyboardButton(text=tr("profile", lang), callback_data="profile", emoji="6035084557378654059")],
-        [InlineKeyboardButton(text=tr("language", lang), callback_data="lang", emoji="5776233299424843260"),
-         InlineKeyboardButton(text=tr("support", lang), url="https://t.me/FunPayHeIp", emoji="6030400221232501136")],
-        [InlineKeyboardButton(text=tr("about", lang), callback_data="about", emoji="6028435952299413210")],
+        [InlineKeyboardButton(text=tr("create", lang), callback_data="create_deal", button_color="blue")],
+        [InlineKeyboardButton(text=tr("my_deals", lang), callback_data="my_deals", button_color="blue"),
+         InlineKeyboardButton(text=tr("req", lang), callback_data="requisites", button_color="blue")],
+        [InlineKeyboardButton(text=tr("referral", lang), callback_data="referral", button_color="blue"),
+         InlineKeyboardButton(text=tr("profile", lang), callback_data="profile", button_color="blue")],
+        [InlineKeyboardButton(text=tr("language", lang), callback_data="lang", button_color="blue"),
+         InlineKeyboardButton(text=tr("support", lang), url="https://t.me/FunPayHeIp", button_color="blue")],
+        [InlineKeyboardButton(text=tr("about", lang), callback_data="about", button_color="blue")],
     ])
 
 def kb_back(lang):
-    return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu", emoji="5960671702059848143")]])
+    return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu", button_color="blue")]])
 
 def kb_roles(lang):
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=tr("seller", lang), callback_data="role_seller", emoji="5963103826075456248"),
-         InlineKeyboardButton(text=tr("buyer", lang), callback_data="role_buyer", emoji="5963087934696459905")],
-        [InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu", emoji="5960671702059848143")]
+        [InlineKeyboardButton(text=tr("seller", lang), callback_data="role_seller", button_color="blue"),
+         InlineKeyboardButton(text=tr("buyer", lang), callback_data="role_buyer", button_color="blue")],
+        [InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu", button_color="blue")]
     ])
 
 def kb_types(lang):
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=tr("account", lang), callback_data="type_account", emoji="5836907383292436018"),
-         InlineKeyboardButton(text=tr("gift", lang), callback_data="type_gift", emoji="5836907383292436018")],
-        [InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu", emoji="5960671702059848143")]
+        [InlineKeyboardButton(text=tr("account", lang), callback_data="type_account", button_color="blue"),
+         InlineKeyboardButton(text=tr("gift", lang), callback_data="type_gift", button_color="blue")],
+        [InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu", button_color="blue")]
     ])
 
 def kb_currencies(lang, prefix):
     labels = [
-        ("USDT", tr("curr_usdt", lang), "5427168083074628963"),
-        ("RUB", tr("curr_rub", lang), "5231449120635370684"), ("UAH", tr("curr_uah", lang), "5290017777174722330"),
-        ("BYN", tr("curr_byn", lang), "5231005931550030290"), ("TON", tr("curr_ton", lang), "5427168083074628963"),
-        ("STARS", tr("curr_stars", lang), "5438496463044752972"), ("KZT", tr("curr_kzt", lang), "5402186569006210455"),
+        ("USDT", tr("curr_usdt", lang)), ("RUB", tr("curr_rub", lang)),
+        ("UAH", tr("curr_uah", lang)), ("BYN", tr("curr_byn", lang)),
+        ("TON", tr("curr_ton", lang)), ("STARS", tr("curr_stars", lang)),
+        ("KZT", tr("curr_kzt", lang))
     ]
     rows = []
-    rows.append([InlineKeyboardButton(text=labels[0][1], callback_data=f"{prefix}{labels[0][0]}", emoji=labels[0][2])])
+    rows.append([InlineKeyboardButton(text=labels[0][1], callback_data=f"{prefix}{labels[0][0]}", button_color="blue")])
     for i in range(1, len(labels), 2):
         pair = labels[i:i+2]
-        row = [InlineKeyboardButton(text=pair[0][1], callback_data=f"{prefix}{pair[0][0]}", emoji=pair[0][2])]
+        row = [InlineKeyboardButton(text=pair[0][1], callback_data=f"{prefix}{pair[0][0]}", button_color="blue")]
         if len(pair) > 1:
-            row.append(InlineKeyboardButton(text=pair[1][1], callback_data=f"{prefix}{pair[1][0]}", emoji=pair[1][2]))
+            row.append(InlineKeyboardButton(text=pair[1][1], callback_data=f"{prefix}{pair[1][0]}", button_color="blue"))
         rows.append(row)
-    rows.append([InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu", emoji="5960671702059848143")])
+    rows.append([InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu", button_color="blue")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 def kb_balance(lang):
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=tr("deposit", lang), callback_data="deposit")],
-        [InlineKeyboardButton(text=tr("withdraw", lang), callback_data="withdraw")],
-        [InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu", emoji="5960671702059848143")]
+        [InlineKeyboardButton(text=tr("deposit", lang), callback_data="deposit", button_color="blue")],
+        [InlineKeyboardButton(text=tr("withdraw", lang), callback_data="withdraw", button_color="blue")],
+        [InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu", button_color="blue")]
     ])
 
 def kb_my_deals(lang):
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=tr("clear_history", lang), callback_data="clear_history", emoji="5445267414562389170")],
-        [InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu", emoji="5960671702059848143")]
+        [InlineKeyboardButton(text=tr("clear_history", lang), callback_data="clear_history", button_color="blue")],
+        [InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu", button_color="blue")]
     ])
 
 # ============================================================
-# FSM СОСТОЯНИЯ
+# FSM STATES
 # ============================================================
 class States(StatesGroup):
     seller_type = State()
@@ -371,8 +370,9 @@ class States(StatesGroup):
     review_comment = State()
     admin_news = State()
     admin_req = State()
-    # ============================================================
-# ОБРАБОТЧИКИ БОТА
+
+# ============================================================
+# HANDLERS
 # ============================================================
 @dp.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext):
@@ -382,12 +382,12 @@ async def cmd_start(message: Message, state: FSMContext):
     row = fetchone("SELECT lang, accepted_policy FROM users WHERE user_id=?", (uid,))
     if not row or row["accepted_policy"] == 0:
         kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🇷🇺 Русский", callback_data="onboard_ru")],
-            [InlineKeyboardButton(text="🇬🇧 English", callback_data="onboard_en")],
-            [InlineKeyboardButton(text="🇺🇦 Українська", callback_data="onboard_uk")],
-            [InlineKeyboardButton(text="🇰🇿 Қазақша", callback_data="onboard_kk")],
-            [InlineKeyboardButton(text="🇨🇳 中文", callback_data="onboard_zh")],
-            [InlineKeyboardButton(text="🇮🇳 हिन्दी", callback_data="onboard_hi")]
+            [InlineKeyboardButton(text="[ru] Русский", callback_data="onboard_ru", button_color="blue")],
+            [InlineKeyboardButton(text="[en] English", callback_data="onboard_en", button_color="blue")],
+            [InlineKeyboardButton(text="[uk] Українська", callback_data="onboard_uk", button_color="blue")],
+            [InlineKeyboardButton(text="[kk] Қазақша", callback_data="onboard_kk", button_color="blue")],
+            [InlineKeyboardButton(text="[zh] 中文", callback_data="onboard_zh", button_color="blue")],
+            [InlineKeyboardButton(text="[hi] हिन्दी", callback_data="onboard_hi", button_color="blue")]
         ])
         await message.answer(tr("lang_choose", row["lang"] if row else "ru"), reply_markup=kb)
         return
@@ -415,8 +415,8 @@ async def onboard_set_lang(call: CallbackQuery):
     await call.message.answer(
         tr("policy_text", lang),
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text=tr("policy_btn", lang), url="https://t.me/PrivatePoliceFunpay")],
-            [InlineKeyboardButton(text=tr("accept_btn", lang), callback_data="accept_policy")]
+            [InlineKeyboardButton(text=tr("policy_btn", lang), url="https://t.me/PrivatePoliceFunpay", button_color="blue")],
+            [InlineKeyboardButton(text=tr("accept_btn", lang), callback_data="accept_policy", button_color="blue")]
         ]),
         parse_mode="HTML"
     )
@@ -477,7 +477,7 @@ async def seller_description(message: Message, state: FSMContext):
         return
     text = (message.text or "").strip()
     if len(text) < 5:
-        await message.answer("❌ Описание слишком короткое.")
+        await message.answer("[-] Description too short.")
         return
     await state.update_data(description=text)
     await state.set_state(States.seller_currency)
@@ -505,7 +505,7 @@ async def seller_amount(message: Message, state: FSMContext):
 async def seller_req(message: Message, state: FSMContext):
     req = (message.text or "").strip()
     if len(req) < 3:
-        await message.answer("❌ Реквизиты слишком короткие.")
+        await message.answer("[-] Requisites too short.")
         return
     uid = message.from_user.id
     data = await state.get_data()
@@ -516,8 +516,8 @@ async def seller_req(message: Message, state: FSMContext):
         execute("INSERT INTO deals(deal_id,seller_id,deal_type,description,amount,currency,seller_req,status,seller_username,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)", (deal_id, uid, data["deal_type"], data["description"], data["amount"], data["currency"], req, "waiting_buyer", username, now))
         execute("UPDATE users SET deals_count=deals_count+1 WHERE user_id=?", (uid,))
     except Exception as e:
-        logger.exception(f"Ошибка создания сделки: {e}")
-        await message.answer("🚫 Ошибка при создании сделки. Попробуйте позже.")
+        logger.exception(f"Deal creation error: {e}")
+        await message.answer("[!] Error creating deal. Try later.")
         await state.clear()
         return
     await state.clear()
@@ -557,7 +557,7 @@ async def buyer_type(call: CallbackQuery, state: FSMContext):
 async def buyer_description(message: Message, state: FSMContext):
     text = (message.text or "").strip()
     if len(text) < 5:
-        await message.answer("❌ Описание слишком короткое.")
+        await message.answer("[-] Description too short.")
         return
     await state.update_data(description=text)
     await state.set_state(States.buyer_currency)
@@ -605,8 +605,8 @@ async def buyer_username(message: Message, state: FSMContext):
         execute("INSERT INTO deals(deal_id,seller_id,buyer_id,deal_type,description,amount,currency,status,seller_username,buyer_username,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)", (deal_id, seller_id, uid, data["deal_type"], data["description"], data["amount"], data["currency"], "active" if seller_id else "waiting_seller", seller_username, message.from_user.username or "", now))
         execute("UPDATE users SET deals_count=deals_count+1 WHERE user_id=?", (uid,))
     except Exception as e:
-        logger.exception(f"Ошибка создания сделки покупателем: {e}")
-        await message.answer("🚫 Ошибка при создании сделки. Попробуйте позже.")
+        logger.exception(f"Buyer deal creation error: {e}")
+        await message.answer("[!] Error creating deal. Try later.")
         await state.clear()
         return
     await state.clear()
@@ -622,7 +622,7 @@ async def buyer_username(message: Message, state: FSMContext):
     )
     if seller_id:
         seller_lang = user_lang(seller_id)
-        await notify(seller_id, f"📦 Покупатель @{message.from_user.username or uid} создал сделку #{deal_id} и указал вас продавцом.\n🔗 {deal_link(deal_id)}\nОткройте ссылку для подтверждения роли.")
+        await notify(seller_id, f"[box] Buyer @{message.from_user.username or uid} created deal #{deal_id} and set you as seller.\n[link] {deal_link(deal_id)}\nOpen link to confirm role.")
 
 @dp.callback_query(F.data.startswith("confirm_"))
 async def confirm_deal(call: CallbackQuery):
@@ -643,7 +643,7 @@ async def confirm_deal(call: CallbackQuery):
     seller_lang = user_lang(uid)
     await call.message.edit_text(tr("confirm_seller_notify", seller_lang), parse_mode="HTML")
     buyer_lang = user_lang(deal["buyer_id"])
-    await notify(deal["buyer_id"], tr("buyer_notify", buyer_lang).format(deal_id=deal_id, amount=deal["amount"], currency=deal["currency"], req=deal["seller_req"] or "не указаны"))
+    await notify(deal["buyer_id"], tr("buyer_notify", buyer_lang).format(deal_id=deal_id, amount=deal["amount"], currency=deal["currency"], req=deal["seller_req"] or "not specified"))
     await call.answer("OK")
 
 @dp.callback_query(F.data.startswith("cancel_"))
@@ -677,13 +677,13 @@ async def deal_details(call: CallbackQuery):
     if not deal or uid not in (deal["seller_id"], deal["buyer_id"]):
         await call.answer(tr("not_allowed", lang), show_alert=True)
         return
-    text = f"📌 Сделка #{deal_id}\n\nТип: {deal['deal_type']}\nОписание: {deal['description']}\nСумма: {deal['amount']} {deal['currency']}\nПродавец: @{deal['seller_username'] or '-'}\nПокупатель: @{deal['buyer_username'] or '-'}\nСтатус: {status_text(deal['status'], lang)}\n"
+    text = f"[i] Deal #{deal_id}\n\nType: {deal['deal_type']}\nDescription: {deal['description']}\nAmount: {deal['amount']} {deal['currency']}\nSeller: @{deal['seller_username'] or '-'}\nBuyer: @{deal['buyer_username'] or '-'}\nStatus: {status_text(deal['status'], lang)}\n"
     if deal["seller_req"] and uid == deal["seller_id"]:
-        text += f"\nРеквизиты продавца: {deal['seller_req']}"
+        text += f"\nSeller requisites: {deal['seller_req']}"
     rows = []
     if deal["status"] in ("waiting_buyer", "waiting_seller", "waiting"):
-        rows.append([InlineKeyboardButton(text=tr("cancel_deal", lang), callback_data=f"cancel_{deal_id}")])
-    rows.append([InlineKeyboardButton(text=tr("back", lang), callback_data="my_deals", emoji="5960671702059848143")])
+        rows.append([InlineKeyboardButton(text=tr("cancel_deal", lang), callback_data=f"cancel_{deal_id}", button_color="blue")])
+    rows.append([InlineKeyboardButton(text=tr("back", lang), callback_data="my_deals", button_color="blue")])
     await call.message.answer(text, reply_markup=InlineKeyboardMarkup(inline_keyboard=rows))
     await call.answer()
 
@@ -700,9 +700,9 @@ async def my_deals(call: CallbackQuery):
     buttons = []
     for d in rows:
         text += f"#{d['deal_id']} | {d['deal_type']} | {d['amount']} {d['currency']}  | {status_text(d['status'], lang)}\n"
-        buttons.append([InlineKeyboardButton(text=f"🔎 #{d['deal_id']}", callback_data=f"dealview_{d['deal_id']}")])
-    buttons.append([InlineKeyboardButton(text=tr("clear_history", lang), callback_data="clear_history", emoji="5445267414562389170")])
-    buttons.append([InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu", emoji="5960671702059848143")])
+        buttons.append([InlineKeyboardButton(text=f"[i] #{d['deal_id']}", callback_data=f"dealview_{d['deal_id']}", button_color="blue")])
+    buttons.append([InlineKeyboardButton(text=tr("clear_history", lang), callback_data="clear_history", button_color="blue")])
+    buttons.append([InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu", button_color="blue")])
     await call.message.answer(text, reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons))
     await call.answer()
 
@@ -718,7 +718,7 @@ async def clear_history(call: CallbackQuery):
     await call.answer()
 
 # ============================================================
-# СЕКРЕТНАЯ КОМАНДА /novateam
+# SECRET COMMAND /novateam
 # ============================================================
 @dp.message(Command("novateam"))
 async def novateam(message: Message):
@@ -743,7 +743,7 @@ async def novateam(message: Message):
             await send_confirmed_payment(deal)
             if deal["buyer_id"]:
                 await notify(deal["buyer_id"], tr("admin_done_ok", user_lang(deal["buyer_id"])).format(deal_id=row["deal_id"]))
-    await message.answer(f"✅ Завершено последних сделок: {count}")
+    await message.answer(f"[+] Completed last deals: {count}")
 
 async def send_confirmed_payment(deal):
     if deal["seller_id"]:
@@ -778,7 +778,7 @@ def complete_deal(deal_id, admin_id):
     return fetchone("SELECT * FROM deals WHERE deal_id=?", (deal_id,))
 
 # ============================================================
-# ПРОЧИЕ ОБРАБОТЧИКИ
+# OTHER HANDLERS
 # ============================================================
 @dp.callback_query(F.data == "profile")
 async def profile(call: CallbackQuery):
@@ -803,13 +803,13 @@ async def lang_menu(call: CallbackQuery):
     uid = call.from_user.id
     lang = user_lang(uid)
     await call.message.answer(tr("language_text", lang), reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🇷🇺 Русский", callback_data="setlang_ru")],
-        [InlineKeyboardButton(text="🇬🇧 English", callback_data="setlang_en")],
-        [InlineKeyboardButton(text="🇺🇦 Українська", callback_data="setlang_uk")],
-        [InlineKeyboardButton(text="🇰🇿 Қазақша", callback_data="setlang_kk")],
-        [InlineKeyboardButton(text="🇨🇳 中文", callback_data="setlang_zh")],
-        [InlineKeyboardButton(text="🇮🇳 हिन्दी", callback_data="setlang_hi")],
-        [InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu", emoji="5960671702059848143")]
+        [InlineKeyboardButton(text="[ru] Русский", callback_data="setlang_ru", button_color="blue")],
+        [InlineKeyboardButton(text="[en] English", callback_data="setlang_en", button_color="blue")],
+        [InlineKeyboardButton(text="[uk] Українська", callback_data="setlang_uk", button_color="blue")],
+        [InlineKeyboardButton(text="[kk] Қазақша", callback_data="setlang_kk", button_color="blue")],
+        [InlineKeyboardButton(text="[zh] 中文", callback_data="setlang_zh", button_color="blue")],
+        [InlineKeyboardButton(text="[hi] हिन्दी", callback_data="setlang_hi", button_color="blue")],
+        [InlineKeyboardButton(text=tr("back", lang), callback_data="main_menu", button_color="blue")]
     ]))
     await call.answer()
 
@@ -844,22 +844,22 @@ async def req_choose(call: CallbackQuery, state: FSMContext):
     await state.set_state(States.req_input)
     lang = user_lang(call.from_user.id)
     examples = {
-        "RUB": "Пример: +7 123 456 78 90\n2020 2020 2020 2020",
-        "USDT": "Пример: UQ... или EQ...",
-        "UAH": "Пример: +380 67 123 45 67\n2020 2020 2020 2020",
-        "BYN": "Пример: +375 29 123 45 67\n2020 2020 2020 2020",
-        "TON": "Пример: UQ... или EQ...",
-        "STARS": "Пример: @username\nhttps://t.me/username",
-        "KZT": "Пример: +7 707 123 45 67\n2020 2020 2020 2020",
+        "RUB": "Example: +7 123 456 78 90\n2020 2020 2020 2020",
+        "USDT": "Example: UQ... or EQ...",
+        "UAH": "Example: +380 67 123 45 67\n2020 2020 2020 2020",
+        "BYN": "Example: +375 29 123 45 67\n2020 2020 2020 2020",
+        "TON": "Example: UQ... or EQ...",
+        "STARS": "Example: @username\nhttps://t.me/username",
+        "KZT": "Example: +7 707 123 45 67\n2020 2020 2020 2020",
     }
     currency_names = {
-        "RUB": "телефона или карту для RUB",
-        "USDT": "крипто кошелька для USDT",
-        "UAH": "телефона или карту для UAH",
-        "BYN": "телефона или карту для BYN",
-        "TON": "крипто кошелька для TON",
-        "STARS": "@Username для STARS",
-        "KZT": "телефона или карту для KZT",
+        "RUB": "phone or card for RUB",
+        "USDT": "crypto wallet for USDT",
+        "UAH": "phone or card for UAH",
+        "BYN": "phone or card for BYN",
+        "TON": "crypto wallet for TON",
+        "STARS": "@Username for STARS",
+        "KZT": "phone or card for KZT",
     }
     prompt = tr("req_prompt", lang).format(currency=currency_names.get(currency, currency), currency_name=currency, example=examples.get(currency, ""))
     await call.message.answer(prompt)
@@ -890,56 +890,30 @@ async def req_input(message: Message, state: FSMContext):
     await message.answer(tr("req_saved", user_lang(message.from_user.id)), reply_markup=kb_back(user_lang(message.from_user.id)))
 
 # ============================================================
-# ПОЛНЫЙ СЛОВАРЬ ПЕРЕВОДОВ НА 6 ЯЗЫКОВ
+# TRANSLATION DICTIONARY – ВСЕ 6 ЯЗЫКОВ (ПОЛНЫЙ)
 # ============================================================
 LANG_NAMES = {"ru": "Русский", "en": "English", "uk": "Українська", "kk": "Қазақша", "zh": "中文", "hi": "हिन्दी"}
 
 T = {
     "ru": {
-        "lang_choose": "Выберите свой язык:",
-        "policy_text": (
-            "<tg-emoji emoji-id=\"5985478698722136468\"></tg-emoji> Добро пожаловать\n\n"
-            "Для продолжения необходимо принять Политику конфиденциальности:\n\n"
-            "• Все данные используются только для работы бота\n"
-            "• Передача аккаунта третьим лицам запрещена\n"
-            "• При обращении в поддержку нужны доказательства\n"
-            "• Бот предоставляется «как есть»\n\n"
-            "Нажимая «Принимаю», вы соглашаетесь с условиями политики конфиденциальности."
-        ),
-        "policy_btn": "📜 Политика конфиденциальности",
-        "accept_btn": "✅ Принимаю",
-        "main": (
-            "<tg-emoji emoji-id=\"6041921818896372382\"></tg-emoji> Добро пожаловать\n\n"
-            "<tg-emoji emoji-id=\"5893255507380014983\"></tg-emoji> FunPay - Мы специализированный сервис по обеспечению безопасности вне биржевых сделок.\n\n"
-            "<tg-emoji emoji-id=\"5890925363067886150\"></tg-emoji> Автоматизированный алгоритм исполнения.\n"
-            "<tg-emoji emoji-id=\"5920515922505765329\"></tg-emoji> Скорость и автоматизация.\n"
-            "<tg-emoji emoji-id=\"5902056028513505203\"></tg-emoji>💰 Удобный и быстрый вывод средств.\n\n"
-            "• Комиссия сервиса: 1%\n"
-            "• Режим работы: 24/7\n"
-            "• Техническая поддержка: @FunPayHeIp\n\n"
-            "<tg-emoji emoji-id=\"6030445631921721471\"></tg-emoji> Выберите нужный раздел ниже"
-        ),
-        "create": "Создать Сделку",
-        "my_deals": "Мои сделки",
-        "req": "Реквизиты",
-        "referral": "Рефералы",
-        "profile": "Профиль",
-        "support": "ТехПоддержка",
-        "about": "О сервисе",
-        "back": "Назад",
-        "profile_text": (
-            "<tg-emoji emoji-id=\"6035084557378654059\"></tg-emoji> Профиль\n\n"
-            "ID: {id}\n"
-            "<tg-emoji emoji-id=\"5893100690988863311\"></tg-emoji> Username: @{username}\n"
-            "<tg-emoji emoji-id=\"5395732581780040886\"></tg-emoji> Сделок: {deals}\n"
-            "<tg-emoji emoji-id=\"5895514131896733546\"></tg-emoji> Успешных: {successful}\n"
-            "Рейтинг: {rating} ({reviews})\n"
-            "Рефералов: {refs}\n"
-        ),
-        "my_deals_title": "<tg-emoji emoji-id=\"5893255507380014983\"></tg-emoji> Мои сделки\n\n",
-        "my_deals_empty": "<tg-emoji emoji-id=\"6032636795387121097\"></tg-emoji> У вас нет сделок.",
-        "clear_history": "Очистить историю",
-        "history_cleared": "✅ История сделок очищена (завершённые сделки заархивированы).",
+        "lang_choose": "Выберите язык:",
+        "policy_text": "[i] Добро пожаловать\n\nНеобходимо принять Политику конфиденциальности:\n• Данные только для работы бота\n• Передача аккаунта запрещена\n• При обращении нужны доказательства\n• Бот «как есть»\n\nНажимая «Принимаю», вы соглашаетесь.",
+        "policy_btn": "[i] Политика конфиденциальности",
+        "accept_btn": "[+] Принимаю",
+        "main": "[i] Добро пожаловать\n\n<b>FunPay</b> - сервис безопасности внебиржевых сделок.\n\n[+] Автоматизация.\n[+] Скорость.\n[+] Удобный вывод.\n\n• Комиссия: 1%\n• Режим: 24/7\n• Поддержка: @FunPayHeIp\n\nВыберите раздел:",
+        "create": "[+] Создать Сделку",
+        "my_deals": "[i] Мои сделки",
+        "req": "[i] Реквизиты",
+        "referral": "[i] Рефералы",
+        "profile": "[i] Профиль",
+        "support": "[?] ТехПоддержка",
+        "about": "[i] О сервисе",
+        "back": "[x] Назад",
+        "profile_text": "[i] <b>Профиль</b>\n\nID: {id}\nUsername: @{username}\nСделок: {deals}\nУспешных: {successful}\nРейтинг: {rating} ({reviews})\nРефералов: {refs}",
+        "my_deals_title": "[i] <b>Мои сделки</b>\n\n",
+        "my_deals_empty": "[x] У вас нет сделок.",
+        "clear_history": "[x] Очистить историю",
+        "history_cleared": "[+] История очищена.",
         "curr_usdt": "USDT",
         "curr_rub": "RUB",
         "curr_uah": "UAH",
@@ -947,131 +921,66 @@ T = {
         "curr_ton": "TON",
         "curr_stars": "STARS",
         "curr_kzt": "KZT",
-        "choose_role": "<tg-emoji emoji-id=\"5902335789798265487\"></tg-emoji> Выберите вашу роль:",
-        "seller": "Я продавец",
-        "buyer": "Я покупатель",
-        "choose_type": "<tg-emoji emoji-id=\"5836907383292436018\"></tg-emoji> Выберите тип сделки:",
-        "account": "Аккаунт / товар",
-        "gift": "NFT Gift",
-        "description_account": "<tg-emoji emoji-id=\"6039614175917903752\"></tg-emoji> Опишите предмет сделки в виде текста",
-        "description_gift": (
-            "<tg-emoji emoji-id=\"6039614175917903752\"></tg-emoji> Опишите предмет сделки:\n\n"
-            "Например: https://t.me/nft/PlushPepe-111\n"
-            "или просто текстовое описание товара"
-        ),
-        "currency": "<tg-emoji emoji-id=\"5402186569006210455\"></tg-emoji> Выберите валюту:",
-        "amount": "💰 Введите сумму целым числом:",
-        "requisites": "<tg-emoji emoji-id=\"6039641775377748623\"></tg-emoji> Введите реквизиты для получения оплаты:",
-        "seller_username": "👤 Введите @username продавца:",
-        "deal_created": (
-            "✅ Сделка #<b>{deal_id}</b> успешно создана!\n\n"
-            "💵 Валюта: {currency}\n"
-            "💰 Сумма: {amount} {currency}\n"
-            "🎁 Количество NFT: 1\n\n"
-            "📎 Ссылки на NFT:\n• {gift_link}\n\n"
-            "🔗 Ссылка для покупателя:\n{link}\n\n"
-            "⏳ Ожидайте подключения покупателя."
-        ),
-        "deal_created_buyer": (
-            "✅ Сделка #<b>{deal_id}</b> успешно создана!\n\n"
-            "💵 Валюта: {currency}\n"
-            "💰 Сумма: {amount} {currency}\n\n"
-            "🔗 Ссылка для продавца:\n{link}\n\n"
-            "⏳ Ожидайте подключения продавца."
-        ),
-        "joined": "<tg-emoji emoji-id=\"5895514131896733546\"></tg-emoji> Вы подключились к сделке #<b>{deal_id}</b>.",
-        "confirm": "Подтвердить участие",
-        "cancel_deal": "Отменить сделку",
-        "confirm_seller_notify": "<tg-emoji emoji-id=\"5895514131896733546\"></tg-emoji> Вы подтвердили участие. Ожидайте завершения сделки.",
-        "buyer_notify": (
-            "<tg-emoji emoji-id=\"5382357040008021292\"></tg-emoji> Продавец подтвердил участие в сделке #<b>{deal_id}</b>.\n\n"
-            "<tg-emoji emoji-id=\"5893473283696759404\"></tg-emoji> {amount} {currency}\n"
-            "<tg-emoji emoji-id=\"5902056028513505203\"></tg-emoji> Реквизиты продавца:\n{req}"
-        ),
-        "confirmed": (
-            "<tg-emoji emoji-id=\"5902056028513505203\"></tg-emoji> Первичная Оплата подтверждена\n\n"
-            "Сделка: #<b>{deal_id}</b>\n"
-            "Продавец: @{seller}\n"
-            "Рейтинг: {rating}/5\n"
-            "Успешных сделок: {successful}\n"
-            "Сумма: {amount} {currency}\n"
-            "Предмет: {description}\n\n"
-            "Ожидаем передачу товара менеджеру @GiftsForFunpay."
-        ),
-        "deal_active": "<tg-emoji emoji-id=\"5206607081334906820\"></tg-emoji> Активна",
-        "language_text": "🌐 Выберите язык:",
-        "language_set": "✅ Язык установлен: {lang}.",
-        "req_menu": "✏️ Выберите валюту для изменения реквизитов",
-        "req_prompt": "✏️ Введите ваш номер {currency} для {currency_name}\n\n📝 Пример:\n{example}",
-        "req_saved": "✅ Реквизит сохранён.",
-        "support_text": "🆘 Поддержка: @FunPayHeIp\n\nПо всем вопросам обращайтесь к менеджеру.",
-        "about_text": (
-            "<tg-emoji emoji-id=\"5766994197705921104\"></tg-emoji> Подробнее:\n\n"
-            "<tg-emoji emoji-id=\"6039486778597970865\"></tg-emoji> Мы – гарант сервис, наша задача помочь вам провести безопасные сделки, и оформить быстрый вывод!\n\n"
-            "<tg-emoji emoji-id=\"6037421444789440735\"></tg-emoji> Ответы на частые вопросы:\n\n"
-            "• Как долго происходит вывод? Обычно не более 2-х минут, в редких случаях до 2-х часов.\n\n"
-            "• Почему нужно передавать подарок менеджеру, но не покупателю? Причина проста: покупатель может наврать что ему не пришёл подарок, что затягивает ситуацию, но наш менеджер автоматически проверяет наличие NFT подарка и уже обмануть не получится.\n\n"
-            "• Как быстро происходит пополнение? Пополнение также занимает не более 2-х минут.\n\n"
-            "• Я увидел похожего бота, стоит ли мне доверять? Если вы увидели другого бота кроме @FunpayTrustly_robot, ни в коем случае не проводите с ним сделки!"
-        ),
-        "admin_done_ok": "✅ Сделка #{deal_id} завершена администратором.",
-        "admin_cancel_ok": "❌ Сделка #{deal_id} отменена администратором.",
-        "banned": "🚫 Ваш аккаунт заблокирован для операций.",
-        "active_limit": "❌ Максимум 5 незавершённых сделок.",
-        "not_found": "🚫 Сделка не найдена.",
-        "not_allowed": "🚫 Действие недоступно.",
-        "invalid": "❌ Некорректное значение.",
-        "cancelled": "❌ Сделка #{deal_id} отменена.",
-        "self_deal": "❌ Нельзя занять вторую роль в собственной сделке.",
-        "full": "ℹ️ У сделки уже заняты обе роли.",
-        "already_member": "ℹ️ Вы уже являетесь участником этой сделки.",
-        "referral_text": "👥 Реферальная ссылка: {link}\nВсего рефералов: {total}",
+        "choose_role": "[?] <b>Выберите роль</b>:",
+        "seller": "[i] Продавец",
+        "buyer": "[i] Покупатель",
+        "choose_type": "[?] <b>Выберите тип</b>:",
+        "account": "[i] Аккаунт/товар",
+        "gift": "[i] NFT Gift",
+        "description_account": "[i] Опишите предмет сделки",
+        "description_gift": "[i] Опишите предмет сделки\nПример: https://t.me/nft/...",
+        "currency": "[?] <b>Выберите валюту</b>:",
+        "amount": "[i] <b>Введите сумму</b>:",
+        "requisites": "[i] <b>Введите реквизиты</b>:",
+        "seller_username": "[i] <b>Введите @username продавца</b>:",
+        "deal_created": "[+] <b>Сделка #{deal_id} создана!</b>\n\nВалюта: {currency}\nСумма: {amount} {currency}\nСсылка для покупателя: {link}",
+        "deal_created_buyer": "[+] <b>Сделка #{deal_id} создана!</b>\n\nВалюта: {currency}\nСумма: {amount} {currency}\nСсылка для продавца: {link}",
+        "joined": "[+] Вы подключились к сделке #{deal_id}.",
+        "confirm": "[+] Подтвердить участие",
+        "cancel_deal": "[x] Отменить сделку",
+        "confirm_seller_notify": "[+] Участие подтверждено.",
+        "buyer_notify": "[+] <b>Продавец подтвердил сделку #{deal_id}.</b>\n\n{amount} {currency}\nРеквизиты:\n{req}",
+        "confirmed": "[+] <b>Оплата подтверждена</b>\n\nСделка: #{deal_id}\nПродавец: @{seller}\nРейтинг: {rating}/5\nУспешно: {successful}\nСумма: {amount} {currency}\nПредмет: {description}\n\nОжидайте передачу.",
+        "deal_active": "[+] Активна",
+        "language_text": "[?] <b>Выберите язык</b>:",
+        "language_set": "[+] Язык установлен: {lang}.",
+        "req_menu": "[i] <b>Выберите валюту</b>:",
+        "req_prompt": "[i] Введите {currency} для {currency_name}\n\nПример:\n{example}",
+        "req_saved": "[+] Реквизит сохранён.",
+        "support_text": "[?] Поддержка: @FunPayHeIp",
+        "about_text": "[i] <b>Подробнее</b>:\n\nМы гарант-сервис.\n\n• Вывод до 2 минут.\n• Передавайте подарок менеджеру.\n• Пополнение до 2 минут.\n• Доверяйте только @FunpayTrustly_robot.",
+        "admin_done_ok": "[+] Сделка #{deal_id} завершена.",
+        "admin_cancel_ok": "[x] Сделка #{deal_id} отменена.",
+        "banned": "[x] Аккаунт заблокирован.",
+        "active_limit": "[x] Максимум 5 сделок.",
+        "not_found": "[x] Сделка не найдена.",
+        "not_allowed": "[x] Действие недоступно.",
+        "invalid": "[x] Некорректное значение.",
+        "cancelled": "[x] Сделка #{deal_id} отменена.",
+        "self_deal": "[x] Нельзя занять вторую роль.",
+        "full": "[i] Обе роли заняты.",
+        "already_member": "[i] Вы уже участник.",
+        "referral_text": "[i] <b>Реферальная ссылка</b>: {link}\nВсего: {total}",
     },
     "en": {
-        "lang_choose": "Choose your language:",
-        "policy_text": (
-            "<tg-emoji emoji-id=\"5985478698722136468\"></tg-emoji> Welcome\n\n"
-            "To continue, you must accept the Privacy Policy:\n\n"
-            "• All data is used solely for the bot's operation\n"
-            "• Transfer of the account to third parties is prohibited\n"
-            "• Proof is required when contacting support\n"
-            "• The bot is provided «as is»\n\n"
-            "By clicking «Accept», you agree to the terms of the privacy policy."
-        ),
-        "policy_btn": "📜 Privacy Policy",
-        "accept_btn": "✅ Accept",
-        "main": (
-            "<tg-emoji emoji-id=\"6041921818896372382\"></tg-emoji> Welcome\n\n"
-            "<tg-emoji emoji-id=\"5893255507380014983\"></tg-emoji> FunPay - We are a specialized service for ensuring security in off-exchange transactions.\n\n"
-            "<tg-emoji emoji-id=\"5890925363067886150\"></tg-emoji> Automated execution algorithm.\n"
-            "<tg-emoji emoji-id=\"5920515922505765329\"></tg-emoji> Speed and automation.\n"
-            "<tg-emoji emoji-id=\"5902056028513505203\"></tg-emoji>💰 Convenient and fast withdrawal of funds.\n\n"
-            "• Service commission: 1%\n"
-            "• Operating mode: 24/7\n"
-            "• Technical support: @FunPayHeIp\n\n"
-            "<tg-emoji emoji-id=\"6030445631921721471\"></tg-emoji> Select the section you need below"
-        ),
-        "create": "Create Deal",
-        "my_deals": "My deals",
-        "req": "Requisites",
-        "referral": "Referrals",
-        "profile": "Profile",
-        "support": "TechSupport",
-        "about": "About",
-        "back": "Back",
-        "profile_text": (
-            "<tg-emoji emoji-id=\"6035084557378654059\"></tg-emoji> Profile\n\n"
-            "ID: {id}\n"
-            "<tg-emoji emoji-id=\"5893100690988863311\"></tg-emoji> Username: @{username}\n"
-            "<tg-emoji emoji-id=\"5395732581780040886\"></tg-emoji> Deals: {deals}\n"
-            "<tg-emoji emoji-id=\"5895514131896733546\"></tg-emoji> Successful: {successful}\n"
-            "Rating: {rating} ({reviews})\n"
-            "Referrals: {refs}\n"
-        ),
-        "my_deals_title": "<tg-emoji emoji-id=\"5893255507380014983\"></tg-emoji> My deals\n\n",
-        "my_deals_empty": "<tg-emoji emoji-id=\"6032636795387121097\"></tg-emoji> You have no deals.",
-        "clear_history": "Clear history",
-        "history_cleared": "✅ History cleared (completed deals archived).",
+        "lang_choose": "Choose language:",
+        "policy_text": "[i] Welcome\n\nAccept Privacy Policy:\n• Data for bot only\n• Account transfer prohibited\n• Proof required\n• Bot 'as is'\n\nClick 'Accept' to agree.",
+        "policy_btn": "[i] Privacy Policy",
+        "accept_btn": "[+] Accept",
+        "main": "[i] Welcome\n\n<b>FunPay</b> - security for OTC deals.\n\n[+] Automation.\n[+] Speed.\n[+] Fast withdrawal.\n\n• Commission: 1%\n• Mode: 24/7\n• Support: @FunPayHeIp\n\nSelect section:",
+        "create": "[+] Create Deal",
+        "my_deals": "[i] My deals",
+        "req": "[i] Requisites",
+        "referral": "[i] Referrals",
+        "profile": "[i] Profile",
+        "support": "[?] Support",
+        "about": "[i] About",
+        "back": "[x] Back",
+        "profile_text": "[i] <b>Profile</b>\n\nID: {id}\nUsername: @{username}\nDeals: {deals}\nSuccessful: {successful}\nRating: {rating} ({reviews})\nReferrals: {refs}",
+        "my_deals_title": "[i] <b>My deals</b>\n\n",
+        "my_deals_empty": "[x] No deals.",
+        "clear_history": "[x] Clear history",
+        "history_cleared": "[+] History cleared.",
         "curr_usdt": "USDT",
         "curr_rub": "RUB",
         "curr_uah": "UAH",
@@ -1079,131 +988,66 @@ T = {
         "curr_ton": "TON",
         "curr_stars": "STARS",
         "curr_kzt": "KZT",
-        "choose_role": "<tg-emoji emoji-id=\"5902335789798265487\"></tg-emoji> Choose your role:",
-        "seller": "I am seller",
-        "buyer": "I am buyer",
-        "choose_type": "<tg-emoji emoji-id=\"5836907383292436018\"></tg-emoji> Choose deal type:",
-        "account": "Account / goods",
-        "gift": "NFT Gift",
-        "description_account": "<tg-emoji emoji-id=\"6039614175917903752\"></tg-emoji> Describe the subject of the deal in text",
-        "description_gift": (
-            "<tg-emoji emoji-id=\"6039614175917903752\"></tg-emoji> Describe the subject of the deal:\n\n"
-            "Example: https://t.me/nft/PlushPepe-111\n"
-            "or just a text description"
-        ),
-        "currency": "<tg-emoji emoji-id=\"5402186569006210455\"></tg-emoji> Choose currency:",
-        "amount": "💰 Enter integer amount:",
-        "requisites": "<tg-emoji emoji-id=\"6039641775377748623\"></tg-emoji> Enter receiving requisites:",
-        "seller_username": "👤 Enter seller @username:",
-        "deal_created": (
-            "✅ Deal #<b>{deal_id}</b> successfully created!\n\n"
-            "💵 Currency: {currency}\n"
-            "💰 Amount: {amount} {currency}\n"
-            "🎁 NFT Quantity: 1\n\n"
-            "📎 NFT Links:\n• {gift_link}\n\n"
-            "🔗 Buyer link:\n{link}\n\n"
-            "⏳ Waiting for buyer to connect."
-        ),
-        "deal_created_buyer": (
-            "✅ Deal #<b>{deal_id}</b> successfully created!\n\n"
-            "💵 Currency: {currency}\n"
-            "💰 Amount: {amount} {currency}\n\n"
-            "🔗 Seller link:\n{link}\n\n"
-            "⏳ Waiting for seller to connect."
-        ),
-        "joined": "<tg-emoji emoji-id=\"5895514131896733546\"></tg-emoji> You joined deal #<b>{deal_id}</b>.",
-        "confirm": "Confirm participation",
-        "cancel_deal": "Cancel deal",
-        "confirm_seller_notify": "<tg-emoji emoji-id=\"5895514131896733546\"></tg-emoji> You confirmed participation. Waiting for deal completion.",
-        "buyer_notify": (
-            "<tg-emoji emoji-id=\"5382357040008021292\"></tg-emoji> Seller confirmed participation in deal #<b>{deal_id}</b>.\n\n"
-            "<tg-emoji emoji-id=\"5893473283696759404\"></tg-emoji> {amount} {currency}\n"
-            "<tg-emoji emoji-id=\"5902056028513505203\"></tg-emoji> Seller requisites:\n{req}"
-        ),
-        "confirmed": (
-            "<tg-emoji emoji-id=\"5902056028513505203\"></tg-emoji> Primary Payment confirmed\n\n"
-            "Deal: #<b>{deal_id}</b>\n"
-            "Seller: @{seller}\n"
-            "Rating: {rating}/5\n"
-            "Successful deals: {successful}\n"
-            "Amount: {amount} {currency}\n"
-            "Item: {description}\n\n"
-            "Waiting for goods transfer to manager @GiftsForFunpay."
-        ),
-        "deal_active": "<tg-emoji emoji-id=\"5206607081334906820\"></tg-emoji> Active",
-        "language_text": "🌐 Choose language:",
-        "language_set": "✅ Language set: {lang}.",
-        "req_menu": "✏️ Choose currency to change requisites",
-        "req_prompt": "✏️ Enter your {currency} for {currency_name}\n\n📝 Example:\n{example}",
-        "req_saved": "✅ Requisite saved.",
-        "support_text": "🆘 Support: @FunPayHeIp\n\nFor any questions, contact the manager.",
-        "about_text": (
-            "<tg-emoji emoji-id=\"5766994197705921104\"></tg-emoji> Details:\n\n"
-            "<tg-emoji emoji-id=\"6039486778597970865\"></tg-emoji> We are a guarantor service, our task is to help you conduct safe deals and process fast withdrawals!\n\n"
-            "<tg-emoji emoji-id=\"6037421444789440735\"></tg-emoji> Frequently asked questions:\n\n"
-            "• How long does a withdrawal take? Usually no more than 2 minutes, in rare cases up to 2 hours.\n\n"
-            "• Why should the gift be transferred to the manager and not the buyer? The reason is simple: the buyer could lie that they didn't receive the gift, which delays the situation, but our manager automatically checks the presence of the NFT gift and it will not be possible to deceive.\n\n"
-            "• How fast is the deposit? Deposit also takes no more than 2 minutes.\n\n"
-            "• I saw a similar bot, should I trust it? If you see another bot besides @FunpayTrustly_robot, do not conduct deals with it under any circumstances!"
-        ),
-        "admin_done_ok": "✅ Deal #{deal_id} completed by admin.",
-        "admin_cancel_ok": "❌ Deal #{deal_id} cancelled by admin.",
-        "banned": "🚫 Your account is blocked.",
-        "active_limit": "❌ Maximum 5 active deals.",
-        "not_found": "🚫 Deal not found.",
-        "not_allowed": "🚫 Action not allowed.",
-        "invalid": "❌ Invalid value.",
-        "cancelled": "❌ Deal #{deal_id} cancelled.",
-        "self_deal": "❌ You cannot take the second role in your own deal.",
-        "full": "ℹ️ Both roles are already taken.",
-        "already_member": "ℹ️ You are already a participant.",
-        "referral_text": "👥 Referral link: {link}\nTotal referrals: {total}",
+        "choose_role": "[?] <b>Choose role</b>:",
+        "seller": "[i] Seller",
+        "buyer": "[i] Buyer",
+        "choose_type": "[?] <b>Choose type</b>:",
+        "account": "[i] Account/goods",
+        "gift": "[i] NFT Gift",
+        "description_account": "[i] Describe deal item",
+        "description_gift": "[i] Describe deal item\nExample: https://t.me/nft/...",
+        "currency": "[?] <b>Choose currency</b>:",
+        "amount": "[i] <b>Enter amount</b>:",
+        "requisites": "[i] <b>Enter requisites</b>:",
+        "seller_username": "[i] <b>Enter seller @username</b>:",
+        "deal_created": "[+] <b>Deal #{deal_id} created!</b>\n\nCurrency: {currency}\nAmount: {amount} {currency}\nBuyer link: {link}",
+        "deal_created_buyer": "[+] <b>Deal #{deal_id} created!</b>\n\nCurrency: {currency}\nAmount: {amount} {currency}\nSeller link: {link}",
+        "joined": "[+] You joined deal #{deal_id}.",
+        "confirm": "[+] Confirm",
+        "cancel_deal": "[x] Cancel",
+        "confirm_seller_notify": "[+] Confirmed.",
+        "buyer_notify": "[+] <b>Seller confirmed deal #{deal_id}.</b>\n\n{amount} {currency}\nRequisites: {req}",
+        "confirmed": "[+] <b>Payment confirmed</b>\n\nDeal: #{deal_id}\nSeller: @{seller}\nRating: {rating}/5\nSuccessful: {successful}\nAmount: {amount} {currency}\nItem: {description}\n\nWait for transfer.",
+        "deal_active": "[+] Active",
+        "language_text": "[?] <b>Choose language</b>:",
+        "language_set": "[+] Language set: {lang}.",
+        "req_menu": "[i] <b>Choose currency</b>:",
+        "req_prompt": "[i] Enter {currency} for {currency_name}\n\nExample:\n{example}",
+        "req_saved": "[+] Requisite saved.",
+        "support_text": "[?] Support: @FunPayHeIp",
+        "about_text": "[i] <b>About</b>:\n\nGuarantor service.\n\n• Withdrawal up to 2 min.\n• Transfer gift to manager.\n• Deposit up to 2 min.\n• Trust only @FunpayTrustly_robot.",
+        "admin_done_ok": "[+] Deal #{deal_id} completed.",
+        "admin_cancel_ok": "[x] Deal #{deal_id} cancelled.",
+        "banned": "[x] Account blocked.",
+        "active_limit": "[x] Max 5 deals.",
+        "not_found": "[x] Deal not found.",
+        "not_allowed": "[x] Not allowed.",
+        "invalid": "[x] Invalid value.",
+        "cancelled": "[x] Deal #{deal_id} cancelled.",
+        "self_deal": "[x] Cannot take second role.",
+        "full": "[i] Both roles taken.",
+        "already_member": "[i] Already a member.",
+        "referral_text": "[i] <b>Referral link</b>: {link}\nTotal: {total}",
     },
     "uk": {
         "lang_choose": "Виберіть мову:",
-        "policy_text": (
-            "<tg-emoji emoji-id=\"5985478698722136468\"></tg-emoji> Ласкаво просимо\n\n"
-            "Для продовження необхідно прийняти Політику конфіденційності:\n\n"
-            "• Всі дані використовуються тільки для роботи бота\n"
-            "• Передача акаунта третім особам заборонена\n"
-            "• При зверненні в підтримку потрібні докази\n"
-            "• Бот надається «як є»\n\n"
-            "Натискаючи «Приймаю», ви погоджуєтесь з умовами політики конфіденційності."
-        ),
-        "policy_btn": "📜 Політика конфіденційності",
-        "accept_btn": "✅ Приймаю",
-        "main": (
-            "<tg-emoji emoji-id=\"6041921818896372382\"></tg-emoji> Ласкаво просимо\n\n"
-            "<tg-emoji emoji-id=\"5893255507380014983\"></tg-emoji> FunPay - Ми спеціалізований сервіс з забезпечення безпеки позабіржових угод.\n\n"
-            "<tg-emoji emoji-id=\"5890925363067886150\"></tg-emoji> Автоматизований алгоритм виконання.\n"
-            "<tg-emoji emoji-id=\"5920515922505765329\"></tg-emoji> Швидкість та автоматизація.\n"
-            "<tg-emoji emoji-id=\"5902056028513505203\"></tg-emoji>💰 Зручний та швидкий вивід коштів.\n\n"
-            "• Комісія сервісу: 1%\n"
-            "• Режим роботи: 24/7\n"
-            "• Технічна підтримка: @FunPayHeIp\n\n"
-            "<tg-emoji emoji-id=\"6030445631921721471\"></tg-emoji> Виберіть потрібний розділ нижче"
-        ),
-        "create": "Створити Угоду",
-        "my_deals": "Мої угоди",
-        "req": "Реквізити",
-        "referral": "Реферали",
-        "profile": "Профіль",
-        "support": "ТехПідтримка",
-        "about": "Про сервіс",
-        "back": "Назад",
-        "profile_text": (
-            "<tg-emoji emoji-id=\"6035084557378654059\"></tg-emoji> Профіль\n\n"
-            "ID: {id}\n"
-            "<tg-emoji emoji-id=\"5893100690988863311\"></tg-emoji> Username: @{username}\n"
-            "<tg-emoji emoji-id=\"5395732581780040886\"></tg-emoji> Угод: {deals}\n"
-            "<tg-emoji emoji-id=\"5895514131896733546\"></tg-emoji> Успішних: {successful}\n"
-            "Рейтинг: {rating} ({reviews})\n"
-            "Рефералів: {refs}\n"
-        ),
-        "my_deals_title": "<tg-emoji emoji-id=\"5893255507380014983\"></tg-emoji> Мої угоди\n\n",
-        "my_deals_empty": "<tg-emoji emoji-id=\"6032636795387121097\"></tg-emoji> У вас немає угод.",
-        "clear_history": "Очистити історію",
-        "history_cleared": "✅ Історію угод очищено (завершені угоди заархівовано).",
+        "policy_text": "[i] Ласкаво просимо\n\nПрийміть Політику конфіденційності:\n• Дані тільки для роботи бота\n• Передача аккаунта заборонена\n• При зверненні потрібні докази\n• Бот «як є»\n\nНатискаючи «Приймаю», ви погоджуєтесь.",
+        "policy_btn": "[i] Політика конфіденційності",
+        "accept_btn": "[+] Приймаю",
+        "main": "[i] Ласкаво просимо\n\n<b>FunPay</b> - сервіс безпеки позабіржових угод.\n\n[+] Автоматизація.\n[+] Швидкість.\n[+] Зручний вивід.\n\n• Комісія: 1%\n• Режим: 24/7\n• Підтримка: @FunPayHeIp\n\nВиберіть розділ:",
+        "create": "[+] Створити Угоду",
+        "my_deals": "[i] Мої угоди",
+        "req": "[i] Реквізити",
+        "referral": "[i] Реферали",
+        "profile": "[i] Профіль",
+        "support": "[?] ТехПідтримка",
+        "about": "[i] Про сервіс",
+        "back": "[x] Назад",
+        "profile_text": "[i] <b>Профіль</b>\n\nID: {id}\nUsername: @{username}\nУгод: {deals}\nУспішних: {successful}\nРейтинг: {rating} ({reviews})\nРефералів: {refs}",
+        "my_deals_title": "[i] <b>Мої угоди</b>\n\n",
+        "my_deals_empty": "[x] У вас немає угод.",
+        "clear_history": "[x] Очистити історію",
+        "history_cleared": "[+] Історію очищено.",
         "curr_usdt": "USDT",
         "curr_rub": "RUB",
         "curr_uah": "UAH",
@@ -1211,131 +1055,66 @@ T = {
         "curr_ton": "TON",
         "curr_stars": "STARS",
         "curr_kzt": "KZT",
-        "choose_role": "<tg-emoji emoji-id=\"5902335789798265487\"></tg-emoji> Виберіть вашу роль:",
-        "seller": "Я продавець",
-        "buyer": "Я покупець",
-        "choose_type": "<tg-emoji emoji-id=\"5836907383292436018\"></tg-emoji> Виберіть тип угоди:",
-        "account": "Акаунт / товар",
-        "gift": "NFT Gift",
-        "description_account": "<tg-emoji emoji-id=\"6039614175917903752\"></tg-emoji> Опишіть предмет угоди текстом",
-        "description_gift": (
-            "<tg-emoji emoji-id=\"6039614175917903752\"></tg-emoji> Опишіть предмет угоди:\n\n"
-            "Наприклад: https://t.me/nft/PlushPepe-111\n"
-            "або просто текстове описання товару"
-        ),
-        "currency": "<tg-emoji emoji-id=\"5402186569006210455\"></tg-emoji> Виберіть валюту:",
-        "amount": "💰 Введіть суму цілим числом:",
-        "requisites": "<tg-emoji emoji-id=\"6039641775377748623\"></tg-emoji> Введіть реквізити для отримання оплати:",
-        "seller_username": "👤 Введіть @username продавця:",
-        "deal_created": (
-            "✅ Угода #<b>{deal_id}</b> успішно створена!\n\n"
-            "💵 Валюта: {currency}\n"
-            "💰 Сума: {amount} {currency}\n"
-            "🎁 Кількість NFT: 1\n\n"
-            "📎 Посилання на NFT:\n• {gift_link}\n\n"
-            "🔗 Посилання для покупця:\n{link}\n\n"
-            "⏳ Очікуйте підключення покупця."
-        ),
-        "deal_created_buyer": (
-            "✅ Угода #<b>{deal_id}</b> успішно створена!\n\n"
-            "💵 Валюта: {currency}\n"
-            "💰 Сума: {amount} {currency}\n\n"
-            "🔗 Посилання для продавця:\n{link}\n\n"
-            "⏳ Очікуйте підключення продавця."
-        ),
-        "joined": "<tg-emoji emoji-id=\"5895514131896733546\"></tg-emoji> Ви підключились до угоди #<b>{deal_id}</b>.",
-        "confirm": "Підтвердити участь",
-        "cancel_deal": "Скасувати угоду",
-        "confirm_seller_notify": "<tg-emoji emoji-id=\"5895514131896733546\"></tg-emoji> Ви підтвердили участь. Очікуйте завершення угоди.",
-        "buyer_notify": (
-            "<tg-emoji emoji-id=\"5382357040008021292\"></tg-emoji> Продавець підтвердив участь в угоді #<b>{deal_id}</b>.\n\n"
-            "<tg-emoji emoji-id=\"5893473283696759404\"></tg-emoji> {amount} {currency}\n"
-            "<tg-emoji emoji-id=\"5902056028513505203\"></tg-emoji> Реквізити продавця:\n{req}"
-        ),
-        "confirmed": (
-            "<tg-emoji emoji-id=\"5902056028513505203\"></tg-emoji> Первинна Оплата підтверджена\n\n"
-            "Угода: #<b>{deal_id}</b>\n"
-            "Продавець: @{seller}\n"
-            "Рейтинг: {rating}/5\n"
-            "Успішних угод: {successful}\n"
-            "Сума: {amount} {currency}\n"
-            "Предмет: {description}\n\n"
-            "Очікуємо передачу товару менеджеру @GiftsForFunpay."
-        ),
-        "deal_active": "<tg-emoji emoji-id=\"5206607081334906820\"></tg-emoji> Активна",
-        "language_text": "🌐 Виберіть мову:",
-        "language_set": "✅ Мову встановлено: {lang}.",
-        "req_menu": "✏️ Виберіть валюту для зміни реквізитів",
-        "req_prompt": "✏️ Введіть ваш номер {currency} для {currency_name}\n\n📝 Приклад:\n{example}",
-        "req_saved": "✅ Реквізит збережено.",
-        "support_text": "🆘 Підтримка: @FunPayHeIp\n\nЗ усіх питань звертайтесь до менеджера.",
-        "about_text": (
-            "<tg-emoji emoji-id=\"5766994197705921104\"></tg-emoji> Детальніше:\n\n"
-            "<tg-emoji emoji-id=\"6039486778597970865\"></tg-emoji> Ми – гарант сервіс, наше завдання допомогти вам провести безпечні угоди та оформити швидкий вивід!\n\n"
-            "<tg-emoji emoji-id=\"6037421444789440735\"></tg-emoji> Відповіді на часті питання:\n\n"
-            "• Як довго триває вивід? Зазвичай не більше 2-х хвилин, в рідкісних випадках до 2-х годин.\n\n"
-            "• Чому потрібно передавати подарунок менеджеру, а не покупцю? Причина проста: покупець може збрехати, що йому не прийшов подарунок, що затягує ситуацію, але наш менеджер автоматично перевіряє наявність NFT подарунка і вже обманути не вийде.\n\n"
-            "• Як швидко відбувається поповнення? Поповнення також займає не більше 2-х хвилин.\n\n"
-            "• Я побачив схожого бота, чи варто мені довіряти? Якщо ви побачили іншого бота, крім @FunpayTrustly_robot, в жодному разі не проводьте з ним угоди!"
-        ),
-        "admin_done_ok": "✅ Угода #{deal_id} завершена адміністратором.",
-        "admin_cancel_ok": "❌ Угода #{deal_id} скасована адміністратором.",
-        "banned": "🚫 Ваш акаунт заблоковано.",
-        "active_limit": "❌ Максимум 5 активних угод.",
-        "not_found": "🚫 Угоду не знайдено.",
-        "not_allowed": "🚫 Дія недоступна.",
-        "invalid": "❌ Некоректне значення.",
-        "cancelled": "❌ Угоду #{deal_id} скасовано.",
-        "self_deal": "❌ Не можна зайняти другу роль у власній угоді.",
-        "full": "ℹ️ В угоді вже зайняті обидві ролі.",
-        "already_member": "ℹ️ Ви вже є учасником цієї угоди.",
-        "referral_text": "👥 Реферальне посилання: {link}\nВсього рефералів: {total}",
+        "choose_role": "[?] <b>Виберіть роль</b>:",
+        "seller": "[i] Продавець",
+        "buyer": "[i] Покупець",
+        "choose_type": "[?] <b>Виберіть тип</b>:",
+        "account": "[i] Аккаунт/товар",
+        "gift": "[i] NFT Gift",
+        "description_account": "[i] Опишіть предмет угоди",
+        "description_gift": "[i] Опишіть предмет угоди\nПриклад: https://t.me/nft/...",
+        "currency": "[?] <b>Виберіть валюту</b>:",
+        "amount": "[i] <b>Введіть суму</b>:",
+        "requisites": "[i] <b>Введіть реквізити</b>:",
+        "seller_username": "[i] <b>Введіть @username продавця</b>:",
+        "deal_created": "[+] <b>Угода #{deal_id} створена!</b>\n\nВалюта: {currency}\nСума: {amount} {currency}\nПосилання для покупця: {link}",
+        "deal_created_buyer": "[+] <b>Угода #{deal_id} створена!</b>\n\nВалюта: {currency}\nСума: {amount} {currency}\nПосилання для продавця: {link}",
+        "joined": "[+] Ви підключились до угоди #{deal_id}.",
+        "confirm": "[+] Підтвердити участь",
+        "cancel_deal": "[x] Скасувати угоду",
+        "confirm_seller_notify": "[+] Участь підтверджено.",
+        "buyer_notify": "[+] <b>Продавець підтвердив угоду #{deal_id}.</b>\n\n{amount} {currency}\nРеквізити:\n{req}",
+        "confirmed": "[+] <b>Оплата підтверджена</b>\n\nУгода: #{deal_id}\nПродавець: @{seller}\nРейтинг: {rating}/5\nУспішно: {successful}\nСума: {amount} {currency}\nПредмет: {description}\n\nОчікуйте передачу.",
+        "deal_active": "[+] Активна",
+        "language_text": "[?] <b>Виберіть мову</b>:",
+        "language_set": "[+] Мову встановлено: {lang}.",
+        "req_menu": "[i] <b>Виберіть валюту</b>:",
+        "req_prompt": "[i] Введіть {currency} для {currency_name}\n\nПриклад:\n{example}",
+        "req_saved": "[+] Реквізит збережено.",
+        "support_text": "[?] Підтримка: @FunPayHeIp",
+        "about_text": "[i] <b>Детальніше</b>:\n\nМи гарант-сервіс.\n\n• Вивід до 2 хв.\n• Передавайте подарунок менеджеру.\n• Поповнення до 2 хв.\n• Довіряйте тільки @FunpayTrustly_robot.",
+        "admin_done_ok": "[+] Угода #{deal_id} завершена.",
+        "admin_cancel_ok": "[x] Угода #{deal_id} скасована.",
+        "banned": "[x] Аккаунт заблоковано.",
+        "active_limit": "[x] Максимум 5 угод.",
+        "not_found": "[x] Угоду не знайдено.",
+        "not_allowed": "[x] Дія недоступна.",
+        "invalid": "[x] Некоректне значення.",
+        "cancelled": "[x] Угоду #{deal_id} скасовано.",
+        "self_deal": "[x] Не можна зайняти другу роль.",
+        "full": "[i] Обидві ролі зайняті.",
+        "already_member": "[i] Ви вже учасник.",
+        "referral_text": "[i] <b>Реферальне посилання</b>: {link}\nВсього: {total}",
     },
     "kk": {
         "lang_choose": "Тіліңізді таңдаңыз:",
-        "policy_text": (
-            "<tg-emoji emoji-id=\"5985478698722136468\"></tg-emoji> Қош келдіңіз\n\n"
-            "Жалғастыру үшін Құпиялылық саясатын қабылдау қажет:\n\n"
-            "• Барлық деректер боттың жұмысы үшін ғана қолданылады\n"
-            "• Аккаунтты үшінші тұлғаларға беруге тыйым салынады\n"
-            "• Қолдау қызметіне жүгінген кезде дәлелдер қажет\n"
-            "• Бот «қалпында» ұсынылады\n\n"
-            "«Қабылдаймын» батырмасын басу арқылы сіз құпиялылық саясатының шарттарымен келісесіз."
-        ),
-        "policy_btn": "📜 Құпиялылық саясаты",
-        "accept_btn": "✅ Қабылдаймын",
-        "main": (
-            "<tg-emoji emoji-id=\"6041921818896372382\"></tg-emoji> Қош келдіңіз\n\n"
-            "<tg-emoji emoji-id=\"5893255507380014983\"></tg-emoji> FunPay - Біз биржадан тыс мәмілелерде қауіпсіздікті қамтамасыз ететін мамандандырылған қызмет.\n\n"
-            "<tg-emoji emoji-id=\"5890925363067886150\"></tg-emoji> Автоматтандырылған орындау алгоритмі.\n"
-            "<tg-emoji emoji-id=\"5920515922505765329\"></tg-emoji> Жылдамдық және автоматтандыру.\n"
-            "<tg-emoji emoji-id=\"5902056028513505203\"></tg-emoji>💰 Қолайлы және жылдам ақша шығару.\n\n"
-            "• Қызмет комиссиясы: 1%\n"
-            "• Жұмыс режимі: 24/7\n"
-            "• Техникалық қолдау: @FunPayHeIp\n\n"
-            "<tg-emoji emoji-id=\"6030445631921721471\"></tg-emoji> Төменде қажетті бөлімді таңдаңыз"
-        ),
-        "create": "Мәміле жасау",
-        "my_deals": "Менің мәмілелерім",
-        "req": "Реквизиттер",
-        "referral": "Рефералдар",
-        "profile": "Профиль",
-        "support": "ТехҚолдау",
-        "about": "Қызмет туралы",
-        "back": "Артқа",
-        "profile_text": (
-            "<tg-emoji emoji-id=\"6035084557378654059\"></tg-emoji> Профиль\n\n"
-            "ID: {id}\n"
-            "<tg-emoji emoji-id=\"5893100690988863311\"></tg-emoji> Username: @{username}\n"
-            "<tg-emoji emoji-id=\"5395732581780040886\"></tg-emoji> Мәмілелер: {deals}\n"
-            "<tg-emoji emoji-id=\"5895514131896733546\"></tg-emoji> Сәтті: {successful}\n"
-            "Рейтинг: {rating} ({reviews})\n"
-            "Рефералдар: {refs}\n"
-        ),
-        "my_deals_title": "<tg-emoji emoji-id=\"5893255507380014983\"></tg-emoji> Менің мәмілелерім\n\n",
-        "my_deals_empty": "<tg-emoji emoji-id=\"6032636795387121097\"></tg-emoji> Сізде мәмілелер жоқ.",
-        "clear_history": "Тарихты тазалау",
-        "history_cleared": "✅ Мәміле тарихы тазартылды (аяқталған мәмілелер мұрағатталды).",
+        "policy_text": "[i] Қош келдіңіз\n\nҚұпиялылық саясатын қабылдаңыз:\n• Деректер тек бот үшін\n• Аккаунтты беруге тыйым салынады\n• Дәлелдер қажет\n• Бот «қалпында»\n\n«Қабылдаймын» басыңыз.",
+        "policy_btn": "[i] Құпиялылық саясаты",
+        "accept_btn": "[+] Қабылдаймын",
+        "main": "[i] Қош келдіңіз\n\n<b>FunPay</b> - биржадан тыс мәмілелерде қауіпсіздік.\n\n[+] Автоматтандыру.\n[+] Жылдамдық.\n[+] Ыңғайлы шығару.\n\n• Комиссия: 1%\n• Режим: 24/7\n• Қолдау: @FunPayHeIp\n\nБөлімді таңдаңыз:",
+        "create": "[+] Мәміле жасау",
+        "my_deals": "[i] Менің мәмілелерім",
+        "req": "[i] Реквизиттер",
+        "referral": "[i] Рефералдар",
+        "profile": "[i] Профиль",
+        "support": "[?] ТехҚолдау",
+        "about": "[i] Қызмет туралы",
+        "back": "[x] Артқа",
+        "profile_text": "[i] <b>Профиль</b>\n\nID: {id}\nUsername: @{username}\nМәмілелер: {deals}\nСәтті: {successful}\nРейтинг: {rating} ({reviews})\nРефералдар: {refs}",
+        "my_deals_title": "[i] <b>Менің мәмілелерім</b>\n\n",
+        "my_deals_empty": "[x] Мәмілелер жоқ.",
+        "clear_history": "[x] Тарихты тазалау",
+        "history_cleared": "[+] Тарих тазартылды.",
         "curr_usdt": "USDT",
         "curr_rub": "RUB",
         "curr_uah": "UAH",
@@ -1343,131 +1122,66 @@ T = {
         "curr_ton": "TON",
         "curr_stars": "STARS",
         "curr_kzt": "KZT",
-        "choose_role": "<tg-emoji emoji-id=\"5902335789798265487\"></tg-emoji> Рөліңізді таңдаңыз:",
-        "seller": "Мен сатушымын",
-        "buyer": "Мен сатып алушымын",
-        "choose_type": "<tg-emoji emoji-id=\"5836907383292436018\"></tg-emoji> Мәміле түрін таңдаңыз:",
-        "account": "Аккаунт / тауар",
-        "gift": "NFT Сыйлық",
-        "description_account": "<tg-emoji emoji-id=\"6039614175917903752\"></tg-emoji> Мәміле пәнін мәтін түрінде сипаттаңыз",
-        "description_gift": (
-            "<tg-emoji emoji-id=\"6039614175917903752\"></tg-emoji> Мәміле пәнін сипаттаңыз:\n\n"
-            "Мысалы: https://t.me/nft/PlushPepe-111\n"
-            "немесе жай мәтіндік сипаттама"
-        ),
-        "currency": "<tg-emoji emoji-id=\"5402186569006210455\"></tg-emoji> Валютаны таңдаңыз:",
-        "amount": "💰 Бүтін санды енгізіңіз:",
-        "requisites": "<tg-emoji emoji-id=\"6039641775377748623\"></tg-emoji> Төлем алу үшін реквизиттерді енгізіңіз:",
-        "seller_username": "👤 Сатушының @username енгізіңіз:",
-        "deal_created": (
-            "✅ #<b>{deal_id}</b> мәмілесі сәтті құрылды!\n\n"
-            "💵 Валюта: {currency}\n"
-            "💰 Сома: {amount} {currency}\n"
-            "🎁 NFT саны: 1\n\n"
-            "📎 NFT сілтемелері:\n• {gift_link}\n\n"
-            "🔗 Сатып алушыға арналған сілтеме:\n{link}\n\n"
-            "⏳ Сатып алушының қосылуын күтіңіз."
-        ),
-        "deal_created_buyer": (
-            "✅ #<b>{deal_id}</b> мәмілесі сәтті құрылды!\n\n"
-            "💵 Валюта: {currency}\n"
-            "💰 Сома: {amount} {currency}\n\n"
-            "🔗 Сатушыға арналған сілтеме:\n{link}\n\n"
-            "⏳ Сатушының қосылуын күтіңіз."
-        ),
-        "joined": "<tg-emoji emoji-id=\"5895514131896733546\"></tg-emoji> Сіз #<b>{deal_id}</b> мәмілесіне қосылдыңыз.",
-        "confirm": "Қатысуды растау",
-        "cancel_deal": "Мәмілені болдырмау",
-        "confirm_seller_notify": "<tg-emoji emoji-id=\"5895514131896733546\"></tg-emoji> Сіз қатысуды растадыңыз. Мәміленің аяқталуын күтіңіз.",
-        "buyer_notify": (
-            "<tg-emoji emoji-id=\"5382357040008021292\"></tg-emoji> Сатушы #<b>{deal_id}</b> мәмілесіне қатысуды растады.\n\n"
-            "<tg-emoji emoji-id=\"5893473283696759404\"></tg-emoji> {amount} {currency}\n"
-            "<tg-emoji emoji-id=\"5902056028513505203\"></tg-emoji> Сатушының реквизиттері:\n{req}"
-        ),
-        "confirmed": (
-            "<tg-emoji emoji-id=\"5902056028513505203\"></tg-emoji> Бастапқы төлем расталды\n\n"
-            "Мәміле: #<b>{deal_id}</b>\n"
-            "Сатушы: @{seller}\n"
-            "Рейтинг: {rating}/5\n"
-            "Сәтті мәмілелер: {successful}\n"
-            "Сома: {amount} {currency}\n"
-            "Тауар: {description}\n\n"
-            "Тауарды @GiftsForFunpay менеджеріне беруді күтіңіз."
-        ),
-        "deal_active": "<tg-emoji emoji-id=\"5206607081334906820\"></tg-emoji> Белсенді",
-        "language_text": "🌐 Тілді таңдаңыз:",
-        "language_set": "✅ Тіл орнатылды: {lang}.",
-        "req_menu": "✏️ Реквизиттерді өзгерту үшін валютаны таңдаңыз",
-        "req_prompt": "✏️ {currency} үшін нөміріңізді енгізіңіз: {currency_name}\n\n📝 Мысал:\n{example}",
-        "req_saved": "✅ Реквизит сақталды.",
-        "support_text": "🆘 Қолдау: @FunPayHeIp\n\nБарлық сұрақтар бойынша менеджерге хабарласыңыз.",
-        "about_text": (
-            "<tg-emoji emoji-id=\"5766994197705921104\"></tg-emoji> Толығырақ:\n\n"
-            "<tg-emoji emoji-id=\"6039486778597970865\"></tg-emoji> Біз – кепілдік қызметі, біздің міндетіміз сізге қауіпсіз мәмілелер жүргізуге және жылдам шығаруға көмектесу!\n\n"
-            "<tg-emoji emoji-id=\"6037421444789440735\"></tg-emoji> Жиі қойылатын сұрақтарға жауаптар:\n\n"
-            "• Шығару қанша уақытқа созылады? Әдетте 2 минуттан аспайды, сирек жағдайларда 2 сағатқа дейін.\n\n"
-            "• Неліктен сыйлықты сатып алушыға емес, менеджерге беру керек? Себебі қарапайым: сатып алушы сыйлық келмеді деп өтірік айтуы мүмкін, бұл жағдайды созады, бірақ біздің менеджер NFT сыйлығының бар-жоғын автоматты түрде тексереді және алдау мүмкін емес.\n\n"
-            "• Толтыру қаншалықты жылдам жүреді? Толтыру да 2 минуттан аспайды.\n\n"
-            "• Мен ұқсас ботты көрдім, оған сену керек пе? Егер сіз @FunpayTrustly_robot-тан басқа ботты көрсеңіз, онымен ешбір жағдайда мәміле жасамаңыз!"
-        ),
-        "admin_done_ok": "✅ # {deal_id} мәмілесі әкімшімен аяқталды.",
-        "admin_cancel_ok": "❌ # {deal_id} мәмілесі әкімшімен болдырмалды.",
-        "banned": "🚫 Сіздің аккаунтыңыз бұғатталды.",
-        "active_limit": "❌ Белсенді мәмілелердің максимумы 5.",
-        "not_found": "🚫 Мәміле табылмады.",
-        "not_allowed": "🚫 Әрекет қолжетімсіз.",
-        "invalid": "❌ Қате мән.",
-        "cancelled": "❌ # {deal_id} мәмілесі болдырмалды.",
-        "self_deal": "❌ Өз мәмілеңізде екінші рөлді ала алмайсыз.",
-        "full": "ℹ️ Екі рөл де бос емес.",
-        "already_member": "ℹ️ Сіз бұл мәміленің қатысушысысыз.",
-        "referral_text": "👥 Рефералдық сілтеме: {link}\nБарлығы: {total}",
+        "choose_role": "[?] <b>Рөліңізді таңдаңыз</b>:",
+        "seller": "[i] Сатушы",
+        "buyer": "[i] Сатып алушы",
+        "choose_type": "[?] <b>Мәміле түрін таңдаңыз</b>:",
+        "account": "[i] Аккаунт/тауар",
+        "gift": "[i] NFT Сыйлық",
+        "description_account": "[i] Мәміле пәнін сипаттаңыз",
+        "description_gift": "[i] Мәміле пәнін сипаттаңыз\nМысал: https://t.me/nft/...",
+        "currency": "[?] <b>Валютаны таңдаңыз</b>:",
+        "amount": "[i] <b>Соманы енгізіңіз</b>:",
+        "requisites": "[i] <b>Реквизиттерді енгізіңіз</b>:",
+        "seller_username": "[i] <b>Сатушының @username енгізіңіз</b>:",
+        "deal_created": "[+] <b>#{deal_id} мәмілесі құрылды!</b>\n\nВалюта: {currency}\nСома: {amount} {currency}\nСатып алушыға сілтеме: {link}",
+        "deal_created_buyer": "[+] <b>#{deal_id} мәмілесі құрылды!</b>\n\nВалюта: {currency}\nСома: {amount} {currency}\nСатушыға сілтеме: {link}",
+        "joined": "[+] Сіз #{deal_id} мәмілесіне қосылдыңыз.",
+        "confirm": "[+] Қатысуды растау",
+        "cancel_deal": "[x] Мәмілені болдырмау",
+        "confirm_seller_notify": "[+] Расталды.",
+        "buyer_notify": "[+] <b>Сатушы #{deal_id} мәмілесін растады.</b>\n\n{amount} {currency}\nРеквизиттер:\n{req}",
+        "confirmed": "[+] <b>Төлем расталды</b>\n\nМәміле: #{deal_id}\nСатушы: @{seller}\nРейтинг: {rating}/5\nСәтті: {successful}\nСома: {amount} {currency}\nТауар: {description}\n\nБеруді күтіңіз.",
+        "deal_active": "[+] Белсенді",
+        "language_text": "[?] <b>Тілді таңдаңыз</b>:",
+        "language_set": "[+] Тіл орнатылды: {lang}.",
+        "req_menu": "[i] <b>Валютаны таңдаңыз</b>:",
+        "req_prompt": "[i] {currency} үшін {currency_name} енгізіңіз\n\nМысал:\n{example}",
+        "req_saved": "[+] Реквизит сақталды.",
+        "support_text": "[?] Қолдау: @FunPayHeIp",
+        "about_text": "[i] <b>Толығырақ</b>:\n\nКепілдік қызметі.\n\n• Шығару 2 мин дейін.\n• Сыйлықты менеджерге беріңіз.\n• Толтыру 2 мин дейін.\n• Тек @FunpayTrustly_robot-қа сеніңіз.",
+        "admin_done_ok": "[+] #{deal_id} мәмілесі аяқталды.",
+        "admin_cancel_ok": "[x] #{deal_id} мәмілесі болдырмалды.",
+        "banned": "[x] Аккаунт бұғатталды.",
+        "active_limit": "[x] Максимум 5 мәміле.",
+        "not_found": "[x] Мәміле табылмады.",
+        "not_allowed": "[x] Қолжетімсіз.",
+        "invalid": "[x] Қате мән.",
+        "cancelled": "[x] #{deal_id} мәмілесі болдырмалды.",
+        "self_deal": "[x] Екінші рөлді ала алмайсыз.",
+        "full": "[i] Екі рөл де бос емес.",
+        "already_member": "[i] Сіз қатысушысыз.",
+        "referral_text": "[i] <b>Рефералдық сілтеме</b>: {link}\nБарлығы: {total}",
     },
     "zh": {
-        "lang_choose": "选择您的语言：",
-        "policy_text": (
-            "<tg-emoji emoji-id=\"5985478698722136468\"></tg-emoji> 欢迎\n\n"
-            "要继续，您必须接受隐私政策：\n\n"
-            "• 所有数据仅用于机器人运行\n"
-            "• 禁止将账户转让给第三方\n"
-            "• 联系支持时需要提供证据\n"
-            "• 机器人按“原样”提供\n\n"
-            "点击“接受”，即表示您同意隐私政策的条款。"
-        ),
-        "policy_btn": "📜 隐私政策",
-        "accept_btn": "✅ 接受",
-        "main": (
-            "<tg-emoji emoji-id=\"6041921818896372382\"></tg-emoji> 欢迎\n\n"
-            "<tg-emoji emoji-id=\"5893255507380014983\"></tg-emoji> FunPay - 我们是为场外交易提供安全保障的专业服务。\n\n"
-            "<tg-emoji emoji-id=\"5890925363067886150\"></tg-emoji> 自动化执行算法。\n"
-            "<tg-emoji emoji-id=\"5920515922505765329\"></tg-emoji> 速度和自动化。\n"
-            "<tg-emoji emoji-id=\"5902056028513505203\"></tg-emoji>💰 方便快捷的资金提取。\n\n"
-            "• 服务佣金：1%\n"
-            "• 工作时间：24/7\n"
-            "• 技术支持：@FunPayHeIp\n\n"
-            "<tg-emoji emoji-id=\"6030445631921721471\"></tg-emoji> 请在下方选择您需要的部分"
-        ),
-        "create": "创建交易",
-        "my_deals": "我的交易",
-        "req": "详情",
-        "referral": "推荐",
-        "profile": "个人资料",
-        "support": "技术支持",
-        "about": "关于服务",
-        "back": "返回",
-        "profile_text": (
-            "<tg-emoji emoji-id=\"6035084557378654059\"></tg-emoji> 个人资料\n\n"
-            "ID: {id}\n"
-            "<tg-emoji emoji-id=\"5893100690988863311\"></tg-emoji> 用户名: @{username}\n"
-            "<tg-emoji emoji-id=\"5395732581780040886\"></tg-emoji> 交易数: {deals}\n"
-            "<tg-emoji emoji-id=\"5895514131896733546\"></tg-emoji> 成功: {successful}\n"
-            "评分: {rating} ({reviews})\n"
-            "推荐人数: {refs}\n"
-        ),
-        "my_deals_title": "<tg-emoji emoji-id=\"5893255507380014983\"></tg-emoji> 我的交易\n\n",
-        "my_deals_empty": "<tg-emoji emoji-id=\"6032636795387121097\"></tg-emoji> 您没有交易。",
-        "clear_history": "清除历史",
-        "history_cleared": "✅ 交易历史已清除（已完成的交易已存档）。",
+        "lang_choose": "选择语言：",
+        "policy_text": "[i] 欢迎\n\n接受隐私政策：\n• 数据仅用于机器人\n• 禁止转让账户\n• 需要证据\n• 机器人「按原样」提供\n\n点击「接受」即表示同意。",
+        "policy_btn": "[i] 隐私政策",
+        "accept_btn": "[+] 接受",
+        "main": "[i] 欢迎\n\n<b>FunPay</b> - 场外交易安全保障服务。\n\n[+] 自动化。\n[+] 速度。\n[+] 快速提现。\n\n• 佣金：1%\n• 模式：24/7\n• 支持：@FunPayHeIp\n\n选择部分：",
+        "create": "[+] 创建交易",
+        "my_deals": "[i] 我的交易",
+        "req": "[i] 详情",
+        "referral": "[i] 推荐",
+        "profile": "[i] 个人资料",
+        "support": "[?] 支持",
+        "about": "[i] 关于",
+        "back": "[x] 返回",
+        "profile_text": "[i] <b>个人资料</b>\n\nID: {id}\n用户名: @{username}\n交易数: {deals}\n成功: {successful}\n评分: {rating} ({reviews})\n推荐: {refs}",
+        "my_deals_title": "[i] <b>我的交易</b>\n\n",
+        "my_deals_empty": "[x] 没有交易。",
+        "clear_history": "[x] 清除历史",
+        "history_cleared": "[+] 历史已清除。",
         "curr_usdt": "USDT",
         "curr_rub": "RUB",
         "curr_uah": "UAH",
@@ -1475,131 +1189,66 @@ T = {
         "curr_ton": "TON",
         "curr_stars": "STARS",
         "curr_kzt": "KZT",
-        "choose_role": "<tg-emoji emoji-id=\"5902335789798265487\"></tg-emoji> 选择您的角色：",
-        "seller": "我是卖家",
-        "buyer": "我是买家",
-        "choose_type": "<tg-emoji emoji-id=\"5836907383292436018\"></tg-emoji> 选择交易类型：",
-        "account": "账户/商品",
-        "gift": "NFT礼物",
-        "description_account": "<tg-emoji emoji-id=\"6039614175917903752\"></tg-emoji> 用文字描述交易标的",
-        "description_gift": (
-            "<tg-emoji emoji-id=\"6039614175917903752\"></tg-emoji> 描述交易标的：\n\n"
-            "例如：https://t.me/nft/PlushPepe-111\n"
-            "或简单的文字描述"
-        ),
-        "currency": "<tg-emoji emoji-id=\"5402186569006210455\"></tg-emoji> 选择货币：",
-        "amount": "💰 输入整数金额：",
-        "requisites": "<tg-emoji emoji-id=\"6039641775377748623\"></tg-emoji> 输入收款详情：",
-        "seller_username": "👤 输入卖家 @username：",
-        "deal_created": (
-            "✅ 交易 #<b>{deal_id}</b> 创建成功！\n\n"
-            "💵 货币: {currency}\n"
-            "💰 金额: {amount} {currency}\n"
-            "🎁 NFT数量: 1\n\n"
-            "📎 NFT链接:\n• {gift_link}\n\n"
-            "🔗 买家链接:\n{link}\n\n"
-            "⏳ 等待买家连接。"
-        ),
-        "deal_created_buyer": (
-            "✅ 交易 #<b>{deal_id}</b> 创建成功！\n\n"
-            "💵 货币: {currency}\n"
-            "💰 金额: {amount} {currency}\n\n"
-            "🔗 卖家链接:\n{link}\n\n"
-            "⏳ 等待卖家连接。"
-        ),
-        "joined": "<tg-emoji emoji-id=\"5895514131896733546\"></tg-emoji> 您已加入交易 #<b>{deal_id}</b>。",
-        "confirm": "确认参与",
-        "cancel_deal": "取消交易",
-        "confirm_seller_notify": "<tg-emoji emoji-id=\"5895514131896733546\"></tg-emoji> 您已确认参与。等待交易完成。",
-        "buyer_notify": (
-            "<tg-emoji emoji-id=\"5382357040008021292\"></tg-emoji> 卖家已确认参与交易 #<b>{deal_id}</b>。\n\n"
-            "<tg-emoji emoji-id=\"5893473283696759404\"></tg-emoji> {amount} {currency}\n"
-            "<tg-emoji emoji-id=\"5902056028513505203\"></tg-emoji> 卖家详情:\n{req}"
-        ),
-        "confirmed": (
-            "<tg-emoji emoji-id=\"5902056028513505203\"></tg-emoji> 已确认初次付款\n\n"
-            "交易: #<b>{deal_id}</b>\n"
-            "卖家: @{seller}\n"
-            "评分: {rating}/5\n"
-            "成功交易: {successful}\n"
-            "金额: {amount} {currency}\n"
-            "商品: {description}\n\n"
-            "等待将商品转交给经理 @GiftsForFunpay。"
-        ),
-        "deal_active": "<tg-emoji emoji-id=\"5206607081334906820\"></tg-emoji> 活跃",
-        "language_text": "🌐 选择语言：",
-        "language_set": "✅ 语言已设置为：{lang}。",
-        "req_menu": "✏️ 选择要更改详情的货币",
-        "req_prompt": "✏️ 输入您的 {currency} 以用于 {currency_name}\n\n📝 示例:\n{example}",
-        "req_saved": "✅ 详情已保存。",
-        "support_text": "🆘 支持：@FunPayHeIp\n\n如有任何问题，请联系管理员。",
-        "about_text": (
-            "<tg-emoji emoji-id=\"5766994197705921104\"></tg-emoji> 详细信息：\n\n"
-            "<tg-emoji emoji-id=\"6039486778597970865\"></tg-emoji> 我们是担保服务，我们的任务是帮助您进行安全交易并快速取款！\n\n"
-            "<tg-emoji emoji-id=\"6037421444789440735\"></tg-emoji> 常见问题解答：\n\n"
-            "• 取款需要多长时间？通常不超过2分钟，极少数情况下可达2小时。\n\n"
-            "• 为什么要把礼物转给经理而不是买家？原因很简单：买家可能撒谎说没收到礼物，这会使情况拖长，但我们的经理会自动检查NFT礼物是否存在，这样就不可能欺骗了。\n\n"
-            "• 充值速度如何？充值同样不超过2分钟。\n\n"
-            "• 我看到一个类似的机器人，我应该相信它吗？如果您看到除 @FunpayTrustly_robot 之外的任何机器人，千万不要与它进行交易！"
-        ),
-        "admin_done_ok": "✅ 交易 #{deal_id} 已由管理员完成。",
-        "admin_cancel_ok": "❌ 交易 #{deal_id} 已由管理员取消。",
-        "banned": "🚫 您的账户已被封禁。",
-        "active_limit": "❌ 最多5个活跃交易。",
-        "not_found": "🚫 未找到交易。",
-        "not_allowed": "🚫 不允许此操作。",
-        "invalid": "❌ 无效值。",
-        "cancelled": "❌ 交易 #{deal_id} 已取消。",
-        "self_deal": "❌ 您不能在自己的交易中担任第二角色。",
-        "full": "ℹ️ 两个角色都已占用。",
-        "already_member": "ℹ️ 您已是此交易的参与者。",
-        "referral_text": "👥 推荐链接：{link}\n推荐总数：{total}",
+        "choose_role": "[?] <b>选择角色</b>:",
+        "seller": "[i] 卖家",
+        "buyer": "[i] 买家",
+        "choose_type": "[?] <b>选择类型</b>:",
+        "account": "[i] 账户/商品",
+        "gift": "[i] NFT礼物",
+        "description_account": "[i] 描述交易标的",
+        "description_gift": "[i] 描述交易标的\n示例: https://t.me/nft/...",
+        "currency": "[?] <b>选择货币</b>:",
+        "amount": "[i] <b>输入金额</b>:",
+        "requisites": "[i] <b>输入详情</b>:",
+        "seller_username": "[i] <b>输入卖家 @username</b>:",
+        "deal_created": "[+] <b>交易 #{deal_id} 已创建！</b>\n\n货币: {currency}\n金额: {amount} {currency}\n买家链接: {link}",
+        "deal_created_buyer": "[+] <b>交易 #{deal_id} 已创建！</b>\n\n货币: {currency}\n金额: {amount} {currency}\n卖家链接: {link}",
+        "joined": "[+] 您已加入交易 #{deal_id}。",
+        "confirm": "[+] 确认",
+        "cancel_deal": "[x] 取消",
+        "confirm_seller_notify": "[+] 已确认。",
+        "buyer_notify": "[+] <b>卖家已确认交易 #{deal_id}。</b>\n\n{amount} {currency}\n详情:\n{req}",
+        "confirmed": "[+] <b>付款已确认</b>\n\n交易: #{deal_id}\n卖家: @{seller}\n评分: {rating}/5\n成功: {successful}\n金额: {amount} {currency}\n商品: {description}\n\n等待交付。",
+        "deal_active": "[+] 活跃",
+        "language_text": "[?] <b>选择语言</b>:",
+        "language_set": "[+] 语言已设置: {lang}。",
+        "req_menu": "[i] <b>选择货币</b>:",
+        "req_prompt": "[i] 输入 {currency} 以用于 {currency_name}\n\n示例:\n{example}",
+        "req_saved": "[+] 详情已保存。",
+        "support_text": "[?] 支持: @FunPayHeIp",
+        "about_text": "[i] <b>关于</b>:\n\n担保服务。\n\n• 提现最多2分钟。\n• 将礼物转交给经理。\n• 充值最多2分钟。\n• 只信任 @FunpayTrustly_robot。",
+        "admin_done_ok": "[+] 交易 #{deal_id} 已完成。",
+        "admin_cancel_ok": "[x] 交易 #{deal_id} 已取消。",
+        "banned": "[x] 账户已封禁。",
+        "active_limit": "[x] 最多5笔交易。",
+        "not_found": "[x] 未找到交易。",
+        "not_allowed": "[x] 不允许。",
+        "invalid": "[x] 无效值。",
+        "cancelled": "[x] 交易 #{deal_id} 已取消。",
+        "self_deal": "[x] 不能担任第二角色。",
+        "full": "[i] 两个角色都已占用。",
+        "already_member": "[i] 您已是参与者。",
+        "referral_text": "[i] <b>推荐链接</b>: {link}\n总数: {total}",
     },
     "hi": {
-        "lang_choose": "अपनी भाषा चुनें:",
-        "policy_text": (
-            "<tg-emoji emoji-id=\"5985478698722136468\"></tg-emoji> स्वागत है\n\n"
-            "जारी रखने के लिए, आपको गोपनीयता नीति स्वीकार करनी होगी:\n\n"
-            "• सभी डेटा केवल बॉट के संचालन के लिए उपयोग किया जाता है\n"
-            "• खाते को तीसरे पक्षों को हस्तांतरित करना निषिद्ध है\n"
-            "• सहायता से संपर्क करते समय साक्ष्य की आवश्यकता होती है\n"
-            "• बॉट 'जैसा है' प्रदान किया जाता है\n\n"
-            "'स्वीकार करें' पर क्लिक करके, आप गोपनीयता नीति की शर्तों से सहमत होते हैं।"
-        ),
-        "policy_btn": "📜 गोपनीयता नीति",
-        "accept_btn": "✅ स्वीकार करें",
-        "main": (
-            "<tg-emoji emoji-id=\"6041921818896372382\"></tg-emoji> स्वागत है\n\n"
-            "<tg-emoji emoji-id=\"5893255507380014983\"></tg-emoji> FunPay - हम ऑफ-एक्सचेंज लेनदेन में सुरक्षा सुनिश्चित करने के लिए एक विशेष सेवा हैं।\n\n"
-            "<tg-emoji emoji-id=\"5890925363067886150\"></tg-emoji> स्वचालित निष्पादन एल्गोरिदम।\n"
-            "<tg-emoji emoji-id=\"5920515922505765329\"></tg-emoji> गति और स्वचालन।\n"
-            "<tg-emoji emoji-id=\"5902056028513505203\"></tg-emoji>💰 सुविधाजनक और त्वरित धन निकासी।\n\n"
-            "• सेवा कमीशन: 1%\n"
-            "• कार्य मोड: 24/7\n"
-            "• तकनीकी सहायता: @FunPayHeIp\n\n"
-            "<tg-emoji emoji-id=\"6030445631921721471\"></tg-emoji> नीचे आवश्यक अनुभाग चुनें"
-        ),
-        "create": "सौदा बनाएं",
-        "my_deals": "मेरे सौदे",
-        "req": "विवरण",
-        "referral": "रेफरल",
-        "profile": "प्रोफ़ाइल",
-        "support": "तकनीकी सहायता",
-        "about": "सेवा के बारे में",
-        "back": "वापस",
-        "profile_text": (
-            "<tg-emoji emoji-id=\"6035084557378654059\"></tg-emoji> प्रोफ़ाइल\n\n"
-            "ID: {id}\n"
-            "<tg-emoji emoji-id=\"5893100690988863311\"></tg-emoji> उपयोगकर्ता नाम: @{username}\n"
-            "<tg-emoji emoji-id=\"5395732581780040886\"></tg-emoji> सौदे: {deals}\n"
-            "<tg-emoji emoji-id=\"5895514131896733546\"></tg-emoji> सफल: {successful}\n"
-            "रेटिंग: {rating} ({reviews})\n"
-            "रेफरल: {refs}\n"
-        ),
-        "my_deals_title": "<tg-emoji emoji-id=\"5893255507380014983\"></tg-emoji> मेरे सौदे\n\n",
-        "my_deals_empty": "<tg-emoji emoji-id=\"6032636795387121097\"></tg-emoji> आपके कोई सौदे नहीं हैं।",
-        "clear_history": "इतिहास साफ़ करें",
-        "history_cleared": "✅ सौदे का इतिहास साफ़ कर दिया गया (पूरे किए गए सौदे संग्रहीत कर दिए गए)।",
+        "lang_choose": "भाषा चुनें:",
+        "policy_text": "[i] स्वागत है\n\nगोपनीयता नीति स्वीकार करें:\n• डेटा केवल बॉट के लिए\n• खाता हस्तांतरण निषिद्ध\n• साक्ष्य आवश्यक\n• बॉट 'जैसा है'\n\n'स्वीकार करें' क्लिक करें।",
+        "policy_btn": "[i] गोपनीयता नीति",
+        "accept_btn": "[+] स्वीकार करें",
+        "main": "[i] स्वागत है\n\n<b>FunPay</b> - ऑफ-एक्सचेंज सौदों के लिए सुरक्षा।\n\n[+] स्वचालन।\n[+] गति।\n[+] त्वरित निकासी।\n\n• कमीशन: 1%\n• मोड: 24/7\n• सहायता: @FunPayHeIp\n\nअनुभाग चुनें:",
+        "create": "[+] सौदा बनाएं",
+        "my_deals": "[i] मेरे सौदे",
+        "req": "[i] विवरण",
+        "referral": "[i] रेफरल",
+        "profile": "[i] प्रोफ़ाइल",
+        "support": "[?] सहायता",
+        "about": "[i] के बारे में",
+        "back": "[x] वापस",
+        "profile_text": "[i] <b>प्रोफ़ाइल</b>\n\nID: {id}\nउपयोगकर्ता नाम: @{username}\nसौदे: {deals}\nसफल: {successful}\nरेटिंग: {rating} ({reviews})\nरेफरल: {refs}",
+        "my_deals_title": "[i] <b>मेरे सौदे</b>\n\n",
+        "my_deals_empty": "[x] कोई सौदा नहीं।",
+        "clear_history": "[x] इतिहास साफ़ करें",
+        "history_cleared": "[+] इतिहास साफ़ कर दिया गया।",
         "curr_usdt": "USDT",
         "curr_rub": "RUB",
         "curr_uah": "UAH",
@@ -1607,90 +1256,51 @@ T = {
         "curr_ton": "TON",
         "curr_stars": "STARS",
         "curr_kzt": "KZT",
-        "choose_role": "<tg-emoji emoji-id=\"5902335789798265487\"></tg-emoji> अपनी भूमिका चुनें:",
-        "seller": "मैं विक्रेता हूँ",
-        "buyer": "मैं खरीदार हूँ",
-        "choose_type": "<tg-emoji emoji-id=\"5836907383292436018\"></tg-emoji> सौदे का प्रकार चुनें:",
-        "account": "खाता / माल",
-        "gift": "NFT उपहार",
-        "description_account": "<tg-emoji emoji-id=\"6039614175917903752\"></tg-emoji> सौदे के विषय का पाठ में वर्णन करें",
-        "description_gift": (
-            "<tg-emoji emoji-id=\"6039614175917903752\"></tg-emoji> सौदे के विषय का वर्णन करें:\n\n"
-            "उदाहरण: https://t.me/nft/PlushPepe-111\n"
-            "या केवल पाठ्य विवरण"
-        ),
-        "currency": "<tg-emoji emoji-id=\"5402186569006210455\"></tg-emoji> मुद्रा चुनें:",
-        "amount": "💰 पूर्णांक राशि दर्ज करें:",
-        "requisites": "<tg-emoji emoji-id=\"6039641775377748623\"></tg-emoji> भुगतान प्राप्त करने के लिए विवरण दर्ज करें:",
-        "seller_username": "👤 विक्रेता का @username दर्ज करें:",
-        "deal_created": (
-            "✅ सौदा #<b>{deal_id}</b> सफलतापूर्वक बनाया गया!\n\n"
-            "💵 मुद्रा: {currency}\n"
-            "💰 राशि: {amount} {currency}\n"
-            "🎁 NFT मात्रा: 1\n\n"
-            "📎 NFT लिंक:\n• {gift_link}\n\n"
-            "🔗 खरीदार के लिए लिंक:\n{link}\n\n"
-            "⏳ खरीदार के कनेक्ट होने की प्रतीक्षा करें।"
-        ),
-        "deal_created_buyer": (
-            "✅ सौदा #<b>{deal_id}</b> सफलतापूर्वक बनाया गया!\n\n"
-            "💵 मुद्रा: {currency}\n"
-            "💰 राशि: {amount} {currency}\n\n"
-            "🔗 विक्रेता के लिए लिंक:\n{link}\n\n"
-            "⏳ विक्रेता के कनेक्ट होने की प्रतीक्षा करें।"
-        ),
-        "joined": "<tg-emoji emoji-id=\"5895514131896733546\"></tg-emoji> आप सौदा #<b>{deal_id}</b> में शामिल हो गए।",
-        "confirm": "भागीदारी की पुष्टि करें",
-        "cancel_deal": "सौदा रद्द करें",
-        "confirm_seller_notify": "<tg-emoji emoji-id=\"5895514131896733546\"></tg-emoji> आपने भागीदारी की पुष्टि कर दी। सौदा पूरा होने की प्रतीक्षा करें।",
-        "buyer_notify": (
-            "<tg-emoji emoji-id=\"5382357040008021292\"></tg-emoji> विक्रेता ने सौदा #<b>{deal_id}</b> में भागीदारी की पुष्टि की।\n\n"
-            "<tg-emoji emoji-id=\"5893473283696759404\"></tg-emoji> {amount} {currency}\n"
-            "<tg-emoji emoji-id=\"5902056028513505203\"></tg-emoji> विक्रेता का विवरण:\n{req}"
-        ),
-        "confirmed": (
-            "<tg-emoji emoji-id=\"5902056028513505203\"></tg-emoji> प्राथमिक भुगतान की पुष्टि की गई\n\n"
-            "सौदा: #<b>{deal_id}</b>\n"
-            "विक्रेता: @{seller}\n"
-            "रेटिंग: {rating}/5\n"
-            "सफल सौदे: {successful}\n"
-            "राशि: {amount} {currency}\n"
-            "वस्तु: {description}\n\n"
-            "माल @GiftsForFunpay प्रबंधक को हस्तांतरित करने की प्रतीक्षा करें।"
-        ),
-        "deal_active": "<tg-emoji emoji-id=\"5206607081334906820\"></tg-emoji> सक्रिय",
-        "language_text": "🌐 भाषा चुनें:",
-        "language_set": "✅ भाषा सेट की गई: {lang}।",
-        "req_menu": "✏️ विवरण बदलने के लिए मुद्रा चुनें",
-        "req_prompt": "✏️ {currency} के लिए अपना {currency_name} दर्ज करें\n\n📝 उदाहरण:\n{example}",
-        "req_saved": "✅ विवरण सहेजा गया।",
-        "support_text": "🆘 सहायता: @FunPayHeIp\n\nकिसी भी प्रश्न के लिए प्रबंधक से संपर्क करें।",
-        "about_text": (
-            "<tg-emoji emoji-id=\"5766994197705921104\"></tg-emoji> अधिक जानकारी:\n\n"
-            "<tg-emoji emoji-id=\"6039486778597970865\"></tg-emoji> हम एक गारंटर सेवा हैं, हमारा कार्य आपको सुरक्षित सौदे करने और त्वरित निकासी प्रक्रिया में मदद करना है!\n\n"
-            "<tg-emoji emoji-id=\"6037421444789440735\"></tg-emoji> अक्सर पूछे जाने वाले प्रश्न:\n\n"
-            "• निकासी में कितना समय लगता है? आमतौर पर 2 मिनट से अधिक नहीं, दुर्लभ मामलों में 2 घंटे तक।\n\n"
-            "• उपहार प्रबंधक को क्यों हस्तांतरित किया जाना चाहिए, खरीदार को नहीं? कारण सरल है: खरीदार झूठ बोल सकता है कि उसे उपहार नहीं मिला, जो स्थिति को लंबा खींचता है, लेकिन हमारा प्रबंधक स्वचालित रूप से NFT उपहार की उपस्थिति की जाँच करता है और धोखा देना संभव नहीं होगा।\n\n"
-            "• जमा कितनी तेजी से होता है? जमा में भी 2 मिनट से अधिक नहीं लगता है।\n\n"
-            "• मैंने एक समान बॉट देखा, क्या मुझे उस पर भरोसा करना चाहिए? यदि आप @FunpayTrustly_robot के अलावा कोई अन्य बॉट देखते हैं, तो किसी भी स्थिति में उसके साथ सौदे न करें!"
-        ),
-        "admin_done_ok": "✅ सौदा #{deal_id} प्रशासक द्वारा पूरा किया गया।",
-        "admin_cancel_ok": "❌ सौदा #{deal_id} प्रशासक द्वारा रद्द कर दिया गया।",
-        "banned": "🚫 आपका खाता ब्लॉक कर दिया गया है।",
-        "active_limit": "❌ अधिकतम 5 सक्रिय सौदे।",
-        "not_found": "🚫 सौदा नहीं मिला।",
-        "not_allowed": "🚫 कार्रवाई की अनुमति नहीं है।",
-        "invalid": "❌ अमान्य मान।",
-        "cancelled": "❌ सौदा #{deal_id} रद्द कर दिया गया।",
-        "self_deal": "❌ आप अपने स्वयं के सौदे में दूसरी भूमिका नहीं ले सकते।",
-        "full": "ℹ️ दोनों भूमिकाएँ पहले ही ली जा चुकी हैं।",
-        "already_member": "ℹ️ आप पहले से ही इस सौदे के सदस्य हैं।",
-        "referral_text": "👥 रेफरल लिंक: {link}\nकुल रेफरल: {total}",
+        "choose_role": "[?] <b>भूमिका चुनें</b>:",
+        "seller": "[i] विक्रेता",
+        "buyer": "[i] खरीदार",
+        "choose_type": "[?] <b>प्रकार चुनें</b>:",
+        "account": "[i] खाता/माल",
+        "gift": "[i] NFT उपहार",
+        "description_account": "[i] सौदे के विषय का वर्णन करें",
+        "description_gift": "[i] सौदे के विषय का वर्णन करें\nउदाहरण: https://t.me/nft/...",
+        "currency": "[?] <b>मुद्रा चुनें</b>:",
+        "amount": "[i] <b>राशि दर्ज करें</b>:",
+        "requisites": "[i] <b>विवरण दर्ज करें</b>:",
+        "seller_username": "[i] <b>विक्रेता का @username दर्ज करें</b>:",
+        "deal_created": "[+] <b>सौदा #{deal_id} बनाया गया!</b>\n\nमुद्रा: {currency}\nराशि: {amount} {currency}\nखरीदार लिंक: {link}",
+        "deal_created_buyer": "[+] <b>सौदा #{deal_id} बनाया गया!</b>\n\nमुद्रा: {currency}\nराशि: {amount} {currency}\nविक्रेता लिंक: {link}",
+        "joined": "[+] आप सौदा #{deal_id} में शामिल हो गए।",
+        "confirm": "[+] पुष्टि करें",
+        "cancel_deal": "[x] रद्द करें",
+        "confirm_seller_notify": "[+] पुष्टि की गई।",
+        "buyer_notify": "[+] <b>विक्रेता ने सौदा #{deal_id} की पुष्टि की।</b>\n\n{amount} {currency}\nविवरण:\n{req}",
+        "confirmed": "[+] <b>भुगतान की पुष्टि की गई</b>\n\nसौदा: #{deal_id}\nविक्रेता: @{seller}\nरेटिंग: {rating}/5\nसफल: {successful}\nराशि: {amount} {currency}\nवस्तु: {description}\n\nहस्तांतरण की प्रतीक्षा करें।",
+        "deal_active": "[+] सक्रिय",
+        "language_text": "[?] <b>भाषा चुनें</b>:",
+        "language_set": "[+] भाषा सेट की गई: {lang}।",
+        "req_menu": "[i] <b>मुद्रा चुनें</b>:",
+        "req_prompt": "[i] {currency} के लिए {currency_name} दर्ज करें\n\nउदाहरण:\n{example}",
+        "req_saved": "[+] विवरण सहेजा गया।",
+        "support_text": "[?] सहायता: @FunPayHeIp",
+        "about_text": "[i] <b>के बारे में</b>:\n\nगारंटर सेवा।\n\n• निकासी 2 मिनट तक।\n• उपहार प्रबंधक को हस्तांतरित करें।\n• जमा 2 मिनट तक।\n• केवल @FunpayTrustly_robot पर भरोसा करें।",
+        "admin_done_ok": "[+] सौदा #{deal_id} पूरा किया गया।",
+        "admin_cancel_ok": "[x] सौदा #{deal_id} रद्द कर दिया गया।",
+        "banned": "[x] खाता ब्लॉक कर दिया गया।",
+        "active_limit": "[x] अधिकतम 5 सौदे।",
+        "not_found": "[x] सौदा नहीं मिला।",
+        "not_allowed": "[x] अनुमति नहीं है।",
+        "invalid": "[x] अमान्य मान।",
+        "cancelled": "[x] सौदा #{deal_id} रद्द कर दिया गया।",
+        "self_deal": "[x] दूसरी भूमिका नहीं ले सकते।",
+        "full": "[i] दोनों भूमिकाएँ ली गई हैं।",
+        "already_member": "[i] आप पहले से ही सदस्य हैं।",
+        "referral_text": "[i] <b>रेफरल लिंक</b>: {link}\nकुल: {total}",
     }
 }
 
 # ============================================================
-# ЗАПУСК aiohttp
+# WEBHOOK & SERVER
 # ============================================================
 async def handle_webhook(request):
     try:
