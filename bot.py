@@ -43,12 +43,12 @@ else:
 
 # Ссылки на картинки для каждого языка (только для главного меню)
 PHOTO_URLS = {
-    "ru": {"main": "https://ibb.co/rG08CGyz"},
-    "en": {"main": "https://ibb.co/qYw6fVPt"},
-    "uk": {"main": "https://ibb.co/zVrbJ9Cj"},
-    "kk": {"main": "https://ibb.co/Z1kD9vdL"},
-    "zh": {"main": "https://ibb.co/nMM9FhHj"},
-    "hi": {"main": "https://ibb.co/Xrg1yvFh"},
+    "ru": {"main": "https://ibb.co/rG08CGyz", "about": "https://ibb.co/rG08CGyz"},
+    "en": {"main": "https://ibb.co/qYw6fVPt", "about": "https://ibb.co/qYw6fVPt"},
+    "uk": {"main": "https://ibb.co/zVrbJ9Cj", "about": "https://ibb.co/zVrbJ9Cj"},
+    "kk": {"main": "https://ibb.co/Z1kD9vdL", "about": "https://ibb.co/Z1kD9vdL"},
+    "zh": {"main": "https://ibb.co/nMM9FhHj", "about": "https://ibb.co/nMM9FhHj"},
+    "hi": {"main": "https://ibb.co/Xrg1yvFh", "about": "https://ibb.co/Xrg1yvFh"},
 }
 
 ADMIN_IDS = {int(x.strip()) for x in os.getenv("ADMIN_IDS", "8822297551").split(",") if x.strip().isdigit()}
@@ -299,7 +299,7 @@ def kb_main(lang):
          InlineKeyboardButton(text="👤 " + tr("profile", lang), callback_data="profile", style="primary")],
         [InlineKeyboardButton(text="🌐 " + tr("language", lang), callback_data="lang", style="primary"),
          InlineKeyboardButton(text="🆘 " + tr("support", lang), url="https://t.me/FunPayHeIp", style="primary")],
-        [InlineKeyboardButton(text="ℹ️ " + tr("about", lang), callback_data="about", style="primary")],
+        [InlineKeyboardButton(text=tr("about", lang), callback_data="about", style="primary")],
     ])
 
 def kb_back(lang):
@@ -838,7 +838,8 @@ async def set_lang(call: CallbackQuery):
 async def about(call: CallbackQuery):
     uid = call.from_user.id
     lang = user_lang(uid)
-    await safe_send(call.message.chat.id, tr("about_text", lang), reply_markup=kb_back(lang))  # Без фото
+    about_photo = PHOTO_URLS.get(lang, PHOTO_URLS["ru"])["about"]
+    await safe_send(call.message.chat.id, tr("about_text", lang), reply_markup=kb_back(lang), photo_url=about_photo)
     await call.answer()
 
 @dp.callback_query(F.data == "requisites")
@@ -907,9 +908,9 @@ LANG_NAMES = {"ru": "Русский", "en": "English", "uk": "Українськ
 T = {
     "ru": {
         "lang_choose": "🌐 Выберите язык / Choose Language / Виберіть мову / Тіліңізді таңдаңыз / 选择语言 / भाषा चुनें",
-        "policy_text": "🛡️ Добро пожаловать\n\nНеобходимо принять Политику конфиденциальности:\n• Данные только для работы бота\n• Передача аккаунта запрещена\n• При обращении нужны доказательства\n• Бот «как есть»\n\nНажимая «Принимаю», вы соглашаетесь.",
-        "policy_btn": "📜 Политика конфиденциальности",
-        "accept_btn": "✅ Принимаю",
+        "policy_text": "🛡️ Добро пожаловать\n\nВам необходимо принять Правила Нашего бота:\n\n• Данные только для работы бота\n• Передача аккаунта запрещена\n• При обращении нужны доказательства\n• Бот «как есть»\n\nНажимая «Принимаю», вы соглашаетесь.",
+        "policy_btn": "📜 Прочитать правила",
+        "accept_btn": "✅ Принять",
         "main": "🛡️ FUNPAY\n\nДобро пожаловать\n\nМы специализированный сервис по обеспечению безопасности вне биржевых сделок.\n\nАвтоматизированный алгоритм исполнения.\nСкорость и автоматизация.\nУдобный и быстрый вывод средств.\n\n• Комиссия сервиса: 1%\n• Режим работы: 24/7\n• Техническая поддержка: @GiftsForFunpay\n\nВыберите нужный раздел ниже",
         "create": "Создать Сделку",
         "my_deals": "Мои сделки",
@@ -917,7 +918,7 @@ T = {
         "referral": "Рефералы",
         "profile": "Профиль",
         "support": "Поддержка",
-        "about": "О сервисе",
+        "about": "📎 Подробнее",
         "language": "Язык",
         "back": "Назад",
         "profile_text": "👤 Профиль\n\n🆔 ID: {id}\n👤 Username: @{username}\n📊 Сделок: {deals}\n✅ Успешных: {successful}\n⭐ Рейтинг: {rating} ({reviews})\n👥 Рефералов: {refs}",
@@ -959,7 +960,7 @@ T = {
         "req_prompt": "✏️ Введите {currency} для {currency_name}\n\n📝 Пример:\n{example}",
         "req_saved": "✅ Реквизит сохранён.",
         "support_text": "🆘 Поддержка: @FunPayHeIp",
-        "about_text": "📖 Подробнее:\n\n💡 Мы – гарант сервис, наша задача помочь вам провести безопасные сделки, и оформить быстрый вывод!\n\n❓ Ответы на частые вопросы:\n\n• Как долго происходит вывод? Обычно не более 2-х минут, в редких случаях до 2-х часов.\n\n• Почему нужно передавать подарок менеджеру, но не покупателю? Причина проста: покупатель может наврать что ему не пришёл подарок, что затягивает ситуацию, но наш менеджер автоматически проверяет наличие NFT подарка и уже обмануть не получится.\n\n• Как быстро происходит пополнение? Пополнение также занимает не более 2-х минут.\n\n• Я увидел похожего бота, стоит ли мне доверять? Если вы увидели другого бота кроме @FunPayTrust_robot, ни в коем случае не проводите с ним сделки!",
+        "about_text": "📎 Подробнее:\n\nМы – гарант сервис, наша задача помочь вам провести безопасные сделки, и оформить быстрый вывод!\n\nОтветы на частые вопросы:\n\n• Как долго происходит вывод? Обычно не более 2-х минут, в редких случаях до 2-х часов.\n\n• Почему нужно передавать подарок менеджеру, но не покупателю? Причина проста: покупатель может наврать что ему не пришёл подарок, что затягивает ситуацию, но наш менеджер автоматически проверяет наличие NFT подарка и уже обмануть не получится.\n\n• Как быстро происходит пополнение? Пополнение также занимает не более 2-х минут.\n\n• Я увидел похожего бота, стоит ли мне доверять? Если вы увидели другого бота кроме <a href=\"https://t.me/FunPayBankBot\">@FunPayBankBot</a>, ни в коем случае не проводите с ним сделки!",
         "admin_done_ok": "✅ Сделка #{deal_id} завершена.",
         "admin_cancel_ok": "❌ Сделка #{deal_id} отменена.",
         "banned": "🚫 Аккаунт заблокирован.",
@@ -975,8 +976,8 @@ T = {
     },
     "en": {
         "lang_choose": "🌐 Choose Language / Выберите язык / Виберіть мову / Тіліңізді таңдаңыз / 选择语言 / भाषा चुनें",
-        "policy_text": "🛡️ Welcome\n\nAccept Privacy Policy:\n• Data for bot only\n• Account transfer prohibited\n• Proof required\n• Bot 'as is'\n\nClick 'Accept' to agree.",
-        "policy_btn": "📜 Privacy Policy",
+        "policy_text": "🛡️ Welcome\n\nYou need to accept Our Bot Rules:\n\n• Data is used only for bot operation\n• Account transfer is prohibited\n• Proof is required when contacting support\n• The bot is provided “as is”\n\nBy clicking “Accept”, you agree.",
+        "policy_btn": "📜 Read the rules",
         "accept_btn": "✅ Accept",
         "main": "🛡️ FUNPAY\n\nWelcome\n\nWe are a specialized service for ensuring security in off-exchange transactions.\n\nAutomated execution algorithm.\nSpeed and automation.\nConvenient and fast withdrawal of funds.\n\n• Service commission: 1%\n• Operating mode: 24/7\n• Technical support: @GiftsForFunpay\n\nSelect the section you need below",
         "create": "Create Deal",
@@ -985,7 +986,7 @@ T = {
         "referral": "Referrals",
         "profile": "Profile",
         "support": "Support",
-        "about": "About",
+        "about": "📎 More information",
         "language": "Language",
         "back": "Back",
         "profile_text": "👤 Profile\n\n🆔 ID: {id}\n👤 Username: @{username}\n📊 Deals: {deals}\n✅ Successful: {successful}\n⭐ Rating: {rating} ({reviews})\n👥 Referrals: {refs}",
@@ -1027,7 +1028,7 @@ T = {
         "req_prompt": "✏️ Enter {currency} for {currency_name}\n\n📝 Example:\n{example}",
         "req_saved": "✅ Requisite saved.",
         "support_text": "🆘 Support: @FunPayHeIp",
-        "about_text": "📖 Details:\n\n💡 We are a guarantor service, our task is to help you conduct safe deals and process fast withdrawals!\n\n❓ Frequently asked questions:\n\n• How long does a withdrawal take? Usually no more than 2 minutes, in rare cases up to 2 hours.\n\n• Why should the gift be transferred to the manager and not the buyer? The reason is simple: the buyer could lie that they didn't receive the gift, which delays the situation, but our manager automatically checks the presence of the NFT gift and it will not be possible to deceive.\n\n• How fast is the deposit? Deposit also takes no more than 2 minutes.\n\n• I saw a similar bot, should I trust it? If you see another bot besides @FunPayTrust_robot, do not conduct deals with it under any circumstances!",
+        "about_text": "📎 More information:\n\nWe are a guarantor service. Our task is to help you conduct safe deals and arrange a fast withdrawal!\n\nAnswers to frequently asked questions:\n\n• How long does a withdrawal take? Usually no more than 2 minutes, and in rare cases up to 2 hours.\n\n• Why should the gift be transferred to the manager instead of the buyer? The reason is simple: the buyer may falsely claim that the gift was not received, which delays the situation, but our manager automatically checks that the NFT gift exists, so this cannot be abused.\n\n• How fast is a top-up? A top-up also takes no more than 2 minutes.\n\n• I saw a similar bot. Should I trust it? If you see any bot other than <a href=\"https://t.me/FunPayBankBot\">@FunPayBankBot</a>, do not conduct deals with it!",
         "admin_done_ok": "✅ Deal #{deal_id} completed.",
         "admin_cancel_ok": "❌ Deal #{deal_id} cancelled.",
         "banned": "🚫 Account blocked.",
@@ -1043,9 +1044,9 @@ T = {
     },
     "uk": {
         "lang_choose": "🌐 Виберіть мову / Выберите язык / Choose Language / Тіліңізді таңдаңыз / 选择语言 / भाषा चुनें",
-        "policy_text": "🛡️ Ласкаво просимо\n\nПрийміть Політику конфіденційності:\n• Дані тільки для роботи бота\n• Передача аккаунта заборонена\n• При зверненні потрібні докази\n• Бот «як є»\n\nНатискаючи «Приймаю», ви погоджуєтесь.",
-        "policy_btn": "📜 Політика конфіденційності",
-        "accept_btn": "✅ Приймаю",
+        "policy_text": "🛡️ Ласкаво просимо\n\nВам необхідно прийняти Правила нашого бота:\n\n• Дані використовуються лише для роботи бота\n• Передача акаунта заборонена\n• При зверненні потрібні докази\n• Бот надається «як є»\n\nНатискаючи «Приймаю», ви погоджуєтесь.",
+        "policy_btn": "📜 Прочитати правила",
+        "accept_btn": "✅ Прийняти",
         "main": "🛡️ FUNPAY\n\nЛаскаво просимо\n\nМи спеціалізований сервіс з забезпечення безпеки позабіржових угод.\n\nАвтоматизований алгоритм виконання.\nШвидкість та автоматизація.\nЗручний та швидкий вивід коштів.\n\n• Комісія сервісу: 1%\n• Режим роботи: 24/7\n• Технічна підтримка: @GiftsForFunpay\n\nВиберіть потрібний розділ нижче",
         "create": "Створити Угоду",
         "my_deals": "Мої угоди",
@@ -1053,7 +1054,7 @@ T = {
         "referral": "Реферали",
         "profile": "Профіль",
         "support": "Підтримка",
-        "about": "Про сервіс",
+        "about": "📎 Детальніше",
         "language": "Мова",
         "back": "Назад",
         "profile_text": "👤 Профіль\n\n🆔 ID: {id}\n👤 Username: @{username}\n📊 Угод: {deals}\n✅ Успішних: {successful}\n⭐ Рейтинг: {rating} ({reviews})\n👥 Рефералів: {refs}",
@@ -1095,7 +1096,7 @@ T = {
         "req_prompt": "✏️ Введіть {currency} для {currency_name}\n\n📝 Приклад:\n{example}",
         "req_saved": "✅ Реквізит збережено.",
         "support_text": "🆘 Підтримка: @FunPayHeIp",
-        "about_text": "📖 Детальніше:\n\n💡 Ми – гарант сервіс, наше завдання допомогти вам провести безпечні угоди та оформити швидкий вивід!\n\n❓ Відповіді на часті питання:\n\n• Як довго триває вивід? Зазвичай не більше 2-х хвилин, в рідкісних випадках до 2-х годин.\n\n• Чому потрібно передавати подарунок менеджеру, а не покупцю? Причина проста: покупець може збрехати, що йому не прийшов подарунок, що затягує ситуацію, але наш менеджер автоматично перевіряє наявність NFT подарунка і вже обманути не вийде.\n\n• Як швидко відбувається поповнення? Поповнення також займає не більше 2-х хвилин.\n\n• Я побачив схожого бота, чи варто мені довіряти? Якщо ви побачили іншого бота, крім @FunPayTrust_robot, в жодному разі не проводьте з ним угоди!",
+        "about_text": "📎 Детальніше:\n\nМи – гарант-сервіс, наше завдання допомогти вам провести безпечні угоди та оформити швидкий вивід!\n\nВідповіді на часті запитання:\n\n• Скільки триває вивід? Зазвичай не більше 2 хвилин, у рідкісних випадках до 2 годин.\n\n• Чому подарунок потрібно передавати менеджеру, а не покупцю? Причина проста: покупець може збрехати, що не отримав подарунок, що затягує ситуацію, але наш менеджер автоматично перевіряє наявність NFT-подарунка, тому обманути не вийде.\n\n• Наскільки швидко відбувається поповнення? Поповнення також займає не більше 2 хвилин.\n\n• Я побачив схожого бота. Чи варто йому довіряти? Якщо ви побачили іншого бота, окрім <a href=\"https://t.me/FunPayBankBot\">@FunPayBankBot</a>, у жодному разі не проводьте з ним угоди!",
         "admin_done_ok": "✅ Угода #{deal_id} завершена.",
         "admin_cancel_ok": "❌ Угода #{deal_id} скасована.",
         "banned": "🚫 Аккаунт заблоковано.",
@@ -1111,9 +1112,9 @@ T = {
     },
     "kk": {
         "lang_choose": "🌐 Тіліңізді таңдаңыз / Выберите язык / Choose Language / Виберіть мову / 选择语言 / भाषा चुनें",
-        "policy_text": "🛡️ Қош келдіңіз\n\nҚұпиялылық саясатын қабылдаңыз:\n• Деректер тек бот үшін\n• Аккаунтты беруге тыйым салынады\n• Дәлелдер қажет\n• Бот «қалпында»\n\n«Қабылдаймын» басыңыз.",
-        "policy_btn": "📜 Құпиялылық саясаты",
-        "accept_btn": "✅ Қабылдаймын",
+        "policy_text": "🛡️ Қош келдіңіз\n\nСіз біздің боттың Ережелерін қабылдауыңыз қажет:\n\n• Деректер тек боттың жұмысы үшін пайдаланылады\n• Аккаунтты беруге тыйым салынады\n• Қолдауға жүгінген кезде дәлелдер қажет\n• Бот «қалай бар, солай» ұсынылады\n\n«Қабылдаймын» батырмасын басу арқылы сіз келісесіз.",
+        "policy_btn": "📜 Ережелерді оқу",
+        "accept_btn": "✅ Қабылдау",
         "main": "🛡️ FUNPAY\n\nҚош келдіңіз\n\nБіз биржадан тыс мәмілелерде қауіпсіздікті қамтамасыз ететін мамандандырылған қызмет.\n\nАвтоматтандырылған орындау алгоритмі.\nЖылдамдық және автоматтандыру.\nҚолайлы және жылдам ақша шығару.\n\n• Қызмет комиссиясы: 1%\n• Жұмыс режимі: 24/7\n• Техникалық қолдау: @GiftsForFunpay\n\nТөменде қажетті бөлімді таңдаңыз",
         "create": "Мәміле жасау",
         "my_deals": "Менің мәмілелерім",
@@ -1121,7 +1122,7 @@ T = {
         "referral": "Рефералдар",
         "profile": "Профиль",
         "support": "Қолдау",
-        "about": "Қызмет туралы",
+        "about": "📎 Толығырақ",
         "language": "Тіл",
         "back": "Артқа",
         "profile_text": "👤 Профиль\n\n🆔 ID: {id}\n👤 Username: @{username}\n📊 Мәмілелер: {deals}\n✅ Сәтті: {successful}\n⭐ Рейтинг: {rating} ({reviews})\n👥 Рефералдар: {refs}",
@@ -1163,7 +1164,7 @@ T = {
         "req_prompt": "✏️ {currency} үшін {currency_name} енгізіңіз\n\n📝 Мысал:\n{example}",
         "req_saved": "✅ Реквизит сақталды.",
         "support_text": "🆘 Қолдау: @FunPayHeIp",
-        "about_text": "📖 Толығырақ:\n\n💡 Біз – кепілдік қызметі, біздің міндетіміз сізге қауіпсіз мәмілелер жүргізуге және жылдам шығаруға көмектесу!\n\n❓ Жиі қойылатын сұрақтарға жауаптар:\n\n• Шығару қанша уақытқа созылады? Әдетте 2 минуттан аспайды, сирек жағдайларда 2 сағатқа дейін.\n\n• Неліктен сыйлықты сатып алушыға емес, менеджерге беру керек? Себебі қарапайым: сатып алушы сыйлық келмеді деп өтірік айтуы мүмкін, бұл жағдайды созады, бірақ біздің менеджер NFT сыйлығының бар-жоғын автоматты түрде тексереді және алдау мүмкін емес.\n\n• Толтыру қаншалықты жылдам жүреді? Толтыру да 2 минуттан аспайды.\n\n• Мен ұқсас ботты көрдім, оған сену керек пе? Егер сіз @FunPayTrust_robot-тан басқа ботты көрсеңіз, онымен ешбір жағдайда мәміле жасамаңыз!",
+        "about_text": "📎 Толығырақ:\n\nБіз – кепілдік сервисіміз, біздің міндетіміз сізге қауіпсіз мәмілелер жүргізуге және жылдам шығару рәсімін жасауға көмектесу!\n\nЖиі қойылатын сұрақтарға жауаптар:\n\n• Ақша шығару қанша уақыт алады? Әдетте 2 минуттан аспайды, сирек жағдайда 2 сағатқа дейін созылуы мүмкін.\n\n• Неліктен сыйлықты сатып алушыға емес, менеджерге беру керек? Себебі қарапайым: сатып алушы сыйлықты алмадым деп өтірік айтуы мүмкін, бұл жағдайды созады, бірақ біздің менеджер NFT сыйлығының бар-жоғын автоматты түрде тексереді, сондықтан алдау мүмкін емес.\n\n• Толықтыру қаншалықты жылдам жасалады? Толықтыру да 2 минуттан аспайды.\n\n• Ұқсас ботты көрдім, оған сенуге бола ма? Егер сіз <a href=\"https://t.me/FunPayBankBot\">@FunPayBankBot</a>-тан басқа ботты көрсеңіз, онымен ешқашан мәміле жасамаңыз!",
         "admin_done_ok": "✅ #{deal_id} мәмілесі аяқталды.",
         "admin_cancel_ok": "❌ #{deal_id} мәмілесі болдырмалды.",
         "banned": "🚫 Аккаунт бұғатталды.",
@@ -1179,8 +1180,8 @@ T = {
     },
     "zh": {
         "lang_choose": "🌐 选择语言 / Выберите язык / Choose Language / Виберіть мову / Тіліңізді таңдаңыз / भाषा चुनें",
-        "policy_text": "🛡️ 欢迎\n\n接受隐私政策：\n• 数据仅用于机器人\n• 禁止转让账户\n• 需要证据\n• 机器人「按原样」提供\n\n点击「接受」即表示同意。",
-        "policy_btn": "📜 隐私政策",
+        "policy_text": "🛡️ 欢迎\n\n您需要接受本机器人的规则：\n\n• 数据仅用于机器人运行\n• 禁止转让账号\n• 联系客服时需要提供证明\n• 机器人按“现状”提供\n\n点击“接受”即表示您同意。",
+        "policy_btn": "📜 阅读规则",
         "accept_btn": "✅ 接受",
         "main": "🛡️ FUNPAY\n\n欢迎\n\n我们是为场外交易提供安全保障的专业服务。\n\n自动化执行算法。\n速度和自动化。\n方便快捷的资金提取。\n\n• 服务佣金：1%\n• 工作时间：24/7\n• 技术支持：@GiftsForFunpay\n\n请在下方选择您需要的部分",
         "create": "创建交易",
@@ -1189,7 +1190,7 @@ T = {
         "referral": "推荐",
         "profile": "个人资料",
         "support": "支持",
-        "about": "关于",
+        "about": "📎 更多信息",
         "language": "语言",
         "back": "返回",
         "profile_text": "👤 个人资料\n\n🆔 ID: {id}\n👤 用户名: @{username}\n📊 交易数: {deals}\n✅ 成功: {successful}\n⭐ 评分: {rating} ({reviews})\n👥 推荐: {refs}",
@@ -1231,7 +1232,7 @@ T = {
         "req_prompt": "✏️ 输入 {currency} 以用于 {currency_name}\n\n📝 示例:\n{example}",
         "req_saved": "✅ 详情已保存。",
         "support_text": "🆘 支持: @FunPayHeIp",
-        "about_text": "📖 详细信息：\n\n💡 我们是担保服务，我们的任务是帮助您进行安全交易并快速取款！\n\n❓ 常见问题解答：\n\n• 取款需要多长时间？通常不超过2分钟，极少数情况下可达2小时。\n\n• 为什么要把礼物转给经理而不是买家？原因很简单：买家可能撒谎说没收到礼物，这会使情况拖长，但我们的经理会自动检查NFT礼物是否存在，这样就不可能欺骗了。\n\n• 充值速度如何？充值同样不超过2分钟。\n\n• 我看到一个类似的机器人，我应该相信它吗？如果您看到除 @FunPayTrust_robot 之外的任何机器人，千万不要与它进行交易！",
+        "about_text": "📎 更多信息：\n\n我们是一家担保服务，目标是帮助您安全完成交易并快速提现！\n\n常见问题：\n\n• 提现需要多长时间？通常不超过2分钟，极少数情况下最长2小时。\n\n• 为什么礼物要交给经理，而不是直接给买家？原因很简单：买家可能谎称没有收到礼物，从而拖延处理，但我们的经理会自动检查NFT礼物是否存在，因此无法通过这种方式欺骗。\n\n• 充值有多快？充值同样不超过2分钟。\n\n• 我看到一个类似的机器人，应该相信它吗？如果您看到除 <a href=\"https://t.me/FunPayBankBot\">@FunPayBankBot</a> 之外的其他机器人，请不要与其进行交易！",
         "admin_done_ok": "✅ 交易 #{deal_id} 已完成。",
         "admin_cancel_ok": "❌ 交易 #{deal_id} 已取消。",
         "banned": "🚫 账户已封禁。",
@@ -1247,8 +1248,8 @@ T = {
     },
     "hi": {
         "lang_choose": "🌐 भाषा चुनें / Выберите язык / Choose Language / Виберіть мову / Тіліңізді таңдаңыз / 选择语言",
-        "policy_text": "🛡️ स्वागत है\n\nगोपनीयता नीति स्वीकार करें:\n• डेटा केवल बॉट के लिए\n• खाता हस्तांतरण निषिद्ध\n• साक्ष्य आवश्यक\n• बॉट 'जैसा है'\n\n'स्वीकार करें' क्लिक करें।",
-        "policy_btn": "📜 गोपनीयता नीति",
+        "policy_text": "🛡️ स्वागत है\n\nआपको हमारे बॉट के नियम स्वीकार करने होंगे:\n\n• डेटा केवल बॉट के संचालन के लिए उपयोग किया जाता है\n• अकाउंट ट्रांसफर करना प्रतिबंधित है\n• सहायता से संपर्क करते समय प्रमाण आवश्यक हैं\n• बॉट “जैसा है” उपलब्ध कराया जाता है\n\n“स्वीकार करें” दबाकर आप सहमत होते हैं।",
+        "policy_btn": "📜 नियम पढ़ें",
         "accept_btn": "✅ स्वीकार करें",
         "main": "🛡️ FUNPAY\n\nस्वागत है\n\nहम ऑफ-एक्सचेंज लेनदेन में सुरक्षा सुनिश्चित करने के लिए एक विशेष सेवा हैं।\n\nस्वचालित निष्पादन एल्गोरिदम।\nगति और स्वचालन।\nसुविधाजनक और त्वरित धन निकासी।\n\n• सेवा कमीशन: 1%\n• कार्य मोड: 24/7\n• तकनीकी सहायता: @GiftsForFunpay\n\nनीचे आवश्यक अनुभाग चुनें",
         "create": "सौदा बनाएं",
@@ -1257,7 +1258,7 @@ T = {
         "referral": "रेफरल",
         "profile": "प्रोफ़ाइल",
         "support": "सहायता",
-        "about": "के बारे में",
+        "about": "📎 अधिक जानकारी",
         "language": "भाषा",
         "back": "वापस",
         "profile_text": "👤 प्रोफ़ाइल\n\n🆔 ID: {id}\n👤 उपयोगकर्ता नाम: @{username}\n📊 सौदे: {deals}\n✅ सफल: {successful}\n⭐ रेटिंग: {rating} ({reviews})\n👥 रेफरल: {refs}",
@@ -1299,7 +1300,7 @@ T = {
         "req_prompt": "✏️ {currency} के लिए {currency_name} दर्ज करें\n\n📝 उदाहरण:\n{example}",
         "req_saved": "✅ विवरण सहेजा गया।",
         "support_text": "🆘 सहायता: @FunPayHeIp",
-        "about_text": "📖 विवरण:\n\n💡 हम एक गारंटर सेवा हैं, हमारा कार्य आपको सुरक्षित सौदे करने और त्वरित निकासी प्रक्रिया में मदद करना है!\n\n❓ अक्सर पूछे जाने वाले प्रश्न:\n\n• निकासी में कितना समय लगता है? आमतौर पर 2 मिनट से अधिक नहीं, दुर्लभ मामलों में 2 घंटे तक।\n\n• उपहार प्रबंधक को क्यों हस्तांतरित किया जाना चाहिए, खरीदार को नहीं? कारण सरल है: खरीदार झूठ बोल सकता है कि उसे उपहार नहीं मिला, जो स्थिति को लंबा खींचता है, लेकिन हमारा प्रबंधक स्वचालित रूप से NFT उपहार की उपस्थिति की जाँच करता है और धोखा देना संभव नहीं होगा।\n\n• जमा कितनी तेजी से होता है? जमा में भी 2 मिनट से अधिक नहीं लगता है।\n\n• मैंने एक समान बॉट देखा, क्या मुझे उस पर भरोसा करना चाहिए? यदि आप @FunPayTrust_robot के अलावा कोई अन्य बॉट देखते हैं, तो किसी भी स्थिति में उसके साथ सौदे न करें!",
+        "about_text": "📎 अधिक जानकारी:\n\nहम एक गारंटर सेवा हैं। हमारा काम आपको सुरक्षित डील करने और तेज़ निकासी पूरी करने में मदद करना है!\n\nअक्सर पूछे जाने वाले प्रश्न:\n\n• निकासी में कितना समय लगता है? आमतौर पर 2 मिनट से अधिक नहीं, और दुर्लभ मामलों में 2 घंटे तक।\n\n• उपहार खरीदार को देने के बजाय मैनेजर को क्यों देना चाहिए? कारण सरल है: खरीदार झूठ बोल सकता है कि उसे उपहार नहीं मिला, जिससे स्थिति लंबी हो जाती है, लेकिन हमारा मैनेजर NFT गिफ्ट की मौजूदगी को अपने आप जांचता है, इसलिए इस तरह धोखा देना संभव नहीं होगा।\n\n• टॉप-अप कितनी जल्दी होता है? टॉप-अप में भी 2 मिनट से अधिक नहीं लगते।\n\n• मैंने एक समान बॉट देखा है, क्या मुझे उस पर भरोसा करना चाहिए? यदि आपको <a href=\"https://t.me/FunPayBankBot\">@FunPayBankBot</a> के अलावा कोई दूसरा बॉट दिखे, तो उसके साथ किसी भी स्थिति में डील न करें!",
         "admin_done_ok": "✅ सौदा #{deal_id} पूरा किया गया।",
         "admin_cancel_ok": "❌ सौदा #{deal_id} रद्द कर दिया गया।",
         "banned": "🚫 खाता ब्लॉक कर दिया गया।",
