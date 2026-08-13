@@ -419,8 +419,8 @@ async def onboard_set_lang(call: CallbackQuery):
     await call.message.answer(
         tr("policy_text", lang),
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="📜 " + tr("policy_btn", lang), url="https://t.me/PrivacyPoliceFunpay", style="primary")],
-            [InlineKeyboardButton(text="✅ " + tr("accept_btn", lang), callback_data="accept_policy", style="primary")]
+            [InlineKeyboardButton(text=tr("policy_btn", lang), url="https://t.me/PrivacyPoliceFunpay", style="primary")],
+            [InlineKeyboardButton(text=tr("accept_btn", lang), callback_data="accept_policy", style="primary")]
         ]),
         parse_mode="HTML"
     )
